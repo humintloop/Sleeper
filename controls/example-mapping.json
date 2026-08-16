@@ -1,0 +1,13 @@
+{
+  "technique": "AML.T0051",
+  "name": "LLM Prompt Injection",
+  "controls": [
+    "LLM-SEC-001",
+    "LLM-GOV-002",
+    "LLM-EVAL-001",
+    "LLM-EVAL-002"
+  ],
+  "nist_ai_rmf": ["Map", "Measure", "Manage", "Govern"],
+  "eu_ai_act_relevance": ["Article 9", "Article 15", "Article 17"],
+  "source": "src/data/frameworkMappings.js"
+}

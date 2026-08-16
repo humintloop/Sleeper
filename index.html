@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NETRUNNER — Local-First Agent Assurance Lab</title>
+    <meta name="description" content="Local-first lab for agentic AI threat evaluation, tool-use control testing, and framework-mapped evidence." />
+    <meta property="og:title" content="NETRUNNER — Local-First Agent Assurance Lab" />
+    <meta property="og:description" content="Run agents against adversarial content in the browser. Watch the tool calls. Map the control gap." />
+    <link rel="icon" type="image/png" sizes="32x32" href="%BASE_URL%favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="%BASE_URL%favicon-180.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Geist+Mono:wght@300;400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet" />
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body, #root { height: 100%; }
+      body { background: #0A0C16; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- Forces cross-origin isolation on GitHub Pages (no custom headers there).
+         WebLLM needs this for SharedArrayBuffer. Must load before the app. -->
+    <script src="./coi-serviceworker.js"></script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

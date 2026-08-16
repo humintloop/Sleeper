@@ -1,0 +1,370 @@
+control_set:
+  id: NETRUNNER-LLM-SAAS
+  name: NETRUNNER LLM SaaS Security and Assurance Control Set
+  version: 0.1.0
+  status: draft-project-defined
+  owner_note: >
+    This is a starter, project-defined control set for portfolio and lab use.
+    It is not an official control framework and should be replaced or adapted
+    when organization-specific controls are available.
+  assurance_question: >
+    Are the LLM application's controls working, failing, or degrading over time?
+  mapping_language:
+    - framework relevance
+    - control traceability
+    - potential control weakness
+    - evidence supporting control review
+  prohibited_claims:
+    - legal violation
+    - audit failure
+    - certification failure
+    - regulatory noncompliance
+  readiness_profile:
+    id: saas-critical-digital-infrastructure-readiness
+    category: >
+      AI-enabled SaaS, cybersecurity, edge, cloud, or critical digital infrastructure provider.
+    scope_note: >
+      Intended for CDN, edge, cybersecurity, cloud, or critical digital
+      infrastructure SaaS providers where AI may support security, network,
+      cloud, or critical digital infrastructure operations. EU AI Act high-risk
+      relevance depends on system role, intended purpose, jurisdiction, and
+      whether the AI system is used as a safety component. Cybersecurity-only
+      components are not automatically safety components.
+
+controls:
+  - id: LLM-GOV-001
+    family: governance
+    name: AI System Inventory and Use-Case Classification
+    objective: >
+      Maintain an inventory of LLM-enabled features, model/provider dependencies,
+      data flows, tools, retrieval sources, user populations, and intended use cases.
+    rationale: >
+      Assurance testing is only meaningful when the system boundary, data context,
+      and business purpose are known.
+    source_relevance:
+      mitre_atlas: []
+      owasp_llm: []
+      nist_ai_rmf: [Govern, Map]
+      iso_42001: [9.1, 9.2, 9.3]
+      eu_ai_act_readiness: [Article 9, Article 17]
+    evidence_examples:
+      - LLM system inventory entry
+      - use-case risk classification
+      - model/provider and runtime record
+      - data-flow and tool-access summary
+    test_methods:
+      - Review whether each evaluated LLM feature has a defined system boundary.
+      - Verify model, prompt, retrieval, and tool dependencies are recorded before testing.
+    retest_guidance:
+      - Reassess inventory after model, prompt, tool, provider, or data-source changes.
+
+  - id: LLM-GOV-002
+    family: governance
+    name: AI Threat Modeling
+    objective: >
+      Identify reasonably foreseeable adversarial inputs, misuse paths, abuse cases,
+      trust-boundary assumptions, and control dependencies for LLM-enabled systems.
+    rationale: >
+      MITRE ATLAS and OWASP LLM risks are most useful when translated into system-specific
+      scenarios and tested against actual controls.
+    source_relevance:
+      mitre_atlas: [AML.T0051, AML.T0054, AML.T0056]
+      owasp_llm: ["LLM01:2026", "LLM02:2026", "LLM08:2026", "LLM09:2026"]
+      nist_ai_rmf: [Govern, Map, Measure]
+      iso_42001: [9.1, 9.2, 9.3]
+      eu_ai_act_readiness: [Article 9, Article 15, Article 17]
+    evidence_examples:
+      - threat model covering direct and indirect prompt injection
+      - abuse case list for sensitive disclosure and tool use
+      - documented assumptions about system prompts, guardrails, and retrieval content
+    test_methods:
+      - Confirm evaluation cases trace back to threat-model scenarios.
+      - Verify high-impact tool and data-access paths are included in testing scope.
+    retest_guidance:
+      - Update threat models after new tools, retrieval sources, model providers, or workflows are added.
+
+  - id: LLM-SEC-001
+    family: llm-application-security
+    name: Prompt Injection Resistance
+    objective: >
+      Design, test, and monitor LLM-enabled systems to resist direct, indirect, and
+      triggered prompt injection attempts that override intended behavior or trust boundaries.
+    rationale: >
+      Prompt injection can cause unintended outputs, sensitive disclosure, unauthorized
+      function use, or downstream decision manipulation.
+    source_relevance:
+      mitre_atlas: [AML.T0051, AML.T0051.000, AML.T0051.001, AML.T0051.002]
+      owasp_llm: ["LLM01:2026"]
+      nist_ai_rmf: [Map, Measure, Manage]
+      iso_42001: [9.1, 9.2]
+      eu_ai_act_readiness: [Article 9, Article 12, Article 14, Article 15, Article 72]
+    evidence_examples:
+      - prompt-injection evaluation results
+      - response excerpts showing refusal, partial influence, or compliance
+      - heuristic/judge/reviewer decisions
+      - control regression history
+    test_methods:
+      - Run direct prompt-injection cases against the current system prompt.
+      - Run indirect prompt-injection cases against simulated documents, email, webpages, and tool output.
+      - Confirm untrusted content is treated as data rather than instruction.
+    implementation_notes:
+      - Separate trusted instructions from untrusted content.
+      - Validate expected output formats with deterministic code where practical.
+      - Avoid relying on prompt wording alone for security-critical behavior.
+    retest_guidance:
+      - Rerun prompt-injection cases after prompt, retrieval, model, guardrail, or tool changes.
+
+  - id: LLM-SEC-002
+    family: llm-application-security
+    name: System Prompt Leakage Prevention
+    objective: >
+      Prevent sensitive information, secrets, authorization logic, and internal control
+      assumptions from being embedded in or disclosed through system prompts.
+    rationale: >
+      System prompt disclosure is not always the primary risk; the deeper control issue
+      is storing sensitive or security-critical logic where the model can expose or bypass it.
+    source_relevance:
+      mitre_atlas: [AML.T0056, AML.T0051.000]
+      owasp_llm: ["LLM08:2026", "LLM02:2026"]
+      nist_ai_rmf: [Map, Measure, Manage]
+      iso_42001: [9.1, 9.2, 9.3]
+      eu_ai_act_readiness: [Article 9, Article 12, Article 15, Article 17, Article 72]
+    evidence_examples:
+      - system prompt review checklist
+      - prompt extraction test results
+      - output guardrail findings
+      - confirmation that secrets and authorization rules live outside the prompt
+    test_methods:
+      - Run direct and indirect system-prompt extraction cases.
+      - Review prompts for credentials, internal architecture, permissions, and policy logic.
+      - Verify authorization checks are enforced outside the LLM.
+    implementation_notes:
+      - Treat the system prompt as potentially discoverable.
+      - Externalize secrets, credentials, and strict authorization decisions.
+    retest_guidance:
+      - Rerun extraction cases after prompt edits, model changes, or new tool instructions.
+
+  - id: LLM-SEC-003
+    family: llm-application-security
+    name: RAG and External Content Trust Boundaries
+    objective: >
+      Treat retrieved documents, web content, tickets, email, uploaded files, and tool outputs
+      as untrusted data with explicit trust labels and access boundaries.
+    rationale: >
+      External content can carry indirect prompt injections, poisoned instructions, or sensitive
+      data that should not influence system-level behavior.
+    source_relevance:
+      mitre_atlas: [AML.T0051.001]
+      owasp_llm: ["LLM01:2026", "LLM09:2026", "LLM02:2026"]
+      nist_ai_rmf: [Map, Measure, Manage]
+      iso_42001: [9.1, 9.2]
+      eu_ai_act_readiness: [Article 9, Article 12, Article 15, Article 72]
+    evidence_examples:
+      - retrieval-source inventory
+      - document trust labeling
+      - permission-aware retrieval design
+      - indirect injection test results
+    test_methods:
+      - Run indirect injection cases in simulated retrieved content.
+      - Verify retrieved content cannot override system instructions or tool policies.
+      - Test whether tenant or permission boundaries are preserved in retrieval.
+    implementation_notes:
+      - Label retrieved content as untrusted.
+      - Keep retrieval permissions aligned to the current user and use case.
+      - Log retrieved sources used in high-impact outputs.
+    retest_guidance:
+      - Rerun RAG-focused cases after adding sources, changing chunking, changing retrievers, or changing vector stores.
+
+  - id: LLM-SEC-004
+    family: agentic-ai-security
+    name: Tool-Use Authorization and Containment
+    objective: >
+      Ensure tools, plugins, agents, and workflow actions are authorized by deterministic
+      controls outside the LLM and constrained by least privilege.
+    rationale: >
+      Excessive functionality, excessive permissions, and excessive autonomy can turn
+      manipulated model output into damaging downstream action.
+    source_relevance:
+      mitre_atlas: [AML.T0053, AML.T0051, AML.T0054]
+      owasp_llm: ["LLM03:2026", "LLM01:2026"]
+      nist_ai_rmf: [Map, Measure, Manage]
+      iso_42001: [9.1, 9.2, 9.3]
+      eu_ai_act_readiness: [Article 9, Article 14, Article 15, Article 17]
+    evidence_examples:
+      - tool inventory and scopes
+      - authorization decision logs
+      - human approval records for high-impact actions
+      - negative tests for unauthorized tool invocation
+    test_methods:
+      - Verify high-impact tool calls require deterministic authorization.
+      - Test whether prompt injection can trigger unauthorized tool calls.
+      - Review tool scopes for least privilege and user-context enforcement.
+    implementation_notes:
+      - Prefer narrow, purpose-built tools over open-ended tool execution.
+      - Enforce complete mediation in downstream systems.
+      - Require human approval for high-impact or irreversible actions.
+    retest_guidance:
+      - Rerun tool-use abuse cases after adding tools, scopes, agents, plugins, or workflow automations.
+
+  - id: LLM-SEC-005
+    family: data-protection
+    name: Sensitive Data Handling
+    objective: >
+      Prevent exposure of customer data, credentials, internal policies, system prompts,
+      regulated data, and confidential business information through prompts, context,
+      retrieval, logs, model responses, or tool outputs.
+    rationale: >
+      Sensitive information can be exposed by model output, training/fine-tuning data,
+      retrieval context, logging, or prompt injection against connected systems.
+    source_relevance:
+      mitre_atlas: [AML.T0057, AML.T0056, AML.T0024.000, AML.T0024.001, AML.T0024.002]
+      owasp_llm: ["LLM02:2026", "LLM08:2026", "LLM09:2026"]
+      nist_ai_rmf: [Map, Measure, Manage]
+      iso_42001: [9.1, 9.2]
+      eu_ai_act_readiness: [Article 9, Article 12, Article 15, Article 17]
+    evidence_examples:
+      - data classification and redaction policy
+      - prompt/context redaction checks
+      - output monitoring findings
+      - retention and deletion records
+    test_methods:
+      - Run sensitive-disclosure and prompt-extraction cases.
+      - Inspect logs and evidence exports for unnecessary sensitive content.
+      - Verify retrieval and tool results are scoped to user authorization.
+    implementation_notes:
+      - Redact or tokenize sensitive data before LLM processing where practical.
+      - Do not store secrets in prompts.
+      - Keep evidence useful but minimized.
+    retest_guidance:
+      - Rerun disclosure tests after data-source, logging, or retention changes.
+
+  - id: LLM-EVAL-001
+    family: ai-evaluation
+    name: Adversarial Evaluation and Regression Testing
+    objective: >
+      Run repeatable adversarial evaluation cases before release and after material
+      changes to prompts, models, tools, retrieval sources, policies, or guardrails.
+    rationale: >
+      AI controls require repeatable technical evidence, not only policy assertions.
+    source_relevance:
+      mitre_atlas: [AML.T0051, AML.T0054, AML.T0056]
+      owasp_llm: ["LLM01:2026", "LLM02:2026", "LLM08:2026", "LLM09:2026"]
+      nist_ai_rmf: [Measure, Manage]
+      iso_42001: [9.1, 9.2, 9.3]
+      eu_ai_act_readiness: [Article 9, Article 12, Article 15, Article 72]
+    evidence_examples:
+      - evaluation case library
+      - run records and timestamps
+      - baseline/current comparison
+      - reviewer decisions
+    test_methods:
+      - Execute a defined case suite against the target model and prompt profile.
+      - Compare findings against prior baseline where available.
+      - Record heuristic, judge, and reviewer outcomes separately.
+    retest_guidance:
+      - Rerun a stable smoke suite after every material LLM system change.
+
+  - id: LLM-EVAL-002
+    family: ai-evaluation
+    name: Evaluation Evidence Retention
+    objective: >
+      Retain sufficient evidence to support review, retesting, and reporting while
+      minimizing unnecessary sensitive data.
+    rationale: >
+      Findings should preserve enough context to explain what happened, why it matters,
+      and how to retest it.
+    source_relevance:
+      mitre_atlas: []
+      owasp_llm: []
+      nist_ai_rmf: [Measure, Manage, Govern]
+      iso_42001: [9.1, 9.2, 9.3]
+      eu_ai_act_readiness: [Article 12, Article 17, Article 72]
+    evidence_examples:
+      - run ID
+      - case ID and version
+      - model/runtime metadata
+      - payload and response excerpt
+      - evaluator outputs and reviewer decision
+      - mapped controls and mitigations
+    test_methods:
+      - Verify exported findings include case, model, evaluator, evidence, and mapping fields.
+      - Confirm evidence exports do not unnecessarily include secrets or customer data.
+    retest_guidance:
+      - Review evidence retention fields before public demos, reports, or repository publication.
+
+  - id: LLM-MON-001
+    family: ai-operations
+    name: AI Output Monitoring and Incident Detection
+    objective: >
+      Monitor production outputs, tool activity, retrieval behavior, and user reports for
+      prompt injection, leakage, excessive agency, sensitive disclosure, and unexpected behavior.
+    rationale: >
+      Some failures will only emerge under real workflows, changing model behavior, or new attacker techniques.
+    source_relevance:
+      mitre_atlas: [AML.T0051, AML.T0054, AML.T0056, AML.T0057]
+      owasp_llm: ["LLM01:2026", "LLM02:2026", "LLM08:2026"]
+      nist_ai_rmf: [Measure, Manage]
+      iso_42001: [9.1, 9.3]
+      eu_ai_act_readiness: [Article 12, Article 15, Article 72]
+    evidence_examples:
+      - detection rules or review queues
+      - monitoring dashboards
+      - flagged output samples
+      - incident tickets and retest records
+    test_methods:
+      - Confirm known failure indicators produce observable signals.
+      - Verify high-risk tool activity and sensitive output patterns are logged.
+    retest_guidance:
+      - Update monitoring after new findings, tools, data sources, or incident lessons learned.
+
+  - id: LLM-OPS-001
+    family: ai-operations
+    name: AI Incident Response
+    objective: >
+      Define triage, containment, communication, remediation, disclosure, and retesting procedures
+      for AI-specific incidents and suspected control failures.
+    rationale: >
+      LLM incidents may involve ambiguous evidence, model/provider dependencies, prompt changes,
+      retrieval contamination, or downstream tool effects.
+    source_relevance:
+      mitre_atlas: [AML.T0051, AML.T0054, AML.T0056, AML.T0057]
+      owasp_llm: ["LLM01:2026", "LLM02:2026", "LLM08:2026", "LLM09:2026"]
+      nist_ai_rmf: [Manage, Govern]
+      iso_42001: [9.2, 9.3]
+      eu_ai_act_readiness: [Article 9, Article 17, Article 72]
+    evidence_examples:
+      - AI incident playbook
+      - containment checklist
+      - retest evidence
+      - post-incident control update
+    test_methods:
+      - Tabletop prompt injection, leakage, and tool-abuse scenarios.
+      - Verify incidents result in retesting and control updates.
+    retest_guidance:
+      - Rerun related evaluation cases before closing AI incident remediation.
+
+  - id: LLM-TPRM-001
+    family: third-party-risk
+    name: AI Vendor and Model Provider Risk
+    objective: >
+      Assess model providers, hosted inference APIs, AI-enabled vendors, plugins, and tool providers
+      for AI-specific security, data handling, logging, transparency, and incident response.
+    rationale: >
+      Hosted models, AI vendors, and plugin providers can change system behavior, data exposure,
+      logging, retention, or control effectiveness.
+    source_relevance:
+      mitre_atlas: []
+      owasp_llm: ["LLM04:2026", "LLM02:2026", "LLM03:2026"]
+      nist_ai_rmf: [Govern, Map, Manage]
+      iso_42001: [9.1, 9.2, 9.3]
+      eu_ai_act_readiness: [Article 9, Article 17]
+    evidence_examples:
+      - vendor AI risk questionnaire
+      - model/provider data-use terms
+      - logging and retention review
+      - incident notification requirements
+    test_methods:
+      - Review whether vendor capabilities align with system risk and data classification.
+      - Verify provider changes trigger reassessment and regression testing.
+    retest_guidance:
+      - Reassess after provider, model, API, retention, or contractual changes.
