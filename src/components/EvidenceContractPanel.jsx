@@ -1,0 +1,132 @@
+// Renders a buildEvidenceContract() contract — evidence class / independence /
+// status / scope, not ORPHEUS's flat field list. Field groups below mirror the
+// actual object shape in src/harness/evidenceContract.js.
+import { Check, Copy, Download, FileJson } from 'lucide-react';
+import { useMemo, useState } from 'react';
+
+function downloadJson(contract) {
+  const blob = new Blob([JSON.stringify(contract, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${contract.case_id || 'sleeper-evidence-contract'}-${contract.profile_id || 'run'}.json`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function ghostBtn(C) {
+  return {
+    display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 11px',
+    background: 'transparent', border: `1px solid ${C.borderHi}`, color: C.text2,
+    fontSize: 11, fontWeight: 700, letterSpacing: .5, cursor: 'pointer', borderRadius: 2,
+  };
+}
+
+function Field({ C, label, value, tone }) {
+  return (
+    <div style={{ minWidth: 0 }}>
+      <div style={{ color: C.text3, fontSize: 10, marginBottom: 2 }}>{label}</div>
+      <div style={{ color: tone ? C[tone] || C.text1 : C.text1, fontSize: 12, fontWeight: 800, fontFamily: C.mono, overflowWrap: 'anywhere' }}>
+        {value === null || value === undefined || value === '' ? 'NULL' : String(value)}
+      </div>
+    </div>
+  );
+}
+
+function Group({ C, title, children }) {
+  return (
+    <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: '12px 14px' }}>
+      <div style={{ color: C.text3, fontSize: 10.5, fontWeight: 800, letterSpacing: 1.3, textTransform: 'uppercase', marginBottom: 9 }}>{title}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 7 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export default function EvidenceContractPanel({ C, contract }) {
+  const [copied, setCopied] = useState(false);
+  const json = useMemo(() => contract ? JSON.stringify(contract, null, 2) : '', [contract]);
+
+  if (!contract) {
+    return (
+      <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.text3, fontSize: 12, fontWeight: 800, letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 8 }}>
+          <FileJson size={14} /> Evidence Contract
+        </div>
+        <div style={{ color: C.text2, fontSize: 13, lineHeight: 1.55 }}>
+          Run a case to generate a contract. It records what this run&rsquo;s evidence permits its author to claim — never more.
+        </div>
+      </div>
+    );
+  }
+
+  const copyJson = async () => {
+    await navigator.clipboard?.writeText(json);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1400);
+  };
+
+  const ev = contract.evidence || {};
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.brass, fontSize: 12, fontWeight: 900, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+            <FileJson size={14} /> Evidence Contract
+          </div>
+          <div style={{ color: C.text3, fontSize: 12, marginTop: 3, fontFamily: C.mono }}>{contract.case_id} · {contract.profile_id}</div>
+        </div>
+        <button onClick={copyJson} style={ghostBtn(C)}>
+          {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'COPIED' : 'COPY JSON'}
+        </button>
+        <button onClick={() => downloadJson(contract)} style={ghostBtn(C)}>
+          <Download size={13} /> DOWNLOAD
+        </button>
+      </div>
+
+      {contract.simulated_only && (
+        <div style={{ fontSize: 12, color: C.text2, background: C.surface, border: `1px solid ${C.borderHi}`, borderRadius: 2, padding: '9px 12px' }}>
+          {contract.simulation_note}
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gap: 10 }}>
+        <Group C={C} title="Evidence class">
+          <Field C={C} label="Target" value={`${ev.target?.class} — ${ev.target?.subject}`} />
+          <Field C={C} label="Control point" value={ev.control_point ? `${ev.control_point.class} — ${ev.control_point.subject}` : 'none exercised'} tone={ev.control_point ? 'brass' : undefined} />
+          <Field C={C} label="Max class claimed" value={ev.max_class_claimed} />
+          <Field C={C} label="Ceiling" value={`${ev.ceiling} (E4/E5 unreachable)`} />
+          <Field C={C} label="Independence" value={ev.independence?.level} />
+          <Field C={C} label="Status" value={ev.status} tone={ev.status_downgraded ? 'ochre' : undefined} />
+        </Group>
+
+        <Group C={C} title="Scope">
+          <Field C={C} label="Vocabulary" value={contract.scope?.vocabulary} />
+          <Field C={C} label="Covers" value={contract.scope?.covers?.join(', ') || '(none)'} tone="green" />
+          <Field C={C} label="Does not cover" value={contract.scope?.does_not_cover?.join(', ') || '(none)'} tone="slate" />
+        </Group>
+
+        <Group C={C} title="Run">
+          <Field C={C} label="Verdict" value={contract.verdict} />
+          <Field C={C} label="Run mode" value={contract.run_mode} />
+          <Field C={C} label="Mode" value={contract.mode} />
+          <Field C={C} label="Target" value={contract.target} />
+        </Group>
+      </div>
+
+      {contract.limitations?.length > 0 && (
+        <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 6, color: C.text3 }}>Limitations</div>
+          <ul style={{ margin: 0, paddingLeft: 18 }}>
+            {contract.limitations.map((note, i) => <li key={i} style={{ marginBottom: 3 }}>{note}</li>)}
+          </ul>
+        </div>
+      )}
+
+      <div style={{ fontSize: 11.5, color: C.text3, fontStyle: 'italic' }}>{contract.claim_boundary}</div>
+
+      <pre style={{ margin: 0, maxHeight: 320, overflow: 'auto', padding: 14, background: C.ink, border: `1px solid ${C.border}`, borderRadius: 2, color: C.brass, fontSize: 11, lineHeight: 1.55, fontFamily: C.mono, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{json}</pre>
+    </div>
+  );
+}

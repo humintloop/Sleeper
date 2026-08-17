@@ -27,7 +27,7 @@ export default function TriagePanel({
         padding: '12px 14px',
         background: `${color}0f`,
         border: `1px solid ${color}40`,
-        borderRadius: 4,
+        borderRadius: 2,
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12, color: C.text3, letterSpacing: 1.2, marginBottom: 6 }}>HUMAN TRIAGE</div>

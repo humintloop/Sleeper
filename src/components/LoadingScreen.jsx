@@ -17,7 +17,7 @@ export default function LoadingScreen({ C, mode = 'model', modelName, modelSize,
         alignItems: 'center',
         border: `1px solid ${color}33`,
         background: C.panel,
-        borderRadius: 4,
+        borderRadius: 2,
         padding: '13px 15px',
       }}>
         <SignalBars C={C} color={color} label={isJudge ? 'judge evaluation' : 'model initialization'} count={isJudge ? 10 : 12} />

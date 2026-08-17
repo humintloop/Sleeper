@@ -12,7 +12,9 @@ import { DEFAULT_AUTHORITY_REGISTRY } from './authorityRegistry';
 const scriptedTarget = (turnResponses) => {
   let turn = 0;
   return {
-    async _create() {
+    calls: [],
+    async _create(params) {
+      this.calls.push(params);
       const response = turnResponses[Math.min(turn, turnResponses.length - 1)];
       turn += 1;
       return { text: '', toolCalls: [], ...response };
@@ -47,6 +49,19 @@ describe('case wiring', () => {
 
   it('detects that the injection cases plant adversarial input', () => {
     expect(caseCarriesAdversarialInput(AGENT_CASES['NR-AGT-001'])).toBe(true);
+  });
+
+  it('synthesizes a base system prompt from actor/environment, since no case declares one', async () => {
+    // No entry in agentCases.js sets scenario.system_prompt. Without this, a
+    // live run would send only the (often empty, under Baseline) control gate
+    // clause as the system prompt — no framing of who the agent is at all.
+    const target = scriptedTarget([say('ok')]);
+    await runAgentAssessment({ agentCase: 'NR-AGT-001', profile: 'baseline', target });
+
+    const systemMessage = target.calls[0].messages[0];
+    expect(systemMessage.role).toBe('system');
+    expect(systemMessage.content).toContain(AGENT_CASES['NR-AGT-001'].scenario.actor);
+    expect(systemMessage.content).toContain(AGENT_CASES['NR-AGT-001'].scenario.environment);
   });
 
   it('rejects an unknown case or profile rather than running something arbitrary', async () => {
@@ -94,6 +109,23 @@ describe('end to end, case 1', () => {
 
     expect(run.controlResults.toolAuthorization.tool_blocked).toBe(true);
     expect(verdict.verdict).not.toBe('CONTROL_FAILED');
+  });
+
+  it('carries the exercised controls onto the contract scope, not an empty scope', async () => {
+    // Regression: buildEvidenceContract was called with verdict.verdict (a
+    // bare string) instead of the verdict object, so deriveScope's
+    // verdict?.scope?.controls_exercised read undefined and every contract
+    // silently reported nothing covered, on every run, on every profile.
+    // No prior test read contract.scope.covers, so this shipped unnoticed.
+    const { verdict, contract } = await runAgentAssessment({
+      agentCase: 'NR-AGT-001',
+      profile: 'reference',
+      target: hijacked(),
+    });
+
+    expect(verdict.scope.controls_exercised.length).toBeGreaterThan(0);
+    expect(contract.scope.covers.length).toBeGreaterThan(0);
+    expect(contract.scope.covers).not.toEqual([]);
   });
 });
 

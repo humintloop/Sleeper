@@ -125,7 +125,7 @@ export default function FindingsReport({
             background: C.panel,
             border: `1px solid ${C.amber}55`,
             borderLeft: `3px solid ${C.amber}`,
-            borderRadius: 4,
+            borderRadius: 2,
             padding: '18px 20px',
             boxShadow: '0 24px 80px rgba(0,0,0,.42)',
           }}>

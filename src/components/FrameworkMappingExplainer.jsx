@@ -32,7 +32,7 @@ export default function FrameworkMappingExplainer({
   const owaspLabel = FRAMEWORK_REFERENCES.owasp[owasp] || owasp;
 
   return (
-    <section style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 5, overflow: 'hidden' }}>
+    <section style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, overflow: 'hidden' }}>
       <div style={{ padding: '9px 12px', borderBottom: `1px solid ${C.border}`, background: 'rgba(255,255,255,.012)' }}>
         <div style={{ fontSize: 11, color: C.text2, letterSpacing: 1.4, fontWeight: 800, textTransform: 'uppercase' }}>Control relevance</div>
         <div style={{ fontSize: 12, color: C.text3, lineHeight: 1.45, marginTop: 4 }}>
@@ -136,7 +136,7 @@ function FrameworkGapTable({ C, techniqueId, mitreLabel, owasp, owaspLabel, mapp
   ];
 
   return (
-    <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 4, overflow: 'hidden' }}>
+    <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 2, overflow: 'hidden' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr 2.2fr 2.2fr', background: C.surface, borderBottom: `1px solid ${C.border}`, minWidth: 760 }}>
         {['Framework', 'Clause / Category', 'Requirement Summary', 'Gap'].map(label => (
           <div key={label} style={{ padding: '7px 8px', fontSize: 10, color: C.text3, letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 900 }}>{label}</div>
@@ -173,7 +173,7 @@ function Cell({ C, children, strong, accent }) {
 
 function Mini({ C, label, value, detail }) {
   return (
-    <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 4, padding: '9px 10px' }}>
+    <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 2, padding: '9px 10px' }}>
       <div style={{ fontSize: 10, color: C.text3, letterSpacing: 1.3, textTransform: 'uppercase' }}>{label}</div>
       <div style={{ fontSize: 13, color: C.text1, fontWeight: 800, lineHeight: 1.4, marginTop: 4 }}>{value}</div>
       <div style={{ fontSize: 11, color: C.text3, marginTop: 3 }}>{detail}</div>
@@ -184,7 +184,7 @@ function Mini({ C, label, value, detail }) {
 function ListSection({ C, title, items }) {
   if (!items.length) return null;
   return (
-    <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 4, padding: '9px 10px' }}>
+    <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 2, padding: '9px 10px' }}>
       <div style={{ fontSize: 10, color: C.text3, letterSpacing: 1.3, textTransform: 'uppercase', marginBottom: 7 }}>{title}</div>
       <div style={{ display: 'grid', gap: 7 }}>
         {items.map(item => (

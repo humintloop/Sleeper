@@ -74,7 +74,7 @@ export default function FindingCard({ C, finding: f, auditorView, onUpdate, onDe
   ].filter(Boolean);
 
   return (
-    <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderLeft: `3px solid ${vc}`, borderRadius: 4, animation: 'fadeUp .2s ease' }}>
+    <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderLeft: `3px solid ${vc}`, borderRadius: 2, animation: 'fadeUp .2s ease' }}>
       {/* Summary row */}
       <div style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }} onClick={() => setExpanded(p => !p)}>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -91,7 +91,7 @@ export default function FindingCard({ C, finding: f, auditorView, onUpdate, onDe
               <StatusChip C={C} color={decisionColor} label={reviewerDecision.replaceAll('_', ' ')} />
             )}
             {assessedEffectiveness && (
-              <StatusChip C={C} color={effectivenessColor} label={effectiveness.replaceAll('_', ' ')} outline />
+              <StatusChip C={C} color={effectivenessColor} label={effectiveness.replaceAll('_', ' ')} />
             )}
           </div>
         </div>
@@ -254,13 +254,15 @@ export default function FindingCard({ C, finding: f, auditorView, onUpdate, onDe
   );
 }
 
-function StatusChip({ color, label, outline, dot }) {
+function StatusChip({ color, label, dot }) {
+  // Obsidian: chips are border-and-text-color only, no fill wash — the same
+  // flat treatment applied to case rows and the verdict banner.
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, color,
-      background: outline ? 'transparent' : `${color}1A`,
-      border: `1px solid ${color}${outline ? '55' : '33'}`,
-      padding: '2px 8px', borderRadius: 3, fontWeight: 700, letterSpacing: .5,
+      background: 'transparent',
+      border: `1px solid ${color}55`,
+      padding: '2px 8px', borderRadius: 2, fontWeight: 700, letterSpacing: .5,
     }}>
       {dot && <span style={{ width: 5, height: 5, borderRadius: 999, background: color }} />}
       {label}
@@ -361,18 +363,17 @@ function VerdictCard({ C, label, verdict, reason, isJudge }) {
   return (
     <div style={{
       flex: '1 1 240px',
-      background: verdict ? `${color}0D` : C.bg,
+      background: verdict ? C.surface : C.bg,
       border: `1px solid ${verdict ? color + '55' : C.border}`,
       borderLeft: `3px solid ${verdict ? color : C.border}`,
-      borderRadius: 5,
+      borderRadius: 2,
       padding: '14px 16px',
-      boxShadow: verdict ? `0 0 18px ${color}22` : 'none',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: reason ? 10 : 0 }}>
         <span style={{ fontSize: 11, color: isJudge ? C.teal : C.text3, fontWeight: 900, letterSpacing: 1.4, textTransform: 'uppercase' }}>{label}</span>
         <span style={{
           fontSize: 12, color, fontWeight: 800,
-          background: verdict ? `${color}18` : C.surface,
+          background: 'transparent',
           border: `1px solid ${verdict ? color + '55' : C.border}`,
           padding: '2px 8px', borderRadius: 2,
         }}>{verdictLabel}</span>

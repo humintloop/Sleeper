@@ -70,6 +70,23 @@ export function caseCarriesAdversarialInput(agentCase) {
   return fixtures.some(fixture => fixture?.carries_injection === true);
 }
 
+/**
+ * No case in src/data/agentCases.js declares an explicit `scenario.system_prompt`
+ * — only `actor` / `environment` / `narrative`. Without a base prompt the model
+ * receives nothing but the control gate's clause (empty under Baseline) plus
+ * the raw task, with no framing of who it is or what the tools mean. Synthesize
+ * a minimal one from the fields that do exist rather than sending an empty
+ * system prompt to a live target.
+ */
+function buildBaseSystemPrompt(scenario) {
+  if (scenario?.system_prompt) return scenario.system_prompt;
+  if (!scenario?.actor && !scenario?.environment) return '';
+  const lines = [];
+  if (scenario.actor) lines.push(`You are an AI agent acting as: ${scenario.actor}.`);
+  if (scenario.environment) lines.push(scenario.environment);
+  return lines.join(' ');
+}
+
 function deriveRunStatus(run) {
   return {
     targetReachable: run.stopReason !== LOOP_STOP_REASON.TARGET_ERROR,
@@ -117,7 +134,7 @@ export async function runAgentAssessment({
     target,
     profile: resolvedProfile,
     task: resolvedCase.scenario?.user_task ?? '',
-    baseSystemPrompt: resolvedCase.scenario?.system_prompt ?? '',
+    baseSystemPrompt: buildBaseSystemPrompt(resolvedCase.scenario),
     registry,
     tools: buildAdvertisedTools(resolvedCase, registry),
     scenarioContent: resolvedCase.scenario_content ?? {},
@@ -141,7 +158,13 @@ export async function runAgentAssessment({
 
   const contract = buildEvidenceContract({
     runMode,
-    verdict: verdict.verdict,
+    // The whole verdict object, not just verdict.verdict: deriveScope reads
+    // verdict.scope.controls_exercised and the contract reads
+    // verdict.evidence_limitations. Passing the bare string silently zeroed
+    // out contract.scope.covers on every run — caught only by checking this
+    // shape by hand, not by any test, since runAgentAssessment.test.js only
+    // asserted on evidence class, not on scope.
+    verdict,
     toolCalls: run.toolCalls,
     toolResults: run.toolResults,
     authorizationDecisions: run.authorizationDecisions,

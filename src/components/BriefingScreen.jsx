@@ -36,7 +36,7 @@ export default function BriefingScreen({ C, cluster, payload, mapping, mode = 'c
         border: `1px solid ${color}33`,
         borderLeft: `3px solid ${color}`,
         background: C.panel,
-        borderRadius: 4,
+        borderRadius: 2,
         padding: mode === 'full' ? '22px 24px' : '12px 14px',
       }}>
         <div style={{ minWidth: 0 }}>

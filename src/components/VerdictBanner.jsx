@@ -4,6 +4,7 @@ const fallback = {
   teal: '#00CFC4',
   blue: '#6D8FD6',
   text3: '#68738A',
+  surface: '#0D0D0C',
   mono: '"JetBrains Mono", ui-monospace, monospace',
 };
 
@@ -33,8 +34,8 @@ export default function VerdictBanner({ C = fallback, verdict, note, compact = f
       padding: compact ? '7px 10px' : '11px 16px',
       border: `1px solid ${color}44`,
       borderLeft: `3px solid ${color}`,
-      borderRadius: 4,
-      background: `${color}12`,
+      borderRadius: 2,
+      background: C.surface || fallback.surface,
       textAlign: compact ? 'left' : 'center',
     }}>
       <div style={{

@@ -1,4 +1,4 @@
-import { ChevronRight, FileText, FolderOpen, Play, RefreshCw } from 'lucide-react';
+import { ChevronRight, FileText, FlaskConical, FolderOpen, Play, RefreshCw } from 'lucide-react';
 import { getVerdictColor, getVerdictLabel } from './VerdictBanner';
 
 function groupFindingsByCase(findings = []) {
@@ -26,7 +26,7 @@ function groupFindingsByCluster(findings = [], clusters = []) {
   return Object.entries(counts).sort((a, b) => b[1] - a[1]);
 }
 
-export default function DossierHome({ C, findings, clusters, activeCase, onEnter, onDemo, onSampleReport, onResume, onReport }) {
+export default function DossierHome({ C, findings, clusters, activeCase, onEnter, onDemo, onSampleReport, onAgentLab, onResume, onReport }) {
   const cases = groupFindingsByCase(findings);
   const coverage = groupFindingsByCluster(findings, clusters);
   const totalProbes = clusters.reduce((n, cl) => n + cl.payloads.length, 0);
@@ -34,7 +34,7 @@ export default function DossierHome({ C, findings, clusters, activeCase, onEnter
   return (
     <main style={{ width: '100%', maxWidth: 980, margin: '0 auto', padding: '44px 24px 72px', display: 'flex', flexDirection: 'column', gap: 34 }}>
       {activeCase?.caseId && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: C.amberBg, border: `1px solid ${C.amber}55`, borderLeft: `3px solid ${C.amber}`, borderRadius: 5, padding: '12px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: C.amberBg, border: `1px solid ${C.amber}55`, borderLeft: `3px solid ${C.amber}`, borderRadius: 2, padding: '12px 16px' }}>
           <div style={{ flex: 1, minWidth: 220, fontSize: 14, color: C.text1, fontWeight: 600 }}>
             Resume <span style={{ color: C.amber, fontFamily: C.mono }}>{activeCase.caseId}</span> — probe {Math.min((activeCase.probeIndex || 0) + 1, activeCase.total || 1)}/{activeCase.total || 0} · {activeCase.findingsCount || 0} findings
           </div>
@@ -48,7 +48,7 @@ export default function DossierHome({ C, findings, clusters, activeCase, onEnter
         <div style={{ fontSize: 11, color: C.text3, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>
           Local-first adversarial assurance
         </div>
-        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 52, color: C.amber, fontWeight: 700, letterSpacing: 10, lineHeight: 1, margin: 0 }}>SLEEPER</h1>
+        <h1 style={{ fontFamily: C.sans, fontSize: 52, color: C.text1, fontWeight: 600, letterSpacing: '0.05em', lineHeight: 1, margin: 0 }}>SLEEPER</h1>
         <p style={{ fontSize: 17, color: C.text1, lineHeight: 1.65, maxWidth: 720, marginTop: 16, marginBottom: 0 }}>
           SLEEPER turns local LLM red-team runs into reviewable evidence, mapped control gaps, and retestable findings.
         </p>
@@ -57,20 +57,29 @@ export default function DossierHome({ C, findings, clusters, activeCase, onEnter
         </p>
       </section>
 
-      <section className="home-hero-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12 }}>
+      <section className="home-hero-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12 }}>
         <EntryCard
           C={C}
-          accent={C.amber}
+          accent={C.brass}
+          icon={<FlaskConical size={17} />}
+          title="Run agent case"
+          text="Pick a threat case and a control profile, point it at a live target, and watch the ReAct loop decide — turn by turn."
+          action="Run agent case"
+          onClick={onAgentLab}
+          primary
+        />
+        <EntryCard
+          C={C}
+          accent={C.borderHi}
           icon={<Play size={17} />}
           title="Run demo assessment"
           text="Use TinyLlama and a starter prompt-injection probe so you can see the attack → evidence → review path quickly."
           action="Start demo"
           onClick={onDemo}
-          primary
         />
         <EntryCard
           C={C}
-          accent={C.teal}
+          accent={C.borderHi}
           icon={<FolderOpen size={17} />}
           title="Start local case"
           text="Configure the target prompt, model, probe set, judge review, evidence settings, and controls for a real assessment."
@@ -79,7 +88,7 @@ export default function DossierHome({ C, findings, clusters, activeCase, onEnter
         />
         <EntryCard
           C={C}
-          accent={C.blue}
+          accent={C.borderHi}
           icon={<FileText size={17} />}
           title="Review sample report"
           text="Skip model loading and inspect a completed sample finding with evidence, mappings, mitigation, and retest guidance."
@@ -88,7 +97,7 @@ export default function DossierHome({ C, findings, clusters, activeCase, onEnter
         />
       </section>
 
-      <section style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 5, padding: '18px 20px' }}>
+      <section style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: '18px 20px' }}>
         <SectionHeading C={C} label="Assessment flow" />
         <div className="home-hero-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 10 }}>
           {[
@@ -98,7 +107,7 @@ export default function DossierHome({ C, findings, clusters, activeCase, onEnter
             ['Control gap', 'Map behavior to controls, frameworks, and plain-English risk statements.'],
             ['Mitigate + retest', 'Use recommended actions and rerun the same probe after changes.'],
           ].map(([title, text]) => (
-            <div key={title} style={{ background: C.bg, border: `1px solid ${C.border}`, borderTop: `2px solid ${C.teal}66`, borderRadius: 4, padding: '12px 13px' }}>
+            <div key={title} style={{ background: C.bg, border: `1px solid ${C.border}`, borderTop: `2px solid ${C.teal}66`, borderRadius: 2, padding: '12px 13px' }}>
               <div style={{ fontSize: 13, color: C.text1, fontWeight: 800, marginBottom: 6 }}>{title}</div>
               <div style={{ fontSize: 12.5, color: C.text3, lineHeight: 1.55 }}>{text}</div>
             </div>
@@ -120,7 +129,7 @@ export default function DossierHome({ C, findings, clusters, activeCase, onEnter
               <button key={item.caseFileId} onClick={onReport} style={{
                 textAlign: 'left', background: C.panel, border: `1px solid ${C.border}`,
                 borderLeft: `3px solid ${item.needsReview ? C.amber : C.teal}`,
-                borderRadius: 4, padding: '12px 14px', cursor: 'pointer',
+                borderRadius: 2, padding: '12px 14px', cursor: 'pointer',
               }}>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 14, color: C.amber, fontWeight: 700, fontFamily: C.mono }}>{item.caseFileId}</span>
@@ -150,7 +159,7 @@ export default function DossierHome({ C, findings, clusters, activeCase, onEnter
               const color = cluster ? (C[cluster.colorKey] || C.amber) : C.text3;
               const pct = Math.round((count / findings.length) * 100);
               return (
-                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: C.panel, border: `1px solid ${C.border}`, borderRadius: 4 }}>
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2 }}>
                   <div style={{ flex: 1, fontSize: 14, color: C.text1, fontWeight: 500 }}>{label}</div>
                   <div style={{ fontSize: 13, color, fontWeight: 700, fontFamily: C.mono }}>{count} {count === 1 ? 'finding' : 'findings'}</div>
                   <div style={{ width: 80, height: 4, background: C.border, borderRadius: 2, overflow: 'hidden' }}>
@@ -167,19 +176,23 @@ export default function DossierHome({ C, findings, clusters, activeCase, onEnter
 }
 
 function EntryCard({ C, accent, icon, title, text, action, onClick, primary }) {
+  // Obsidian: only the primary card carries a color accent (brass, the brand
+  // token). Other cards go neutral (borderHi) so the entry grid doesn't read
+  // as three competing verdict-adjacent hues before any run has happened.
+  const chrome = primary ? accent : C.borderHi;
   return (
     <button onClick={onClick} style={{
-      textAlign: 'left', background: primary ? `${accent}18` : C.panel,
-      border: `1px solid ${primary ? accent : C.border}`,
-      borderTop: `3px solid ${accent}`, borderRadius: 5, padding: '16px 16px 15px',
+      textAlign: 'left', background: primary ? C.surface : C.panel,
+      border: `1px solid ${primary ? chrome : C.border}`,
+      borderTop: `3px solid ${chrome}`, borderRadius: 2, padding: '16px 16px 15px',
       cursor: 'pointer', minHeight: 210, display: 'flex', flexDirection: 'column', gap: 12,
     }}>
-      <div style={{ width: 34, height: 34, borderRadius: 4, background: `${accent}1F`, border: `1px solid ${accent}55`, color: accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
+      <div style={{ width: 34, height: 34, borderRadius: 2, background: primary ? `${chrome}1F` : 'transparent', border: `1px solid ${primary ? `${chrome}55` : C.borderHi}`, color: chrome, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
       <div>
         <div style={{ fontSize: 17, color: C.text1, fontWeight: 800, marginBottom: 7 }}>{title}</div>
         <div style={{ fontSize: 13, color: C.text3, lineHeight: 1.6 }}>{text}</div>
       </div>
-      <div style={{ marginTop: 'auto', color: primary ? C.amber : accent, fontSize: 12, fontWeight: 900, letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ marginTop: 'auto', color: primary ? C.brass : C.text2, fontSize: 12, fontWeight: 900, letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
         {action} <ChevronRight size={13} />
       </div>
     </button>
@@ -207,7 +220,7 @@ function primaryBtn(C) {
   return {
     display: 'inline-flex', alignItems: 'center', gap: 7,
     padding: '11px 18px', background: C.amber, color: C.ink,
-    border: `1px solid ${C.amber}`, borderRadius: 4, cursor: 'pointer',
+    border: `1px solid ${C.amber}`, borderRadius: 2, cursor: 'pointer',
     fontSize: 13, fontWeight: 800, letterSpacing: 1.2,
   };
 }

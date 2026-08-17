@@ -29,7 +29,7 @@ export default function ConversationTranscript({
   };
 
   return (
-    <section style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 5, overflow: 'hidden' }}>
+    <section style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderBottom: `1px solid ${C.border}`, background: 'rgba(255,255,255,.012)' }}>
         <div style={{ fontSize: 11, color: C.text2, letterSpacing: 1.4, fontWeight: 800, textTransform: 'uppercase', flex: 1 }}>Evidence Transcript</div>
         <button onClick={copyEvidence} style={{
@@ -82,7 +82,7 @@ function TranscriptBlock({ C, label, text, maxHeight, accent, bright, dim, live 
         background: isBright ? `${accent}0A` : C.bg,
         border: `1px solid ${accent ? `${accent}55` : C.border}`,
         borderLeft: accent ? `3px solid ${accent}` : `1px solid ${C.border}`,
-        borderRadius: 4,
+        borderRadius: 2,
         color: bright ? '#FFFFFF' : dim ? C.text3 : C.text2,
         fontFamily: C.mono,
         fontSize: isBright ? 13.5 : 12,
@@ -103,7 +103,7 @@ function TranscriptBlock({ C, label, text, maxHeight, accent, bright, dim, live 
 function EvaluatorCard({ C, label, verdict, text }) {
   const color = getVerdictColor(verdict, C);
   return (
-    <div style={{ background: C.bg, border: `1px solid ${color}44`, borderLeft: `3px solid ${color}`, borderRadius: 4, padding: '9px 10px' }}>
+    <div style={{ background: C.bg, border: `1px solid ${color}44`, borderLeft: `3px solid ${color}`, borderRadius: 2, padding: '9px 10px' }}>
       <div style={{ fontSize: 10, color: C.text3, letterSpacing: 1.3, textTransform: 'uppercase' }}>{label}</div>
       <div style={{ fontSize: 13, color, fontWeight: 900, marginTop: 4 }}>{getVerdictLabel(verdict)}</div>
       <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.45, marginTop: 5 }}>{text}</div>
