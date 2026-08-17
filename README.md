@@ -11,24 +11,33 @@ take, and turns the result into reviewable evidence mapped to published control 
 
 The question is not "did the model say something bad." It is:
 
-> The model refused this injection in a single turn. Given tools, did it act on it anyway —
-> and did anything stop it?
+> Given real tools, does the agent act on an instruction hidden in something it reads — and
+> does anything stop it?
 
 An agent's security properties live in the gap between what it *says* and what it *does*.
 SLEEPER instruments that gap: a real tool-calling loop where the model genuinely decides
 whether to call `send_email`, against mock tools where nothing actually leaves the browser.
 
-It descends from [ELICIT](https://github.com/humintloop/ELICIT), a single-turn adversarial
-assurance lab, and keeps ELICIT's evidence pipeline — structured cases, heuristic and judge
-triage, reviewer disposition, framework-mapped findings, exportable reports. Single-turn
-probes remain as the **baseline arm** of an agent case, not as the product.
+The sharpest demonstration of that isn't one model's reply to one adversarial prompt — it's
+running the *same* case against the *same* model under two control postures and comparing.
+Under Baseline (no controls active), the hijacked action executes and the run resolves
+`CONTROL_FAILED`. Under Reference (full controls active), the gate catches it and the run
+resolves `CONTROL_HELD`. That comparison — not whether a model resists in isolation — is the
+actual claim: the harness and process controls around an agent are what stop the action, not
+model behavior alone.
+
+SLEEPER descends from [ELICIT](https://github.com/humintloop/ELICIT), a single-turn adversarial
+assurance lab. It no longer runs single-turn probes itself — that flow was deleted once the
+agent harness could stand fully on its own; see
+[`docs/remove-single-turn-flow.md`](./docs/remove-single-turn-flow.md) for why and what changed.
+ELICIT remains the place for single-turn evaluation.
 
 ## Status
 
-Early. The framework mapping layer, evidence pipeline, and single-turn probe library are
-working and inherited. The agent harness is being built — see
-[`docs/agent-module-plan.md`](./docs/agent-module-plan.md) for scope, schedule, and the
-source-verified crosswalk it is being built against.
+The agent harness is built and wired end to end, in the browser, against both a live API
+target (Anthropic first) and a local WebLLM model. 463 tests, lint clean. See
+[`docs/agent-module-plan.md`](./docs/agent-module-plan.md) for the full build history, scope,
+and the source-verified framework crosswalk.
 
 ## Threat Cases (v1 scope)
 
@@ -36,7 +45,8 @@ source-verified crosswalk it is being built against.
 |---|---|---|
 | **1. Indirect injection → unauthorized action** | An employee points an agent at untrusted content — a ticket, a PR, an email, a scraped page. Hidden instructions in that content hijack the agent into an action nobody asked for. | `AML.T0051.001` + `AML.T0053` · ASI01 |
 | **2. Excessive agency / insufficient approval** | The agent holds tool access to consequential, irreversible, or externally-visible actions with an approval gate that is missing, bypassable, or degrades under load. | `LLM03:2026` Excessive Agency · `AML.M0029` |
-| **3. Malicious or over-permissioned MCP** | An agent is connected to an unsanctioned or compromised MCP server, or an internal one scoped far broader than the task needs. | `AML.T0110` · AIUC-1 `B006` |
+| **3a. Poisoned MCP tool descriptor** | A tool's *definition* is poisoned at runtime — the interface of an otherwise legitimate tool is manipulated. | `AML.T0110.000` · ASI02 |
+| **3b. Malicious or over-permissioned MCP server** | An agent connects to an unsanctioned or compromised MCP server, or an internal one scoped far broader than the task needs. | `AML.T0010.005` · AIUC-1 `E006`/`E009` |
 
 Deferred to a later scope: memory poisoning (ASI06), inter-agent communication (ASI07),
 identity spoofing.
@@ -47,7 +57,7 @@ Every finding records what it actually permits you to claim, on three axes:
 
 - **Evidence class (E1–E5).** Observation → runtime characterization → enforcement →
   persistence/replay resistance → isolation. Nothing SLEEPER produces reaches E4 or E5, and
-  it says so.
+  it says so — enforced in code, not just documented.
 - **Oracle independence (I0–I2).** Who produced the verdict: self-authored, independently
   reimplemented, or an independent sensor the target does not control. SLEEPER is I0.
 - **Status.** Mapped / executed / independently reviewed / certified. A framework crosswalk is
@@ -103,8 +113,9 @@ npm install
 npm run dev
 ```
 
-Requires a desktop browser with WebGPU (Chrome, Edge, or Arc). Models download into browser
-storage on first load and are cached there.
+Requires a desktop browser with WebGPU (Chrome, Edge, or Arc) for the local-model target.
+Models download into browser storage on first load and are cached there. The live-API target
+needs no local model at all.
 
 ```bash
 npm test    # vitest
@@ -115,23 +126,31 @@ npm run build
 ## Targets
 
 - **Local (WebLLM/WebGPU)** — models run entirely in the browser. Nothing leaves the machine.
-  Small models call tools unreliably; the harness has a JSON-emit fallback and records when it
-  is used rather than hiding the degradation.
-- **Live API (Anthropic first)** — probes and agent runs against a real endpoint. The API key
-  is held in memory for the session and never written to storage.
+  Small models call tools unreliably, so this path never uses real tool-calling: a prompted
+  JSON schema stands in, and every run against a local model is recorded `degraded: true` —
+  visible on the trace, never hidden.
+- **Live API (Anthropic first)** — agent runs against a real endpoint, with real provider
+  tool-calling. The API key is held in memory for the session and never written to storage.
+
+## Persistence
+
+Completed agent-case runs — verdict, reason, and the full Evidence Contract — are saved to
+this browser's local storage (most recent 20), so navigating away doesn't lose the run. Nothing
+else is persisted: there is no in-progress "resume a half-configured case" state, since a run
+is a single self-contained action, not a multi-step wizard.
 
 ## Limitations
 
-- Evaluates model behavior in a lab. It does not prove production exploitability.
-- Results vary by model, runtime, quantization, prompt, context, and temperature.
-- Heuristics are triage aids, not ground truth. The LLM judge can be biased or influenced;
-  treat it as supporting evidence.
+- Evaluates model behavior in a lab, against a mock-tool harness. It does not prove production
+  exploitability, and no tool effect in this project is ever real.
+- Results vary by model, provider, runtime, quantization, prompt, context, and temperature.
 - Browser inference is bounded by GPU memory, WebGPU support, cache storage, and tab lifecycle.
 - ISO/IEC 42001 and EU AI Act relevance depends on system role, scope, risk classification,
   jurisdiction, and deployment context. High-risk *readiness* is not high-risk *classification*.
 
 ## Roadmap
 
-See [`docs/agent-module-plan.md`](./docs/agent-module-plan.md). Near-term: port the control
-profile and authority registry layer, add tool-calling to the API adapter, build the ReAct
-orchestrator, wire agent runs into the existing findings and report pipeline.
+See [`docs/agent-module-plan.md`](./docs/agent-module-plan.md) for the full build history.
+Open: AIUC-1 3a/3b crosswalk allocation and two inferred OWASP LLM mappings are this project's
+own judgment calls rather than sourced facts (flagged as such in the plan doc); brand art
+(icon/social preview) is still a text wordmark.

@@ -3,6 +3,7 @@
 // actual object shape in src/harness/evidenceContract.js.
 import { Check, Copy, Download, FileJson } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { EVIDENCE_CLASSES as EVIDENCE_CLASS_NAMES } from '../harness/evidenceContract';
 
 function downloadJson(contract) {
   const blob = new Blob([JSON.stringify(contract, null, 2)], { type: 'application/json' });
@@ -93,13 +94,23 @@ export default function EvidenceContractPanel({ C, contract }) {
 
       <div style={{ display: 'grid', gap: 10 }}>
         <Group C={C} title="Evidence class">
-          <Field C={C} label="Target" value={`${ev.target?.class} — ${ev.target?.subject}`} />
-          <Field C={C} label="Control point" value={ev.control_point ? `${ev.control_point.class} — ${ev.control_point.subject}` : 'none exercised'} tone={ev.control_point ? 'brass' : undefined} />
-          <Field C={C} label="Max class claimed" value={ev.max_class_claimed} />
-          <Field C={C} label="Ceiling" value={`${ev.ceiling} (E4/E5 unreachable)`} />
-          <Field C={C} label="Independence" value={ev.independence?.level} />
+          <Field C={C} label="Target" value={`${ev.target?.class} (${ev.target?.class_name}) — ${ev.target?.subject}`} />
+          <Field C={C} label="Control point" value={ev.control_point ? `${ev.control_point.class} (${ev.control_point.class_name}) — ${ev.control_point.subject}` : 'none exercised'} tone={ev.control_point ? 'brass' : undefined} />
+          <Field C={C} label="Max class claimed" value={`${ev.max_class_claimed} (${EVIDENCE_CLASS_NAMES[ev.max_class_claimed] || ''})`} />
+          <Field C={C} label="Ceiling" value={`${ev.ceiling} — E4/E5 (persistence, isolation) are unreachable by design`} />
+          <Field C={C} label="Independence" value={`${ev.independence?.level} — ${ev.independence?.level_name}`} />
           <Field C={C} label="Status" value={ev.status} tone={ev.status_downgraded ? 'ochre' : undefined} />
         </Group>
+
+        <div style={{ fontSize: 11, color: C.text3, lineHeight: 1.6, background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: '10px 12px' }}>
+          <span style={{ color: C.text2, fontWeight: 700 }}>What this means: </span>
+          Evidence class (E1&ndash;E5) is how strong a claim this run&rsquo;s evidence supports &mdash; E1 is a mapping,
+          E2 is characterizing real behavior, E3 is watching a control actually block something. This project
+          never reaches E4 (replay-resistant persistence) or E5 (isolation boundary) &mdash; that ceiling is
+          enforced in code, not just stated here. Independence (I0&ndash;I2) is who built the check: I0 means
+          this project wrote both the control and the check on it, which is what every run here is unless
+          stated otherwise.
+        </div>
 
         <Group C={C} title="Scope">
           <Field C={C} label="Vocabulary" value={contract.scope?.vocabulary} />

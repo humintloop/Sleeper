@@ -16,9 +16,14 @@
 //     second while holding the first fixed, which the old shape could not
 //     express.
 //
+// The known/allowed/risk/authorization-required decision itself is
+// `authorityRegistry.js`'s `classifyToolCall` — this gate used to recompute it
+// inline, which briefly diverged from `requiresExplicitApproval`'s copy of the
+// same logic. One computation now; this file only adds enforcement.
+//
 // This control decides only. It never executes a tool.
 
-import { getToolDefinition, isUntrustedInstructionSource } from '../authorityRegistry.js';
+import { classifyToolCall } from '../authorityRegistry.js';
 
 const IDLE_RESULT = {
   tool_call_attempted: false,
@@ -53,18 +58,9 @@ export function runToolAuthorizationGate(toolCall, mode, registry, options = {})
 
   const approvalGranted = options.approvalGranted === true;
   const gateEnforcing = mode === 'enforce';
-  const tool = getToolDefinition(registry, toolCall.tool);
   const source = toolCall.instructionSource ?? null;
-  const untrustedSource = isUntrustedInstructionSource(registry, source);
 
-  // Deny-by-default: a tool absent from the registry is treated as disallowed
-  // and high risk. An agent calling something nobody declared is the finding.
-  const known = Boolean(tool);
-  const allowed = known ? tool.allowed !== false : false;
-  const risk = known ? tool.risk : 'unknown';
-
-  const authorizationRequired =
-    !known || !allowed || risk === 'high' || tool?.requiresApproval === true || untrustedSource;
+  const { known, allowed, risk, untrustedSource, authorizationRequired } = classifyToolCall(registry, toolCall);
 
   const blocked = gateEnforcing && authorizationRequired && !approvalGranted;
 

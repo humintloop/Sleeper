@@ -231,6 +231,25 @@ describe('evidence class assignment (normative table)', () => {
     expect(fromDecisionOnly.control_point.class).toBe('E3');
   });
 
+  it('does not award E3 for a router default-deny with no real decision behind it', () => {
+    // Regression: routeMockToolCall denies by default when no authorization
+    // decision was supplied for a call, and that default-deny result carries
+    // the identical status: 'denied' a real gate denial does — but
+    // result.authorization is null, since no decision was ever recorded.
+    // Checking status alone would claim E3 enforcement evidence for a call
+    // the gate was never actually asked about.
+    const result = routeMockToolCall(hijackedCall, null, { registry: R });
+    expect(result.status).toBe('denied');
+    expect(result.authorization).toBeNull();
+
+    const evidenceClass = deriveEvidenceClass({
+      runMode: RUN_MODES.MOCK_TOOL_HARNESS,
+      toolResults: [result],
+    });
+    expect(evidenceClass.control_point).toBeNull();
+    expect(evidenceClass.max_class_claimed).toBe('E2');
+  });
+
   it('records whether tool content came from a fixture or from the router', () => {
     // content_origin distinguishes scenario fixtures from router-generated text,
     // which is what "mock-tool harness against fixtures" means in the table.

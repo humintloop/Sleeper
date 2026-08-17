@@ -1,10 +1,24 @@
 // Renders a computeVerdict.js verdict object — {verdict, reason, outcomes,
 // scope, evidence_limitations} — not ORPHEUS's flat control_verdict string.
-const VERDICT_TONE = {
-  CONTROL_HELD: 'green',
-  PARTIAL_CONTROL_FAILURE: 'ochre',
-  CONTROL_FAILED: 'red',
-  INCONCLUSIVE: 'slate',
+//
+// Label and color come from VerdictBanner.jsx's shared verdictDisplay rather
+// than a second local copy of the same mapping — that duplication was the
+// exact confusion docs/coherence-review.md (U4) flagged: the raw enum string
+// rendered here, a different color mapping from the one other verdict
+// surfaces used.
+import { getVerdictColor, getVerdictLabel } from './VerdictBanner';
+
+// This screen's CONTROL_* vocabulary answers "did the control hold" — a
+// different question from the single-turn probe vocabulary (MODEL HELD /
+// PROBE SUCCEEDED / etc., "did the model resist") this project used to also
+// carry. The word HELD is shared on purpose (see
+// docs/agent-module-plan.md §"Reporting") but the two must never be read as
+// the same claim, so this label is spelled out rather than assumed obvious.
+const VERDICT_PLAIN_LANGUAGE = {
+  CONTROL_HELD: 'The control held — the exercised controls caught the attempted action.',
+  PARTIAL_CONTROL_FAILURE: 'Partial control failure — at least one control failed while others held.',
+  CONTROL_FAILED: 'Control failed — no exercised control caught the attempted action.',
+  INCONCLUSIVE: 'Inconclusive — not enough was exercised in this run to say either way.',
 };
 
 const OUTCOME_TONE = { held: 'green', failed: 'red', unexercised: 'slate' };
@@ -29,15 +43,20 @@ function OutcomeTag({ C, outcome }) {
 
 export default function ControlResultsPanel({ C, verdict, profiles, comparisonHistory }) {
   if (!verdict) return null;
-  const color = C[VERDICT_TONE[verdict.verdict]] || C.text3;
+  const color = getVerdictColor(verdict.verdict, C);
   const outcomes = verdict.outcomes || {};
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ padding: '14px 16px', borderRadius: 2, background: C.surface, border: `1px solid ${color}55`, borderLeft: `3px solid ${color}` }}>
-        <div style={{ fontSize: 10, color: C.text3, letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 6 }}>Verdict (control vocabulary)</div>
-        <div style={{ fontSize: 20, color, fontWeight: 900, letterSpacing: .3, marginBottom: verdict.reason?.text ? 6 : 0 }}>
-          {verdict.verdict}
+        <div style={{ fontSize: 10, color: C.text3, letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 6 }}>
+          Verdict &mdash; control vocabulary, not probe vocabulary
+        </div>
+        <div style={{ fontSize: 20, color, fontWeight: 900, letterSpacing: .3, marginBottom: 4 }}>
+          {getVerdictLabel(verdict.verdict)}
+        </div>
+        <div style={{ fontSize: 13, color: C.text1, lineHeight: 1.5, marginBottom: verdict.reason?.text ? 8 : 0 }}>
+          {VERDICT_PLAIN_LANGUAGE[verdict.verdict]}
         </div>
         {verdict.reason?.text && (
           <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.5 }}>{verdict.reason.text}</div>
@@ -45,6 +64,11 @@ export default function ControlResultsPanel({ C, verdict, profiles, comparisonHi
         {verdict.reason?.code && (
           <div style={{ fontSize: 10.5, color: C.text3, fontFamily: C.mono, marginTop: 6 }}>{verdict.reason.code}</div>
         )}
+        <div style={{ fontSize: 11, color: C.text3, lineHeight: 1.5, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.border}` }}>
+          This answers &ldquo;did the control hold,&rdquo; a different question from the single-turn probe
+          screens&rsquo; MODEL HELD / PROBE SUCCEEDED vocabulary, which answers &ldquo;did the model resist.&rdquo;
+          The word HELD appears in both by design &mdash; they are not the same claim.
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -78,7 +102,7 @@ export default function ControlResultsPanel({ C, verdict, profiles, comparisonHi
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {Object.values(profiles).map(profile => {
               const v = comparisonHistory[profile.id];
-              const tone = v ? (C[VERDICT_TONE[v]] || C.text3) : C.borderHi;
+              const tone = v ? getVerdictColor(v, C) : C.borderHi;
               return (
                 <div key={profile.id} style={{
                   padding: '8px 12px', borderRadius: 2, background: C.surface,
@@ -87,7 +111,7 @@ export default function ControlResultsPanel({ C, verdict, profiles, comparisonHi
                 }}>
                   <div style={{ fontSize: 11, color: C.text2, fontWeight: 700, marginBottom: 3 }}>{profile.label}</div>
                   <div style={{ fontSize: 11, color: tone, fontWeight: 800, letterSpacing: .5 }}>
-                    {v || 'NOT RUN YET'}
+                    {v ? getVerdictLabel(v) : 'NOT RUN YET'}
                   </div>
                 </div>
               );

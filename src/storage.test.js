@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { ACTIVE_CASE_KEY, ANALYST_KEY, buildActiveCaseForStorage, clearStoredLocalData, FINDINGS_KEY, LEGACY_FINDINGS_KEY, loadActiveCase } from './storage';
+import {
+  AGENT_RUNS_KEY,
+  clearStoredLocalData,
+  loadAgentRuns,
+  MAX_STORED_AGENT_RUNS,
+  saveAgentRun,
+} from './storage';
 
 const fakeStorage = (initial = {}) => {
   const store = new Map(Object.entries(initial));
@@ -13,47 +19,61 @@ const fakeStorage = (initial = {}) => {
 };
 
 describe('storage hardening', () => {
-  it('does not include the raw target prompt in active-case storage', () => {
-    const stored = buildActiveCaseForStorage({
-      caseId: 'AI-1',
-      victimPrompt: 'SECRET SYSTEM PROMPT',
-      victimModelId: 'model-a',
-      selectedControlIds: ['LLM-SEC-001'],
-    });
-
-    expect(stored.caseId).toBe('AI-1');
-    expect(stored.victimPrompt).toBeUndefined();
-    expect(JSON.stringify(stored)).not.toContain('SECRET SYSTEM PROMPT');
-  });
-
-  it('ignores legacy stored raw prompts when loading active case metadata', () => {
-    const storage = fakeStorage({
-      [ACTIVE_CASE_KEY]: JSON.stringify({ caseId: 'AI-OLD', victimPrompt: 'LEGACY SECRET', presetId: 'support' }),
-    });
-
-    const loaded = loadActiveCase(storage);
-
-    expect(loaded.caseId).toBe('AI-OLD');
-    expect(loaded.presetId).toBe('support');
-    expect(loaded.victimPrompt).toBeUndefined();
-    expect(JSON.stringify(loaded)).not.toContain('LEGACY SECRET');
-  });
-
   it('clears only SLEEPER-owned storage keys', () => {
     const storage = fakeStorage({
-      [ACTIVE_CASE_KEY]: '{}',
-      [FINDINGS_KEY]: '[]',
-      [LEGACY_FINDINGS_KEY]: '[]',
-      [ANALYST_KEY]: 'analyst',
+      [AGENT_RUNS_KEY]: '[]',
       unrelated: 'keep-me',
     });
 
     clearStoredLocalData(storage);
 
-    expect(storage.has(ACTIVE_CASE_KEY)).toBe(false);
-    expect(storage.has(FINDINGS_KEY)).toBe(false);
-    expect(storage.has(LEGACY_FINDINGS_KEY)).toBe(false);
-    expect(storage.has(ANALYST_KEY)).toBe(false);
+    expect(storage.has(AGENT_RUNS_KEY)).toBe(false);
     expect(storage.has('unrelated')).toBe(true);
+  });
+});
+
+describe('agent run persistence', () => {
+  // Regression: agent-case runs previously lived only in component state.
+  // Navigating away lost the run with no warning, and the run never appeared
+  // in any local history.
+  it('returns an empty list when nothing is stored', () => {
+    const storage = fakeStorage();
+    expect(loadAgentRuns(storage)).toEqual([]);
+  });
+
+  it('saves a run and makes it loadable', () => {
+    const storage = fakeStorage();
+    const run = { caseId: 'NR-AGT-001', profileId: 'reference', verdict: 'CONTROL_HELD', timestamp: '2026-08-17T00:00:00Z' };
+
+    const updated = saveAgentRun(run, storage);
+
+    expect(updated).toEqual([run]);
+    expect(loadAgentRuns(storage)).toEqual([run]);
+  });
+
+  it('prepends new runs so the most recent is first', () => {
+    const storage = fakeStorage();
+    saveAgentRun({ caseId: 'first' }, storage);
+    saveAgentRun({ caseId: 'second' }, storage);
+
+    const loaded = loadAgentRuns(storage);
+    expect(loaded[0].caseId).toBe('second');
+    expect(loaded[1].caseId).toBe('first');
+  });
+
+  it('caps stored history at MAX_STORED_AGENT_RUNS', () => {
+    const storage = fakeStorage();
+    for (let i = 0; i < MAX_STORED_AGENT_RUNS + 5; i++) {
+      saveAgentRun({ caseId: `run-${i}` }, storage);
+    }
+
+    const loaded = loadAgentRuns(storage);
+    expect(loaded).toHaveLength(MAX_STORED_AGENT_RUNS);
+    expect(loaded[0].caseId).toBe(`run-${MAX_STORED_AGENT_RUNS + 4}`);
+  });
+
+  it('does not throw when storage is unavailable', () => {
+    expect(() => saveAgentRun({ caseId: 'x' }, null)).not.toThrow();
+    expect(loadAgentRuns(null)).toEqual([]);
   });
 });

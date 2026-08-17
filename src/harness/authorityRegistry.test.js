@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_AUTHORITY_REGISTRY,
+  classifyToolCall,
   getToolDefinition,
   isTrustedInstructionSource,
   isUntrustedInstructionSource,
   requiresExplicitApproval,
 } from './authorityRegistry';
+import { runToolAuthorizationGate } from './controls/toolAuthorizationGate';
 
 const R = DEFAULT_AUTHORITY_REGISTRY;
 
@@ -103,5 +105,38 @@ describe('requiresExplicitApproval', () => {
     expect(
       requiresExplicitApproval(registry, { tool: 'read_file', instructionSource: 'user' })
     ).toBe(true);
+  });
+});
+
+describe('classifyToolCall is the one source of truth for the authorization decision', () => {
+  // requiresExplicitApproval and the tool authorization gate used to each
+  // compute known/allowed/risk/authorizationRequired independently. Both now
+  // delegate to classifyToolCall; this pins the invariant so a future edit to
+  // one path can't silently diverge from the other again.
+  it('requiresExplicitApproval returns exactly classifyToolCall(...).authorizationRequired', () => {
+    const calls = [
+      { tool: 'retrieve_document', instructionSource: 'user' },
+      { tool: 'send_email', instructionSource: 'user' },
+      { tool: 'retrieve_document', instructionSource: 'retrieved_content' },
+      { tool: 'nonexistent_tool', instructionSource: 'user' },
+      {},
+    ];
+    for (const call of calls) {
+      expect(requiresExplicitApproval(R, call)).toBe(classifyToolCall(R, call).authorizationRequired);
+    }
+  });
+
+  it('the gate’s authorization_required field matches classifyToolCall for the same call', () => {
+    const calls = [
+      { tool: 'send_email', args: {}, instructionSource: 'user' },
+      { tool: 'retrieve_document', args: {}, instructionSource: 'retrieved_content' },
+      { tool: 'write_file', args: {}, instructionSource: 'user' },
+    ];
+    for (const call of calls) {
+      const gateResult = runToolAuthorizationGate(call, 'enforce', R);
+      expect(gateResult.authorization_required).toBe(classifyToolCall(R, call).authorizationRequired);
+      expect(gateResult.tool_known).toBe(classifyToolCall(R, call).known);
+      expect(gateResult.tool_risk).toBe(classifyToolCall(R, call).risk);
+    }
   });
 });

@@ -366,7 +366,7 @@ Seven weeks to Offensive AI Con (Oceanside, Oct 4–7 2026, Seabird Ocean Resort
 | 4 (Sep 7–13) | ReAct orchestrator + mock tool router (routing half only); the three cases as real scenarios with fixtures, tool sets, and MCP registry. | **Done** — see below |
 | 5 (Sep 14–20) | Verdict rewrite with INCONCLUSIVE discipline + evidence-class fields; Evidence Contract wired into the existing findings/report pipeline. | **Done** — see below |
 | 6 (Sep 21–27) | AIUC-1 crosswalk surfaced in `FindingCard` / `FrameworkMappingExplainer`; framework display prioritization. | |
-| 7 (Sep 28–Oct 3) | Buffer, demo script, regenerate `sample-assessment-report.md`, README. | |
+| 7 (Sep 28–Oct 3) | Buffer, demo script, README. `sample-assessment-report.md`, `scoring-rubric.md`, and `methodology.md` were deleted rather than regenerated — they described single-turn probe scoring, and that flow no longer exists. See `docs/remove-single-turn-flow.md`. | |
 
 ### Week 1, as landed (2026-08-16)
 

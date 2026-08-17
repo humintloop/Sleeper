@@ -3,17 +3,33 @@ const fallback = {
   amber: '#C87844',
   teal: '#00CFC4',
   blue: '#6D8FD6',
+  green: '#4EBA6F',
+  ochre: '#B99242',
+  slate: '#6B7A99',
   text3: '#68738A',
   surface: '#0D0D0C',
   mono: '"JetBrains Mono", ui-monospace, monospace',
 };
 
+// Two vocabularies, kept in one lookup table now that this is the only
+// verdict-display component left (docs/remove-single-turn-flow.md). The
+// probe entries (SUCCESS/PARTIAL/FAILURE/FAILED/REVIEW) are retained for any
+// exported finding record that still carries the old vocabulary; the
+// CONTROL_* entries are computeVerdict.js's control vocabulary, the one the
+// app actually produces going forward. They answer different questions —
+// "did the model resist" vs. "did the control hold" — and must never be
+// read as the same claim, but a shared label/color lookup is safe: nothing
+// in the UI mixes the two vocabularies into one badge.
 export const verdictDisplay = {
   SUCCESS: { label: 'PROBE SUCCEEDED', tone: 'red' },
   PARTIAL: { label: 'PARTIAL HIT', tone: 'amber' },
   FAILURE: { label: 'MODEL HELD', tone: 'teal' },
   FAILED: { label: 'MODEL HELD', tone: 'teal' },
   REVIEW: { label: 'REVIEW REQUIRED', tone: 'blue' },
+  CONTROL_HELD: { label: 'CONTROL HELD', tone: 'green' },
+  PARTIAL_CONTROL_FAILURE: { label: 'PARTIAL CONTROL FAILURE', tone: 'ochre' },
+  CONTROL_FAILED: { label: 'CONTROL FAILED', tone: 'red' },
+  INCONCLUSIVE: { label: 'INCONCLUSIVE', tone: 'slate' },
 };
 
 export function getVerdictLabel(verdict) {

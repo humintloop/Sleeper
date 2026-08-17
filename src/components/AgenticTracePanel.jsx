@@ -16,6 +16,29 @@ const EVENT_META = {
   response: { icon: MessageSquare, label: 'Final response', tone: 'text1' },
 };
 
+// Plain-language glosses for the enum values the harness emits. The raw code
+// stays visible in the JSON export; the trace is where a first-time reader
+// actually looks, so it gets translated rather than left as snake_case.
+const STOP_REASON_LABEL = {
+  no_tool_call: 'Model answered without calling a tool',
+  turn_cap: 'Stopped at the turn limit',
+  repeated_call: 'Stopped — the model repeated an identical call',
+  target_error: 'Stopped — the target could not be reached',
+};
+
+const TOOL_STATUS_LABEL = {
+  ok: 'executed',
+  denied: 'denied',
+  no_such_tool: 'no such tool',
+};
+
+const DETECTION_ACTION_LABEL = {
+  not_configured: 'detection was off',
+  not_triggered: 'scanned, nothing matched',
+  detected_only: 'matched, not blocked (detect-only)',
+  blocked_or_constrained: 'matched and blocked',
+};
+
 function EventDetail({ C, event }) {
   switch (event.type) {
     case 'prompt':
@@ -32,16 +55,22 @@ function EventDetail({ C, event }) {
     case 'tool_call':
       return (
         <span>
-          <code style={codeStyle(C)}>{event.tool}</code> — instruction_source:{' '}
-          <span style={{ color: isUntrustedSource(event.instruction_source) ? C.red : C.text2, fontWeight: 700 }}>
+          <code style={codeStyle(C)}>{event.tool}</code> — instruction source:{' '}
+          {/* Deny-by-default in the UI too: anything short of an explicit `true`
+              from the gate reads as untrusted, matching authorityRegistry.js's
+              own rule that unknown provenance is never treated as trusted. */}
+          <span style={{ color: event.instruction_source_trusted === true ? C.text2 : C.red, fontWeight: 700 }}>
             {event.instruction_source ?? 'unattributed'}
+            {event.instruction_source_trusted !== true && ' (untrusted)'}
           </span>
         </span>
       );
     case 'authorization_decision':
       return (
         <span>
-          <code style={codeStyle(C)}>{event.tool}</code> — required: {String(event.required)}, enforcing: {String(event.enforcing)}
+          <code style={codeStyle(C)}>{event.tool}</code> —{' '}
+          {event.required ? 'authorization required' : 'no authorization required'},{' '}
+          gate {event.enforcing ? 'enforcing' : 'not enforcing'}
           {event.blocked && <span style={{ color: C.red, fontWeight: 700 }}> — BLOCKED</span>}
           {event.reason && <div style={{ marginTop: 4, color: C.text3 }}>{event.reason}</div>}
         </span>
@@ -49,15 +78,15 @@ function EventDetail({ C, event }) {
     case 'tool_result':
       return (
         <span>
-          <code style={codeStyle(C)}>{event.tool}</code> — status: {event.status}
-          {event.simulated_only && <span style={{ color: C.text3 }}> (simulated_only)</span>}
+          <code style={codeStyle(C)}>{event.tool}</code> — {TOOL_STATUS_LABEL[event.status] || event.status}
+          {event.simulated_only && <span style={{ color: C.text3 }}> (simulated — no real action was taken)</span>}
         </span>
       );
     case 'detection':
       return (
         <span>
-          <code style={codeStyle(C)}>{event.tool}</code> — {event.detected ? 'matched' : 'no match'} ({event.action})
-          {event.signals?.length > 0 && <div style={{ marginTop: 4, color: C.text3 }}>Signals: {event.signals.join(', ')}</div>}
+          <code style={codeStyle(C)}>{event.tool}</code> — {DETECTION_ACTION_LABEL[event.action] || event.action}
+          {event.signals?.length > 0 && <div style={{ marginTop: 4, color: C.text3 }}>Matched: {event.signals.join(', ')}</div>}
         </span>
       );
     case 'loop_guard':
@@ -78,10 +107,6 @@ function truncate(text, max) {
   return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
-function isUntrustedSource(source) {
-  return !source || !['system', 'developer', 'user'].includes(source);
-}
-
 function codeStyle(C) {
   return { fontFamily: C.mono, fontSize: 11.5, background: C.ink, border: `1px solid ${C.border}`, borderRadius: 2, padding: '1px 5px', color: C.text1 };
 }
@@ -99,11 +124,22 @@ export default function AgenticTracePanel({ C, run }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 11, color: C.text3, fontFamily: C.mono, letterSpacing: .5 }}>
-        <span>TURNS: {run.turns}/{run.maxTurns}</span>
-        <span>STOP: {run.stopReason}</span>
-        {run.degraded && <span style={{ color: C.red }}>DEGRADED: {run.degradations?.join(', ')}</span>}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 11.5, color: C.text3 }}>
+        <span>{run.turns} of {run.maxTurns} turns</span>
+        <span>&middot;</span>
+        <span>{STOP_REASON_LABEL[run.stopReason] || run.stopReason}</span>
+        {run.degraded && (
+          <>
+            <span>&middot;</span>
+            <span style={{ color: C.red, fontWeight: 700 }}>DEGRADED</span>
+          </>
+        )}
       </div>
+      {run.degraded && run.degradations?.length > 0 && (
+        <div style={{ fontSize: 11.5, color: C.text3, lineHeight: 1.5 }}>
+          {run.degradations.map((note, i) => <div key={i}>{note}</div>)}
+        </div>
+      )}
 
       {events.map((event, i) => {
         const meta = EVENT_META[event.type] || EVENT_META.model_turn;

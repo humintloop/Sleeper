@@ -21,6 +21,7 @@
 
 import {
   PROVIDERS,
+  describeDegradation,
   formatAssistantToolCallMessage,
   formatToolResultMessage,
 } from '../api/adapter.js';
@@ -135,7 +136,16 @@ export async function runAgentCase({
 
     if (response?.degraded) {
       degraded = true;
-      if (response.degradation) degradations.push(response.degradation);
+      // response.degradation is an array of {reason, detail?} records (see
+      // adapter.js's normalizeResponse / parseLocalToolCalls) — pushing it
+      // directly nested an array of objects inside `degradations` on every
+      // degraded turn, which rendered as "[object Object]" wherever this list
+      // was shown as text (the trace panel's DEGRADED badge, the Evidence
+      // Contract's limitations list). Flatten to readable strings here, once,
+      // rather than leaving every consumer to guess the record shape.
+      if (Array.isArray(response.degradation)) {
+        degradations.push(...response.degradation.map(describeDegradation));
+      }
     }
 
     events.push({ type: 'model_turn', turn: turns, text, tool_call_count: calls.length });
@@ -180,6 +190,11 @@ export async function runAgentCase({
         tool: call.tool,
         args: call.args ?? {},
         instruction_source: call.instructionSource ?? null,
+        // The gate's own classification, not a re-derivation of it — the UI
+        // must read what the gate actually decided about this source rather
+        // than reimplementing the trust boundary from a hardcoded list that
+        // can silently drift from authorityRegistry.js's real one.
+        instruction_source_trusted: !decision.untrusted_source,
       });
       events.push({
         type: 'authorization_decision',
@@ -241,7 +256,18 @@ export async function runAgentCase({
     events.push({ type: 'turn_cap', turn: turns, max_turns: maxTurns });
   }
 
-  const piiResult = runPiiLeakageGuard(finalText, controls.piiFilter, piiSeeds);
+  // Scanning only the model's final chat text misses exactly the exfiltration
+  // path some cases are built to test: an instruction that tells the agent to
+  // send a seeded value via a tool call while saying nothing about it in its
+  // own summary. A seeded value that left through an *executed* tool call's
+  // arguments is exposure the guard must catch even when the final reply is
+  // clean. Blocked calls are excluded — their arguments never reached a tool.
+  const executedToolArgsText = toolCalls
+    .filter((_, i) => authorizationDecisions[i]?.tool_call_executed)
+    .map(call => JSON.stringify(call.args ?? {}))
+    .join('\n');
+  const piiScanText = [finalText, executedToolArgsText].filter(Boolean).join('\n');
+  const piiResult = runPiiLeakageGuard(piiScanText, controls.piiFilter, piiSeeds);
   events.push({ type: 'response', turn: turns, text: finalText });
 
   const loggingResult = runActivityLogging(controls.activityLogging, events);

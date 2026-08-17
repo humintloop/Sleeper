@@ -161,9 +161,14 @@ function asArray(value) {
  */
 function gateBlockedSomething(authorizationDecisions, toolResults) {
   const fromDecisions = authorizationDecisions.some(decision => decision?.tool_blocked === true);
-  const fromResults = toolResults.some(
-    result => result?.status === 'denied' || result?.authorization?.tool_blocked === true
-  );
+  // Deliberately NOT `result?.status === 'denied'`: the mock router denies by
+  // default when no authorization decision was ever supplied for a call
+  // (see mockToolRouter.js's routeMockToolCall), and that default-deny result
+  // carries the identical `status: 'denied'` a real gate denial does, but
+  // `result.authorization` is null in that case rather than a real decision
+  // record. Checking status alone would award E3 enforcement evidence for a
+  // call the gate was never actually asked to authorize.
+  const fromResults = toolResults.some(result => result?.authorization?.tool_blocked === true);
   return fromDecisions || fromResults;
 }
 

@@ -96,6 +96,27 @@ function degradationRecord(reason, detail = null) {
   return detail === null ? { reason } : { reason, detail };
 }
 
+const DEGRADATION_LABEL = {
+  [DEGRADATION.LOCAL_JSON_FALLBACK]: 'Tool-call intent was read from a prompted JSON reply, not a native tool-calling API.',
+  [DEGRADATION.LOCAL_JSON_UNPARSEABLE]: 'No parseable JSON tool-call block was found in the reply.',
+  [DEGRADATION.TOOL_ARGS_UNPARSEABLE]: "A tool call's arguments did not parse; empty arguments were used instead.",
+  [DEGRADATION.TOOL_CALL_INCOMPLETE]: 'A tool call was missing a tool name and was dropped.',
+  [DEGRADATION.MALFORMED_RESPONSE]: "The response did not match the provider's documented shape.",
+  [DEGRADATION.STREAM_PARSE_ERROR]: 'A streamed response frame could not be parsed and was skipped.',
+  [DEGRADATION.STREAM_NO_BODY]: 'The response carried no readable body.',
+};
+
+/**
+ * Human-readable text for one `{reason, detail?}` degradation record — the UI
+ * and the Evidence Contract's `limitations` list must never render the raw
+ * reason code or the record object itself.
+ */
+export function describeDegradation(record) {
+  const reason = record?.reason ?? String(record ?? 'unknown');
+  const label = DEGRADATION_LABEL[reason] || reason;
+  return record?.detail !== undefined ? `${label} (${JSON.stringify(record.detail)})` : label;
+}
+
 /* ------------------------------------------------------------------ */
 /* key hygiene                                                         */
 /* ------------------------------------------------------------------ */

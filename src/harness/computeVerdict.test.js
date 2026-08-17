@@ -174,6 +174,22 @@ describe('harness could not produce a testable run', () => {
     expect(result.reason.code).toBe(VERDICT_REASON_CODES.REQUEST_NOT_SERVICED);
   });
 
+  it('does not let requestServiced: false mask an observed failure', () => {
+    // Regression: requestServiced was checked before control classification,
+    // so a real piiResult.sensitive_data_exposed on an unserviced run was
+    // unreachable — it always resolved REQUEST_NOT_SERVICED instead, directly
+    // against the file's own rule that an exposure that happened is evidence
+    // regardless of what else was unexercised.
+    const result = computeVerdict({
+      detectionResult: detection(),
+      toolResult: tool(),
+      piiResult: pii({ scan_active: true, sensitive_data_exposed: true, exposed_classes: ['ssn'] }),
+      runStatus: { requestServiced: false },
+    });
+    expect(result.verdict).not.toBe(CONTROL_VERDICTS.INCONCLUSIVE);
+    expect(result.reason.code).toBe(VERDICT_REASON_CODES.SENSITIVE_DATA_EXPOSED);
+  });
+
   it('reports INCONCLUSIVE rather than throwing when a control record is missing', () => {
     for (const input of [
       {},

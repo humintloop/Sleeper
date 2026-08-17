@@ -104,16 +104,32 @@ export function isUntrustedInstructionSource(registry, source) {
 }
 
 /**
- * Whether a tool call needs explicit authorization before it may run.
- * Deny-by-default: an unknown tool, a disallowed tool, a tool flagged
+ * The single classification of a proposed tool call against the registry —
+ * deny-by-default: an unknown tool, a disallowed tool, a tool flagged
  * `requiresApproval`, a high-risk tool, or any call whose instruction did not
  * come from a trusted source all require authorization.
+ *
+ * `toolAuthorizationGate.js` and `requiresExplicitApproval` below both need
+ * this same decision — the gate also needs the decomposed `known`/`allowed`/
+ * `risk` fields for its own output record, `requiresExplicitApproval` needs
+ * only the final boolean. One computation, two call sites, so they cannot
+ * silently diverge if one is edited and not the other.
+ */
+export function classifyToolCall(registry, toolCall) {
+  const tool = getToolDefinition(registry, toolCall?.tool);
+  const known = Boolean(tool);
+  const allowed = known ? tool.allowed !== false : false;
+  const risk = known ? tool.risk : 'unknown';
+  const untrustedSource = isUntrustedInstructionSource(registry, toolCall?.instructionSource);
+  const authorizationRequired = !known || !allowed || risk === 'high' || tool?.requiresApproval === true || untrustedSource;
+
+  return { known, allowed, risk, untrustedSource, authorizationRequired };
+}
+
+/**
+ * Whether a tool call needs explicit authorization before it may run. See
+ * `classifyToolCall` for the underlying decision.
  */
 export function requiresExplicitApproval(registry, toolCall) {
-  const tool = getToolDefinition(registry, toolCall?.tool);
-  if (!tool) return true;
-  if (!tool.allowed) return true;
-  if (tool.requiresApproval) return true;
-  if (tool.risk === 'high') return true;
-  return isUntrustedInstructionSource(registry, toolCall?.instructionSource);
+  return classifyToolCall(registry, toolCall).authorizationRequired;
 }

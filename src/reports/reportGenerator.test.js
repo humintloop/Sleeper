@@ -1,28 +1,53 @@
 import { describe, expect, it } from 'vitest';
-import { createFindingsExport, fencedCodeBlock, generateAssessmentReport, generateAuditBriefHtml, sanitizeFindingForExport } from './reportGenerator';
+import {
+  createAgentRunsExport,
+  fencedCodeBlock,
+  generateAgentAssessmentReport,
+  generateAgentAssuranceBriefHtml,
+  sanitizeAgentRunForExport,
+} from './reportGenerator';
 
-const adversarialFinding = {
-  id: 'f-1',
-  runId: 'run-1',
-  caseFileId: 'AI-CASE',
-  systemUnderTest: '<img src=x onerror=alert(1)>',
-  promptHash: 'abc123',
-  victimPromptPreview: 'SECRET TARGET PROMPT',
-  internalRuntimeObject: { shouldNotExport: true },
-  payloadName: '# Payload heading | table',
-  payload: 'normal payload\n```\n# escaped?\n`````\n[click](https://evil.example)',
-  responseExcerpt: 'short excerpt',
-  responseFull: 'model output\n<script>alert(1)</script>\n<img src=x onerror=alert(1)>\n# model heading\n| pipe | value |\n`````',
-  verdict: 'SUCCESS',
-  reviewerDecision: 'CONFIRMED',
-  reviewerNotes: '<script>alert(2)</script>',
-  evalReason: 'reason with | pipes and [link](https://evil.example)',
-  judgeReason: '<img src=x onerror=alert(3)>',
-  techniqueId: 'AML.T0051.000',
-  techniqueName: '<script>technique()</script>',
-  mappedControls: ['LLM-SEC-001'],
-  nistAiRmf: ['MAP 1.1 <script>x</script>'],
-  retestGuidance: ['rerun <img src=x onerror=alert(4)>'],
+// Reason text, limitations, and case titles can all carry text that traces
+// back to scenario fixtures or model output — deliberately adversarial here
+// to pin the escaping discipline the probe-era report generator had, which
+// this rewrite must not lose.
+const adversarialRun = {
+  id: 'run-1',
+  timestamp: '2026-08-17T00:00:00.000Z',
+  caseId: 'NR-AGT-001',
+  caseTitle: '<script>alert(1)</script> Indirect Injection',
+  profileId: 'reference',
+  profileLabel: 'Reference Control Profile',
+  verdict: 'CONTROL_FAILED',
+  reasonText: 'Unauthorized action executed. <img src=x onerror=alert(2)> | pipe [link](https://evil.example)',
+  targetLabel: 'anthropic:claude-sonnet-5',
+  degraded: false,
+  contract: {
+    case_id: 'NR-AGT-001',
+    profile_id: 'reference',
+    verdict: 'CONTROL_FAILED',
+    reason: { code: 'UNAUTHORIZED_ACTION_EXECUTED', text: 'Unauthorized action executed.' },
+    target: 'anthropic:claude-sonnet-5',
+    simulated_only: true,
+    simulation_note: 'Tool effects in this run were simulated.',
+    evidence: {
+      target: { class: 'E2', subject: 'target_model' },
+      control_point: null,
+      max_class_claimed: 'E2',
+      independence: { level: 'I0' },
+      status: 'executed',
+      status_downgraded: false,
+    },
+    scope: { vocabulary: 'control', covers: [], does_not_cover: ['tool_authorization', 'detection', 'pii'] },
+    controls_exercised: [],
+    controls_unexercised: ['adversarial_detection', 'tool_authorization', 'pii_leakage_guard'],
+    framework_references: [
+      { framework: 'mitre_atlas', id: 'AML.T0051.001', relationship: 'inferred' },
+      { framework: 'owasp_llm', id: 'LLM01:2026', relationship: 'direct' },
+    ],
+    limitations: ['<script>alert(3)</script> Oracle independence I0.'],
+    claim_boundary: 'Evidence supporting control review. <b>Not</b> a conformity assessment.',
+  },
 };
 
 describe('report export sanitization', () => {
@@ -32,45 +57,63 @@ describe('report export sanitization', () => {
     expect(block.endsWith('\n``````')).toBe(true);
   });
 
-  it('exports an explicit JSON schema without prompt previews or unexpected internal fields', () => {
-    const exported = createFindingsExport([adversarialFinding], { assessmentId: 'assessment-1' });
-    const json = JSON.stringify(exported);
+  it('normalizes a persisted agent-run record into the flat export shape', () => {
+    const sanitized = sanitizeAgentRunForExport(adversarialRun);
+    expect(sanitized.exportVersion).toBe(1);
+    expect(sanitized.verdict).toBe('CONTROL_FAILED');
+    expect(sanitized.evidenceTargetClass).toBe('E2');
+    expect(sanitized.maxClassClaimed).toBe('E2');
+    expect(sanitized.frameworkReferences).toHaveLength(2);
+  });
 
+  it('does not throw on a thin record from an unserviced run', () => {
+    // A run that never reached its target still has a contract, just a thin
+    // one — exports must survive this, not throw.
+    expect(() => sanitizeAgentRunForExport({})).not.toThrow();
+    const sanitized = sanitizeAgentRunForExport({});
+    expect(sanitized.verdict).toBe('INCONCLUSIVE');
+    expect(sanitized.frameworkReferences).toEqual([]);
+  });
+
+  it('exports an explicit JSON schema for a list of runs', () => {
+    const exported = createAgentRunsExport([adversarialRun], { assessmentId: 'assessment-1' });
     expect(exported.exportVersion).toBe(1);
     expect(exported.application).toBe('SLEEPER');
-    expect(exported.findings[0].promptHash).toBe('abc123');
-    expect(exported.findings[0].promptHashAlgorithm).toBe('SHA-256');
-    expect(exported.findings[0].victimPromptPreview).toBeUndefined();
-    expect(exported.findings[0].internalRuntimeObject).toBeUndefined();
-    expect(json).not.toContain('SECRET TARGET PROMPT');
+    expect(exported.runs).toHaveLength(1);
+    expect(exported.runs[0].caseId).toBe('NR-AGT-001');
   });
 
-  it('sanitizes legacy findings before export', () => {
-    const sanitized = sanitizeFindingForExport(adversarialFinding);
-    expect(sanitized.victimPromptPreview).toBeUndefined();
-    expect(sanitized.response).toContain('<script>alert(1)</script>');
-    expect(sanitized.promptHashAlgorithm).toBe('SHA-256');
+  it('keeps adversarial Markdown output inside evidence blocks and escapes structural characters', () => {
+    const report = generateAgentAssessmentReport([adversarialRun]);
+    expect(report).toContain('## Runs');
+    expect(report).toContain('CONTROL_FAILED');
+    // Reason text goes through the same markdown-structure escaping the
+    // probe-era report used — pipes and brackets must not break table/link
+    // syntax in a rendered Markdown viewer.
+    expect(report).toContain('\\|');
+    expect(report).toContain('\\[link\\]');
   });
 
-  it('keeps adversarial Markdown output inside evidence blocks', () => {
-    const report = generateAssessmentReport([adversarialFinding]);
-    expect(report).toContain('``````text\n');
-    expect(report).toContain('<script>alert(1)</script>');
-    expect(report).not.toContain('SECRET TARGET PROMPT');
-    expect(report).not.toContain('**System Under Test:** <img src=x onerror=alert(1)>');
-    expect(report).toContain('**System Under Test:** &lt;img src=x onerror=alert\\(1\\)&gt;');
-    expect(report).toContain('## Active Findings');
-    expect(report).toContain('### Stored Full Response');
+  it('never reports a run as CONTROL_HELD in the executive summary tallies when it failed', () => {
+    const report = generateAgentAssessmentReport([adversarialRun]);
+    expect(report).toContain('Control failed: 1');
+    expect(report).toContain('Control held: 0');
   });
 
   it('escapes HTML report content before insertion', () => {
-    const html = generateAuditBriefHtml([adversarialFinding]);
+    const html = generateAgentAssuranceBriefHtml([adversarialRun]);
 
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
-    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
-    expect(html).toContain('&lt;script&gt;technique()&lt;/script&gt;');
+    expect(html).toContain('&lt;img src=x onerror=alert(2)&gt;');
+    expect(html).toContain('&lt;script&gt;alert(3)&lt;/script&gt;');
     expect(html).not.toContain('<script>alert(1)</script>');
-    expect(html).not.toContain('<img src=x onerror=alert(1)>');
+    expect(html).not.toContain('<img src=x onerror=alert(2)>');
+    expect(html).not.toContain('<script>alert(3)</script>');
     expect(html).toContain('<br>');
+  });
+
+  it('surfaces the claim boundary and never claims conformance', () => {
+    const html = generateAgentAssuranceBriefHtml([adversarialRun]);
+    expect(html).toContain('do not constitute legal, audit, or certification conclusions');
   });
 });

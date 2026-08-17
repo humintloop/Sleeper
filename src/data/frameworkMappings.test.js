@@ -5,7 +5,6 @@ import {
   OWASP_PUBLISHED_CROSSWALK,
   getOwaspPublishedCrosswalk,
 } from './frameworkMappings';
-import { TECHNIQUES } from '../payloads';
 
 // These tests guard the framework migration performed on 2026-08-16. They are
 // consistency checks against docs/source-ledger.md, not assertions that the
@@ -17,18 +16,6 @@ describe('OWASP edition consistency', () => {
     expect(stale).toEqual([]);
   });
 
-  it('tags every probe technique with a 2026-edition OWASP ID', () => {
-    const ids = Object.values(TECHNIQUES).map(t => t.owasp);
-    expect(ids.length).toBeGreaterThan(0);
-    ids.forEach(id => expect(id).toMatch(/^LLM\d{2}:2026$/));
-  });
-
-  it('resolves every technique OWASP ID against the reference table', () => {
-    Object.values(TECHNIQUES).forEach(technique => {
-      expect(FRAMEWORK_REFERENCES.owasp[technique.owasp]).toBeTruthy();
-    });
-  });
-
   it('pins a version for every framework the app asserts', () => {
     ['owasp_llm', 'owasp_asi', 'mitre_atlas', 'nist_ai_rmf', 'iso_42001', 'eu_ai_act', 'aiuc_1']
       .forEach(key => expect(FRAMEWORK_VERSIONS[key]).toBeTruthy());
@@ -38,7 +25,6 @@ describe('OWASP edition consistency', () => {
 describe('ATLAS technique naming', () => {
   it('uses the current ATLAS name for AML.T0054', () => {
     // Renamed from "LLM Jailbreaking" in ATLAS content v2026.07.
-    expect(TECHNIQUES['AML.T0054'].name).toBe('LLM Jailbreak');
     expect(FRAMEWORK_REFERENCES.mitre_atlas['AML.T0054']).toBe('LLM Jailbreak');
   });
 
