@@ -1,6 +1,6 @@
 control_set:
-  id: NETRUNNER-LLM-SAAS
-  name: NETRUNNER LLM SaaS Security and Assurance Control Set
+  id: SLEEPER-LLM-SAAS
+  name: SLEEPER LLM SaaS Security and Assurance Control Set
   version: 0.1.0
   status: draft-project-defined
   owner_note: >

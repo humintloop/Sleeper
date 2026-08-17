@@ -301,7 +301,7 @@ function CompatGate({ C }) {
       padding: 24,
     }}>
       <div style={{ maxWidth: 480, width: '100%', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: 6, color: C.amber }}>NETRUNNER</div>
+        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: 6, color: C.amber }}>SLEEPER</div>
 
         <div style={{ padding: '16px 18px', background: C.redBg, border: `1px solid ${C.red}55`, borderLeft: `3px solid ${C.red}`, borderRadius: 4 }}>
           <div style={{ fontSize: 12, color: C.red, fontWeight: 800, letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 8 }}>
@@ -309,7 +309,7 @@ function CompatGate({ C }) {
           </div>
           <div style={{ fontSize: 14, color: C.text1, lineHeight: 1.6 }}>
             {isMobile
-              ? 'NETRUNNER runs large language models directly in your browser using WebGPU. Mobile devices do not yet have the GPU memory required to load models locally.'
+              ? 'SLEEPER runs large language models directly in your browser using WebGPU. Mobile devices do not yet have the GPU memory required to load models locally.'
               : 'This browser is missing required capabilities to run in-browser models.'}
           </div>
         </div>
@@ -327,7 +327,7 @@ function CompatGate({ C }) {
           <div style={{ fontSize: 12, color: C.text3, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Use instead</div>
           <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.65 }}>
             {isMobile
-              ? <>Open NETRUNNER on a <strong style={{ color: C.text1 }}>desktop or laptop</strong> running Chrome, Edge, or Arc. WebGPU and sufficient GPU memory are required to load models locally.</>
+              ? <>Open SLEEPER on a <strong style={{ color: C.text1 }}>desktop or laptop</strong> running Chrome, Edge, or Arc. WebGPU and sufficient GPU memory are required to load models locally.</>
               : <>Try <strong style={{ color: C.text1 }}>Chrome, Edge, or Arc</strong> on desktop. Make sure hardware acceleration is enabled in browser settings.</>}
           </div>
         </div>
@@ -355,7 +355,7 @@ export default function App() {
   const [runPreset, setRunPreset] = useState(savedCase.runPreset || 'standard');
   const [clusterId, setClusterId] = useState(savedCase.clusterId || CLUSTERS[0]?.id || null);
   const [judgeMode, setJudgeMode] = useState(Boolean(savedCase.judgeMode));
-  const [analyst, setAnalyst] = useState(() => savedCase.analyst || localStorage.getItem('netrunner-analyst') || '');
+  const [analyst, setAnalyst] = useState(() => savedCase.analyst || localStorage.getItem('sleeper-analyst') || '');
   const [selectedControlIds, setSelectedControlIds] = useState(savedCase.selectedControlIds || []);
   const [hardwareProfile, setHardwareProfile] = useState({ status: 'detecting' });
 
@@ -954,14 +954,14 @@ export default function App() {
     const blob = new Blob([JSON.stringify(createFindingsExport(findings, { assessmentId: caseId }), null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `netrunner-findings-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `sleeper-findings-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
   };
   const exportReport = () => {
-    downloadMarkdown(`netrunner-assessment-report-${new Date().toISOString().slice(0, 10)}.md`, generateAssessmentReport(findings));
+    downloadMarkdown(`sleeper-assessment-report-${new Date().toISOString().slice(0, 10)}.md`, generateAssessmentReport(findings));
   };
   const exportAuditBrief = () => {
-    downloadHtml(`netrunner-audit-brief-${new Date().toISOString().slice(0, 10)}.html`, generateAuditBriefHtml(findings, { assuranceProfile: ASSURANCE_PROFILE.label }));
+    downloadHtml(`sleeper-audit-brief-${new Date().toISOString().slice(0, 10)}.html`, generateAuditBriefHtml(findings, { assuranceProfile: ASSURANCE_PROFILE.label }));
   };
   const updateFinding = (id, patch) => setFindings(prev => prev.map(f => f.id === id ? { ...f, ...patch } : f));
   const applyHardwareRecommendation = () => {
@@ -1093,7 +1093,7 @@ export default function App() {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", color: C.amber, fontSize: 24, fontWeight: 700, letterSpacing: 6, lineHeight: 1 }}>NETRUNNER</div>
+          <div style={{ fontFamily: "'Rajdhani', sans-serif", color: C.amber, fontSize: 24, fontWeight: 700, letterSpacing: 6, lineHeight: 1 }}>SLEEPER</div>
           <div style={{ color: C.warmDim, fontSize: 11, fontWeight: 800, letterSpacing: 1.4, textTransform: 'uppercase', marginTop: 3 }}>Agent Assurance Lab</div>
         </div>
       </div>

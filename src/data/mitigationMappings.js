@@ -1,7 +1,7 @@
 // Source-backed mitigation references plus project-defined action guidance.
 // MITRE ATLAS entries preserve official IDs/names from mitre-atlas/atlas-data
 // dist/v6/ATLAS-2026.07.yaml (content v2026.07, format-version 6.0.0).
-// NETRUNNER recommended actions and retest guidance are project-defined.
+// SLEEPER recommended actions and retest guidance are project-defined.
 
 export const MITIGATION_SET_VERSION = '0.3.0';
 

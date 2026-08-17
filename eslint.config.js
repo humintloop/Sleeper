@@ -10,7 +10,9 @@ export default [
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
-      ecmaVersion: 2021,
+      // 2022 for class private fields (`#apiKey` in src/api/adapter.js), which
+      // keep the key off the instance as an own enumerable property.
+      ecmaVersion: 2022,
       sourceType: 'module',
       globals: { ...globals.browser, ...globals.node },
       parserOptions: { ecmaFeatures: { jsx: true } },

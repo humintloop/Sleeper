@@ -46,7 +46,7 @@ export default function FrameworkMappingExplainer({
           <Mini C={C} label="Profile" value={ASSURANCE_PROFILE.label} detail={mapping.eu_ai_act_scope || 'conditional-readiness'} />
         </div>
 
-        <ListSection C={C} title="Mapped NETRUNNER controls" items={mappedControls.map(control => ({
+        <ListSection C={C} title="Mapped SLEEPER controls" items={mappedControls.map(control => ({
           key: control.id,
           title: `${control.id} - ${control.name}`,
           text: `${control.domain}: ${control.objective}`,

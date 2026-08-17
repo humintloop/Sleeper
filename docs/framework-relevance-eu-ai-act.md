@@ -1,10 +1,10 @@
 # EU AI Act High-Risk Readiness Notes
 
-These notes explain how NETRUNNER uses EU AI Act references. They are readiness indicators only, not legal conclusions.
+These notes explain how SLEEPER uses EU AI Act references. They are readiness indicators only, not legal conclusions.
 
 ## Working Profile
 
-NETRUNNER uses a **SaaS / Critical Digital Infrastructure Readiness** profile for CDN, edge, cybersecurity, cloud, and critical digital infrastructure SaaS providers:
+SLEEPER uses a **SaaS / Critical Digital Infrastructure Readiness** profile for CDN, edge, cybersecurity, cloud, and critical digital infrastructure SaaS providers:
 
 - AI-enabled SaaS
 - cybersecurity products and operations
@@ -15,14 +15,14 @@ NETRUNNER uses a **SaaS / Critical Digital Infrastructure Readiness** profile fo
 
 The EU AI Act high-risk analysis depends on the actual AI system, intended purpose, user role, jurisdiction, and deployment context. For critical infrastructure, the lab treats high-risk readiness as most relevant when an AI system is used as a safety component in the management or operation of critical digital infrastructure or another high-risk area.
 
-Cybersecurity-only components are not automatically safety components. NETRUNNER therefore uses careful wording such as:
+Cybersecurity-only components are not automatically safety components. SLEEPER therefore uses careful wording such as:
 
 - "EU AI Act readiness relevance"
 - "where applicable and in scope"
 - "potential readiness gap"
 - "not a compliance conclusion"
 
-## Articles Used in NETRUNNER Reports
+## Articles Used in SLEEPER Reports
 
 - **Article 9:** risk management system
 - **Article 12:** record-keeping and logging
@@ -34,7 +34,7 @@ Cybersecurity-only components are not automatically safety components. NETRUNNER
 
 ## How Findings Map to Readiness
 
-When an attack succeeds or partially succeeds, NETRUNNER frames the result as evidence that a control may be weak, missing, or degrading. The finding record should show:
+When an attack succeeds or partially succeeds, SLEEPER frames the result as evidence that a control may be weak, missing, or degrading. The finding record should show:
 
 - what was tested
 - what happened

@@ -225,7 +225,7 @@ export default function FindingCard({ C, finding: f, auditorView, onUpdate, onDe
             {tab === 'remediation' && (
               <>
                 {officialMitigations.length > 0 && <ListBlock C={C} label="OFFICIAL MITIGATION REFERENCES" items={officialMitigations.map(i => `${i.source}: ${i.id} — ${i.name}`)} />}
-                {recommendedMitigations.length > 0 && <ListBlock C={C} label="NETRUNNER RECOMMENDED ACTIONS" items={recommendedMitigations} />}
+                {recommendedMitigations.length > 0 && <ListBlock C={C} label="SLEEPER RECOMMENDED ACTIONS" items={recommendedMitigations} />}
                 {retestGuidance.length > 0 && <ListBlock C={C} label="RETEST GUIDANCE" items={retestGuidance} />}
               </>
             )}

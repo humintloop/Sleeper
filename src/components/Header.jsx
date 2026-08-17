@@ -27,8 +27,8 @@ export default function Header({
     <header className="app-header">
       <div className="brand-lockup">
         {/* Text wordmark until brand art exists. */}
-        <div className="brand-word" aria-label="NETRUNNER Agent Assurance Lab">
-          <div className="brand-title">NETRUNNER</div>
+        <div className="brand-word" aria-label="SLEEPER Agent Assurance Lab">
+          <div className="brand-title">SLEEPER</div>
           <div className="brand-subtitle">AGENT ASSURANCE LAB</div>
         </div>
         <span className="brand-context">Local-first agent threat and control lab</span>

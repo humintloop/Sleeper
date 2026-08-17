@@ -1,7 +1,7 @@
-export const ACTIVE_CASE_KEY = 'netrunner-active-case';
-export const FINDINGS_KEY = 'netrunner-findings';
+export const ACTIVE_CASE_KEY = 'sleeper-active-case';
+export const FINDINGS_KEY = 'sleeper-findings';
 export const LEGACY_FINDINGS_KEY = 'rtl-findings';
-export const ANALYST_KEY = 'netrunner-analyst';
+export const ANALYST_KEY = 'sleeper-analyst';
 
 export const STORAGE_KEYS = [
   ACTIVE_CASE_KEY,

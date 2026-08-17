@@ -39,7 +39,7 @@ describe('storage hardening', () => {
     expect(JSON.stringify(loaded)).not.toContain('LEGACY SECRET');
   });
 
-  it('clears only NETRUNNER-owned storage keys', () => {
+  it('clears only SLEEPER-owned storage keys', () => {
     const storage = fakeStorage({
       [ACTIVE_CASE_KEY]: '{}',
       [FINDINGS_KEY]: '[]',

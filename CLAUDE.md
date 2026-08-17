@@ -1,4 +1,4 @@
-# NETRUNNER — working notes
+# SLEEPER — working notes
 
 Local-first browser lab for **agentic** AI threat evaluation. Tests whether an agent can be
 manipulated into taking an action it should not take, and turns the result into reviewable
@@ -27,7 +27,7 @@ Vite + React 18, no router, no state library. WebLLM (`@mlc-ai/web-llm`) for loc
 Vitest + ESLint. Deploys to GitHub Pages via `npm run deploy`.
 
 ```bash
-npm run dev     # via .claude/launch.json config "netrunner-dev", port 5173
+npm run dev     # via .claude/launch.json config "sleeper-dev", port 5173
 npm test
 npm run lint
 npm run build
@@ -45,9 +45,14 @@ forces it on Pages. Desktop browsers only — mobile is blocked deliberately by 
 | `src/data/frameworkMappings.js` | Control set, framework references, `OWASP_PUBLISHED_CROSSWALK`, `FRAMEWORK_VERSIONS`. |
 | `src/data/mitigationMappings.js` | ATLAS mitigation refs + project-defined action guidance. |
 | `src/reports/reportGenerator.js` | Markdown / JSON / HTML export. |
-| `src/storage.js` | localStorage keys (all `netrunner-*`) and teardown. |
+| `src/storage.js` | localStorage keys (all `sleeper-*`) and teardown. |
 | `controls/`, `docs/` | Project-defined control set and framework relevance notes. |
-| `src/harness/` | **Does not exist yet.** Where the agent harness lands. |
+| `src/harness/runAgentAssessment.js` | **Start here for agent runs.** Case + profile + target → run → verdict → contract. `runCaseAcrossProfiles` is the comparative arm. |
+| `src/harness/runAgentCase.js` | The ReAct loop. Owns provenance attribution, the turn cap, and the loop guard. |
+| `src/harness/` | `authorityRegistry.js` (tool trust boundaries), `controlGate.js` (profile → system-prompt wrapper), `controls/*` (four control functions), `mockToolRouter.js`, `computeVerdict.js`, `evidenceContract.js`. |
+| `src/api/adapter.js` | Live-target adapter. OpenAI / Anthropic / generic, tool-calling, local JSON fallback. Key is a private field — keep it that way. |
+| `src/data/agentCases.js` | The four threat cases, fixtures, and framework mappings. |
+| `src/data/controlProfiles.js` | Baseline / Partial / Reference / Custom control postures. |
 
 ## Conventions that matter
 
@@ -82,14 +87,24 @@ explains why this matters.
 
 ## Current state
 
-Framework layer, evidence pipeline, and single-turn probe library work and are tested
-(30 tests). Single-turn is the **baseline arm** of an agent case, not the product — the
-comparative claim is the point: *the model refused this injection in a single turn; given
-tools, did it act on it anyway?*
+Framework layer, evidence pipeline, and single-turn probe library work and are tested.
+Single-turn is the **baseline arm** of an agent case, not the product — the comparative claim
+is the point: *the model refused this injection in a single turn; given tools, did it act on
+it anyway?*
 
-Next up is week 2 of the plan: port ORPHEUS's `authorityRegistry`, the four control functions,
-`controlProfiles`, and `controlGate` into `src/harness/`, each landing with Vitest coverage.
-Then Anthropic tool-calling in the API adapter, then the ReAct orchestrator.
+Weeks 1–5 are done (446 tests, lint clean). A case runs end to end: control gate builds the
+system prompt, the ReAct loop runs against a live or local target, tool-call intent is real
+while tool effects are simulated, the authorization gate decides, controls run over the event
+stream, and the run emits a verdict plus an Evidence Contract.
+`runCaseAcrossProfiles` produces the comparative arm — same attack, three postures.
+
+Remaining: week 6 (AIUC-1 crosswalk in `FindingCard` / `FrameworkMappingExplainer`, framework
+display prioritization) and week 7 (demo, regenerated sample report, README). The plan doc's
+"Weeks 3–5, as landed" section records four framework-data questions this work raised; all
+four are now resolved against primary sources (two ATLAS IDs registered, one mitigation
+confirmed out of scope, one publication-date typo fixed) — see that section for the sourcing.
+Two open items remain there: the AIUC-1 3a/3b allocation and two inferred OWASP LLM mappings
+are this project's own judgment calls, not asserted by any source, and should be read as such.
 
 Live API target is **Anthropic first**. The adapter holds the key in memory for the session
 and never writes it to storage. Keep it that way.

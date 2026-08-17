@@ -1,4 +1,4 @@
-# NETRUNNER — Local-First Agent Assurance Lab
+# SLEEPER — Local-First Agent Assurance Lab
 
 > Run agents against adversarial content in the browser. Watch the tool calls. Map the control gap.
 
@@ -6,7 +6,7 @@
 
 ## What This Is
 
-NETRUNNER tests whether an AI agent can be manipulated into taking an action it should not
+SLEEPER tests whether an AI agent can be manipulated into taking an action it should not
 take, and turns the result into reviewable evidence mapped to published control frameworks.
 
 The question is not "did the model say something bad." It is:
@@ -15,7 +15,7 @@ The question is not "did the model say something bad." It is:
 > and did anything stop it?
 
 An agent's security properties live in the gap between what it *says* and what it *does*.
-NETRUNNER instruments that gap: a real tool-calling loop where the model genuinely decides
+SLEEPER instruments that gap: a real tool-calling loop where the model genuinely decides
 whether to call `send_email`, against mock tools where nothing actually leaves the browser.
 
 It descends from [ELICIT](https://github.com/humintloop/ELICIT), a single-turn adversarial
@@ -46,16 +46,16 @@ identity spoofing.
 Every finding records what it actually permits you to claim, on three axes:
 
 - **Evidence class (E1–E5).** Observation → runtime characterization → enforcement →
-  persistence/replay resistance → isolation. Nothing NETRUNNER produces reaches E4 or E5, and
+  persistence/replay resistance → isolation. Nothing SLEEPER produces reaches E4 or E5, and
   it says so.
 - **Oracle independence (I0–I2).** Who produced the verdict: self-authored, independently
-  reimplemented, or an independent sensor the target does not control. NETRUNNER is I0.
+  reimplemented, or an independent sensor the target does not control. SLEEPER is I0.
 - **Status.** Mapped / executed / independently reviewed / certified. A framework crosswalk is
   E1 material regardless of how many requirements it covers.
 
 Two consequences worth stating up front:
 
-1. When NETRUNNER blocks a tool call, that is enforcement **by NETRUNNER's own gate**, and
+1. When SLEEPER blocks a tool call, that is enforcement **by SLEEPER's own gate**, and
    evidence about the target's behavior only. A mock-tool run does not establish that a
    production system would have blocked anything.
 2. An unexercised control resolves to `INCONCLUSIVE`, never to "held." If the model never
@@ -86,7 +86,7 @@ have explicit permission to test. Do not use against production AI systems witho
 authorization.
 
 Framework mappings are control traceability aids. They are **not** legal conclusions, audit
-determinations, certification evidence, or findings of noncompliance. No NETRUNNER output is a
+determinations, certification evidence, or findings of noncompliance. No SLEEPER output is a
 conformity assessment against any standard.
 
 Mock tools never take real actions — no email is sent, no file is written, no API is called.

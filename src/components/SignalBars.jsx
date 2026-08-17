@@ -8,7 +8,7 @@ export default function SignalBars({ C = fallback, color = C.amber, label, count
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
       <style>{`
-        @keyframes netrunnerBar {
+        @keyframes sleeperBar {
           0%, 100% { height: 9px; opacity: .25; }
           45% { height: 38px; opacity: .88; }
         }
@@ -22,7 +22,7 @@ export default function SignalBars({ C = fallback, color = C.amber, label, count
               borderRadius: 2,
               backgroundColor: color,
               opacity: 0.75,
-              animation: `netrunnerBar 1.35s ease-in-out ${(i * 0.08).toFixed(2)}s infinite`,
+              animation: `sleeperBar 1.35s ease-in-out ${(i * 0.08).toFixed(2)}s infinite`,
             }}
           />
         ))}

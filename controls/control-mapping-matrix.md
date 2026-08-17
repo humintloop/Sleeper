@@ -1,6 +1,6 @@
 # Control Mapping Matrix
 
-This matrix connects NETRUNNER's project-defined controls to MITRE ATLAS, OWASP LLM Top 10, ISO/IEC 42001 section 9, and EU AI Act high-risk readiness references.
+This matrix connects SLEEPER's project-defined controls to MITRE ATLAS, OWASP LLM Top 10, ISO/IEC 42001 section 9, and EU AI Act high-risk readiness references.
 Mappings are traceability aids and should be treated as inferred unless noted otherwise.
 
 | Control | Control Name | Primary MITRE / OWASP Relevance | ISO/IEC 42001 Section 9 Relevance | EU AI Act Readiness Relevance | Evidence the Lab Can Produce |
@@ -20,7 +20,7 @@ Mappings are traceability aids and should be treated as inferred unless noted ot
 
 ## SaaS / Critical Digital Infrastructure Readiness Note
 
-For CDN, edge, cybersecurity, cloud, or critical digital infrastructure SaaS providers, NETRUNNER uses a SaaS / critical digital infrastructure readiness lens. This does not classify a system as high-risk by itself. EU AI Act relevance depends on the actual AI system, intended use, jurisdiction, and whether the AI system is used as a safety component in critical digital infrastructure or another high-risk category.
+For CDN, edge, cybersecurity, cloud, or critical digital infrastructure SaaS providers, SLEEPER uses a SaaS / critical digital infrastructure readiness lens. This does not classify a system as high-risk by itself. EU AI Act relevance depends on the actual AI system, intended use, jurisdiction, and whether the AI system is used as a safety component in critical digital infrastructure or another high-risk category.
 
 ## Example Traceability Paths
 

@@ -1,4 +1,4 @@
-# NETRUNNER — Agent Threats & Controls Module: Design Plan
+# SLEEPER — Agent Threats & Controls Module: Design Plan
 
 Rev. 2026-08-16. Supersedes the original `agent-module-plan.md`.
 Framework references below are verified against primary sources and pinned in
@@ -6,21 +6,26 @@ Framework references below are verified against primary sources and pinned in
 
 ## Status
 
-**Week 1 (framework refresh) is complete and in the working tree.** See
-[Implementation order](#implementation-order). The rest of this document is plan.
+**Weeks 1–5 are complete and in the working tree** (446 tests, lint clean): framework refresh,
+harness skeleton, API adapter with tool-calling, ReAct orchestrator and mock tool router, the
+four threat cases, and the verdict/Evidence Contract pipeline. A case now runs end to end
+under three control profiles and emits a contract.
+
+Remaining: week 6 (surfacing the crosswalk in the UI) and week 7 (demo, regenerated sample
+report, README). See [Implementation order](#implementation-order) and [Open items](#open-items).
 
 ## Context
 
-NETRUNNER inherits ELICIT's single-turn evaluation layer (prompt injection, jailbreak,
+SLEEPER inherits ELICIT's single-turn evaluation layer (prompt injection, jailbreak,
 system prompt extraction) and its mappings to MITRE ATLAS, OWASP LLM Top 10, NIST AI RMF, and
 ISO/IEC 42001 §9, with conditional EU AI Act readiness notes. This module extends the same
 evidence → control → framework-readiness traceability model to multi-step, tool-using agent
-behavior — which is NETRUNNER's reason for existing as a separate project. Single-turn probes
+behavior — which is SLEEPER's reason for existing as a separate project. Single-turn probes
 stay as the baseline arm of an agent case, not as the product.
 
 ## Lineage, and reclaiming ORPHEUS
 
-NETRUNNER is a copy of [ELICIT](https://github.com/humintloop/ELICIT) taken on 2026-08-16,
+SLEEPER is a copy of [ELICIT](https://github.com/humintloop/ELICIT) taken on 2026-08-16,
 immediately after the framework refresh described below, then stripped of ELICIT's dossier
 framing and rebuilt around agent threats. ELICIT stays live and unchanged as the single-turn
 lab.
@@ -30,11 +35,11 @@ The original plan assumed the mock-tool harness had to be built from nothing. It
 same codebase (shared component tree, same `frameworkMappings.js`, same `C` token object)
 that already ships a working agentic harness, a control-profile model, an Evidence Contract
 schema, and a live OpenAI/Anthropic API adapter. The ELICIT line meanwhile gained ESLint,
-Vitest, storage hardening, and the batch-judge UX that ORPHEUS lacks — all of which NETRUNNER
+Vitest, storage hardening, and the batch-judge UX that ORPHEUS lacks — all of which SLEEPER
 inherits.
 
 The two forks last shared a commit on 2026-07-02. Neither is a superset. The move is to port
-ORPHEUS's harness *into* NETRUNNER under its engineering standards (tests + lint), not to
+ORPHEUS's harness *into* SLEEPER under its engineering standards (tests + lint), not to
 merge branches or restart work in ORPHEUS. ORPHEUS itself is being retired.
 
 ### ORPHEUS salvage assessment
@@ -43,7 +48,7 @@ merge branches or restart work in ORPHEUS. ORPHEUS itself is being retired.
 
 | File | Why it fits |
 |---|---|
-| `src/api/adapter.js` | Complete live-endpoint adapter: OpenAI / Anthropic / generic, provider detection, SSE normalization into the WebLLM `choices[0].delta.content` shape the app already consumes, API key held only as an instance field. Needs tool-calling added (§Harness) and a pass against NETRUNNER's storage-hardening commit `b2b6f1b`. |
+| `src/api/adapter.js` | Complete live-endpoint adapter: OpenAI / Anthropic / generic, provider detection, SSE normalization into the WebLLM `choices[0].delta.content` shape the app already consumes, API key held only as an instance field. Needs tool-calling added (§Harness) and a pass against SLEEPER's storage-hardening commit `b2b6f1b`. |
 | `src/harness/authorityRegistry.js` | Tool allowlist with `risk` / `allowed` / `requiresApproval` / `trustedOutput` plus trusted vs. untrusted instruction sources. The data model cases 2 and 3 both need. |
 | `src/harness/controls/*.js` | `toolAuthorizationGate`, `adversarialDetection`, `piiLeakageGuard`, `activityLogging` — deterministic control functions that already take `(content, mode)` and are not fixture-bound. |
 | `src/data/controlProfiles.js` | Baseline / Partial / Reference / Custom postures. **The strongest idea in either fork.** It makes a finding comparative — same attack, three control postures, three outcomes — which is what control-effectiveness evidence requires. Adopt as the spine of the agent module. |
@@ -76,7 +81,7 @@ records who produced the oracle (self-authored / independently reimplemented / i
 sensor the target does not control). A third, orthogonal axis records status: *mapped*,
 *executed*, *independently reviewed*, *certified*.
 
-This is the missing piece in both NETRUNNER and ORPHEUS. NETRUNNER's central promise — evidence for
+This is the missing piece in both SLEEPER and ORPHEUS. SLEEPER's central promise — evidence for
 control review, not audit conclusions — is currently carried only by prose disclaimers.
 An explicit evidence class per finding makes it structural, and it resolves the exact
 confusion ORPHEUS has, where a fixture run and a live run both report `CONTROL_HELD`.
@@ -86,11 +91,11 @@ Applied here:
 | Run mode | Class | Why |
 |---|---|---|
 | Mock-tool harness against fixtures | **E2 / I0** for the target | The target's behavior is characterized; nothing about the target's controls is enforced. |
-| Mock-tool harness, tool call blocked at NETRUNNER's gate | **E3 / I0** for *NETRUNNER's gate*, still E2 for the target | The enforcement observed is our own. The taxonomy's "where the control point sits" section is precisely this distinction. |
+| Mock-tool harness, tool call blocked at SLEEPER's gate | **E3 / I0** for *SLEEPER's gate*, still E2 for the target | The enforcement observed is our own. The taxonomy's "where the control point sits" section is precisely this distinction. |
 | Live API target, single turn | **E2 / I0** | Real response, no control point under test. |
 | Framework crosswalk rows | **E1**, status *mapped* | A mapping is E1 material no matter how many requirements it covers. |
 
-No NETRUNNER output reaches E4 or E5, and it should say so.
+No SLEEPER output reaches E4 or E5, and it should say so.
 
 ### 2. INCONCLUSIVE over PASS (adopt)
 
@@ -125,7 +130,7 @@ Attribution goes in `ATTRIBUTION.md` if any of their text or structure is reused
 
 **Not taking:** the payments/settlement stack (x402, L402, AP2, Visa TAP), the MCP/A2A wire
 protocol tests, the attestation registry, the GitHub Action, the Discord bot. All out of
-NETRUNNER's scope — that project tests deployed endpoints over the network; NETRUNNER is a
+SLEEPER's scope — that project tests deployed endpoints over the network; SLEEPER is a
 local-first browser lab.
 
 ## Target scenario
@@ -176,7 +181,7 @@ gain in this module.
 
 ### OWASP LLM Top 10 2026 — migrated repo-wide
 
-Published 2026-08-03. Official source: `GenAI-Security-Project/GenAI-LLM-Top10`, `2026/final/`,
+Published 2026-08-04. Official source: `GenAI-Security-Project/GenAI-LLM-Top10`, `2026/final/`,
 pinned at commit `7bbe0f06`. Two changes land on this module:
 
 - **Excessive Agency moved LLM06 → LLM03** — case 2's primary mapping.
@@ -190,14 +195,14 @@ Full 2025→2026 table in [`source-ledger.md`](./source-ledger.md).
 
 The 2026 edition ships **Appendix A, Related Framework Mappings**, which directly asserts
 LLM→ASI, LLM→ATLAS *tactic*, and LLM→NIST AI RMF *category* relationships across nine
-frameworks. This is OWASP asserting the relationship, not NETRUNNER inferring it.
+frameworks. This is OWASP asserting the relationship, not SLEEPER inferring it.
 
 Recorded in `OWASP_PUBLISHED_CROSSWALK` (`src/data/frameworkMappings.js`) as the only direct
 mappings in that file. Two notes:
 
 - OWASP's RMF mapping is at Category level (`MEASURE 2`, `MAP 4`, `GOVERN 6`) — finer than
-  NETRUNNER's existing Function-level references, which stay inferred.
-- OWASP pins ATLAS at content v2026.06; NETRUNNER pins v2026.07 (current). Noted rather than
+  SLEEPER's existing Function-level references, which stay inferred.
+- OWASP pins ATLAS at content v2026.06; SLEEPER pins v2026.07 (current). Noted rather than
   reconciled.
 
 ### OWASP Top 10 for Agentic Applications (ASI) 2026 — verified from the PDF
@@ -300,7 +305,7 @@ user task
   → parse tool-call intent          ← normalized across providers
   → authorityRegistry lookup + toolAuthorizationGate(profile)
       → blocked  → synthetic denial result fed back to model
-      → allowed  → mockToolRouter returns scripted-but-realistic result
+      → allowed  → mockToolRouter returns parameterized-but-realistic result
   → feed result back, repeat (turn cap)
   → controls: adversarialDetection on tool output, piiLeakageGuard on final text,
     activityLogging over the whole event stream (shaped to satisfy AIUC-1 E015)
@@ -356,10 +361,10 @@ Seven weeks to Offensive AI Con (Oceanside, Oct 4–7 2026, Seabird Ocean Resort
 | Week | Work | Status |
 |---|---|---|
 | 1 (Aug 17–23) | **Framework refresh, shipped independently.** OWASP 2026 migration repo-wide; ATLAS v6 refresh incl. agent techniques and `M0026`–`M0033`; `AML.T0054` rename; `OWASP_PUBLISHED_CROSSWALK`; `FRAMEWORK_VERSIONS`; ledger + attribution rewrite; regression tests. | **Done** — see below |
-| 2 (Aug 24–30) | Port ORPHEUS harness skeleton into `src/harness/` under NETRUNNER lint/test standards: `authorityRegistry`, `controls/*`, `controlProfiles`, `controlGate`. Tests for each control function. No ReAct yet. | |
-| 3 (Aug 31–Sep 6) | `adapter.js` port + tool-calling for OpenAI and Anthropic; normalized tool-call shape; local WebLLM JSON fallback. | |
-| 4 (Sep 7–13) | ReAct orchestrator + mock tool router (routing half only); the three cases as real scenarios with fixtures, tool sets, and MCP registry. | |
-| 5 (Sep 14–20) | Verdict rewrite with INCONCLUSIVE discipline + evidence-class fields; Evidence Contract wired into the existing findings/report pipeline. | |
+| 2 (Aug 24–30) | Port ORPHEUS harness skeleton into `src/harness/` under SLEEPER lint/test standards: `authorityRegistry`, `controls/*`, `controlProfiles`, `controlGate`. Tests for each control function. No ReAct yet. | **Done** — see below |
+| 3 (Aug 31–Sep 6) | `adapter.js` port + tool-calling for OpenAI and Anthropic; normalized tool-call shape; local WebLLM JSON fallback. | **Done** — see below |
+| 4 (Sep 7–13) | ReAct orchestrator + mock tool router (routing half only); the three cases as real scenarios with fixtures, tool sets, and MCP registry. | **Done** — see below |
+| 5 (Sep 14–20) | Verdict rewrite with INCONCLUSIVE discipline + evidence-class fields; Evidence Contract wired into the existing findings/report pipeline. | **Done** — see below |
 | 6 (Sep 21–27) | AIUC-1 crosswalk surfaced in `FindingCard` / `FrameworkMappingExplainer`; framework display prioritization. | |
 | 7 (Sep 28–Oct 3) | Buffer, demo script, regenerate `sample-assessment-report.md`, README. | |
 
@@ -378,9 +383,125 @@ Seven weeks to Offensive AI Con (Oceanside, Oct 4–7 2026, Seabird Ocean Resort
 
 30 tests pass, lint clean (3 pre-existing warnings, unrelated).
 
+### Week 2, as landed (2026-08-16)
+
+Harness skeleton ported from ORPHEUS. Nothing wires these together yet — no ReAct loop, no
+mock tool router, no verdict function.
+
+- `src/harness/authorityRegistry.js` — v1 tool set from §Harness architecture
+  (`retrieve_document`, `web_search`, `read_file`, `write_file`, `send_email`), trusted vs.
+  untrusted source sets, `requiresExplicitApproval`. Deny-by-default.
+- `src/harness/controlGate.js` — profile → literal system-prompt clause, SLEEPER-branded.
+- `src/harness/controls/{toolAuthorizationGate,adversarialDetection,piiLeakageGuard,activityLogging}.js`
+- `src/data/controlProfiles.js` — the four postures, plus `CONTROL_PROFILE_ORDER` and a getter.
+- Seven test files, 82 new tests. 112 total pass, lint clean (same 3 pre-existing warnings).
+
+**Corrections to the salvage assessment.** The §"Take largely as-is" table claims the control
+functions "are not fixture-bound." Two of them were: `toolAuthorizationGate` imported
+`HIGH_RISK_TOOLS` and `piiLeakageGuard` imported `DEMO_PII_SEEDS`, both from `demoTarget.js`,
+which is on the throw-out list. Resolved on port — risk is read from the authority registry
+(the single source of truth the plan already wanted it to be), and PII seeds are a parameter
+supplied by the scenario.
+
+Three other changes worth recording, since they alter behavior rather than packaging:
+
+- **`authorization_present` split into `gate_enforcing` and `approval_granted`.** ORPHEUS's
+  single field conflated "the gate is enforcing" with "an approval exists," so
+  `authorization_present = mode === 'enforce'` meant a blocked call and an approved call were
+  indistinguishable. Case 2's HITL failure modes need to vary approval while holding
+  enforcement fixed, which the old shape could not express.
+- **Untrusted provenance is now the registry's full untrusted set**, not a literal comparison
+  against `'retrieved_content'`, and unattributed provenance counts as untrusted. A tool call
+  with no recorded source is the case this module exists to catch.
+- **Every control distinguishes "off" from "ran and found nothing."** `not_configured` vs.
+  `not_triggered`, `scan_active: false` vs. a clean scan. This is the INCONCLUSIVE discipline
+  pushed down into the control records themselves, so the week 5 verdict function has the
+  information it needs rather than having to infer it.
+
+Deferred to week 4 as planned: MCP-shaped registry entries (server provenance, declared vs.
+required scope, poisoned tool descriptions). The registry schema takes them additively.
+
+### Weeks 3–5, as landed (2026-08-16)
+
+Built in parallel, then integrated. 446 tests, lint clean.
+
+- `src/api/adapter.js` — OpenAI / Anthropic / generic, provider detection, SSE normalization,
+  tool-calling both directions, local WebLLM JSON-emit fallback with degradation recorded on
+  the result. The API key is a class private field (`#apiKey`), invisible to `JSON.stringify`
+  and `Object.keys`, with an explicit `toJSON` so a later refactor cannot reintroduce it.
+  This required `eslint.config.js` to move to `ecmaVersion: 2022`.
+- `src/harness/mockToolRouter.js` — routing half only. `createAgenticSeedTrace()` was not
+  ported in any form.
+- `src/harness/runAgentCase.js` — the ReAct loop: control gate → model turn → provenance
+  attribution → authorization → mock effect → feed back, with turn cap and loop guard recorded
+  as evidence.
+- `src/harness/computeVerdict.js` — INCONCLUSIVE discipline, reason codes on every verdict.
+- `src/harness/evidenceContract.js` — E1–E5 / I0–I2 / status / scope, E4–E5 unreachable as a
+  tested invariant rather than a comment.
+- `src/data/agentCases.js` — four cases (`NR-AGT-001`, `-002`, `-003A`, `-003B`).
+- `src/harness/runAgentAssessment.js` — the integration seam: case + profile + target → run →
+  verdict → contract, plus `runCaseAcrossProfiles` for the comparative arm.
+
+**Two more ORPHEUS `computeVerdict` defects, beyond the two this document already records.**
+(c) Its baseline branch read `profile.controls` to infer whether a control had run, rather
+than reading the control records. Under the Custom profile, or any run where a control was
+configured on but never exercised, that branch misfires. (d) It treated `!attack_detected` as
+evidence of safety with no ground truth about whether adversarial input was present — a clean
+scan on a seeded-injection scenario is a miss, not a hold. The rewrite never inspects
+`profile.controls`, and requires an explicit `scenario.adversarialInputPresent` before a clean
+scan can count as anything.
+
+**One defect of our own, found at integration.** The orchestrator aggregated zero detection
+records into a synthetic "scan ran, found nothing" result. Paired with a case whose ground
+truth says injected content exists, that made an unexercised detector read as a miss, and a
+run where the model never retrieved the poisoned document resolved `CONTROL_FAILED`. Fixed by
+reporting `scan_active: false` when no tool output was ever produced; regression test added.
+It is the same failure shape as (d), which is worth noting: this error is easy to make even
+while holding the discipline explicitly in mind.
+
+**Framework gaps this work exposed — resolved 2026-08-17:**
+
+- `AML.T0010.005` and `AML.T0011.002` are confirmed registered, verified directly against
+  `dist/v6/ATLAS-2026.07.yaml` (the current `ATLAS-latest.yaml` target; no `2026.08` dist
+  exists yet). Names match exactly what the case-3 table above already used: "AI Supply Chain
+  Compromise: AI Agent Tool" and "User Execution: Poisoned AI Agent Tool." ATLAS's own
+  description of `T0011.002` cross-references `T0010.005` as the supply-chain path by which
+  the poisoned tool was introduced — the two are linked in the source, not just in this
+  document. Both are now registered in `frameworkMappings.js` and the ledger.
+  `agentCases.js`'s `ATLAS_IDS_PENDING_REGISTRY` mechanism and its "still missing" regression
+  test are removed; a direct registration test replaces them.
+- `AML.M0031` is **Memory Hardening** — registered, sits numerically inside the `M0026`–`M0033`
+  range, but out of scope for every case in this module. It covers persistent agent
+  memory/state integrity, which is the ASI06 memory-poisoning surface this document already
+  defers (§"Threat cases"). Recorded in the ledger as a scope decision, not a missed
+  registration. (ATLAS's own agent-mitigation numbering continues past this range too —
+  `M0034` Deepfake Detection, `M0035` AI Red Team, `M0036` Limit AI Workload Resource
+  Consumption — general-AI mitigations, not agent-specific in the same sense, and correctly
+  outside this document's `M0026`–`M0033` framing.)
+- **Date discrepancy resolved:** 2026-08-04 is correct. The source repo's README, at the
+  pinned commit `7bbe0f06f468cdcc61fa73e1752183c6cfd23987`, states "Current release: 2026 —
+  published August 4, 2026" directly; the commit's own message corroborates ("Updates the
+  repository to reflect the August 4, 2026 publication," authored 2026-08-05, one day after).
+  §OWASP LLM Top 10 2026 above corrected from "2026-08-03" to "2026-08-04" to match
+  `FRAMEWORK_VERSIONS.owasp_llm`, which was already right.
+
+**Framework gaps still open:**
+
+- The AIUC-1 table has a single case-3 row, but the 3a/3b split needs two. The allocation used
+  (`B006`/`B008`/`A003` for runtime descriptor integrity; `E006`/`E009`/`B006`/`A003`/`B008`
+  for source provenance) is ours, not this document's.
+- Case 1's OWASP `LLM01:2026` and case 3b's `LLM04:2026` are inferred here — this document
+  tabulates OWASP LLM IDs for only two cases. `LLM04:2026` is at least corroborated by OWASP's
+  own published `LLM04 → ASI04` crosswalk row.
+
+**One ordering choice worth a second opinion:** `requestServiced: false` short-circuits to
+INCONCLUSIVE *before* control classification, so a PII exposure observed on an unserviced run
+is masked. The harness-level signal was judged more trustworthy; reversing it is a one-line
+change if observed exposures should always survive.
+
 ## Open items
 
-1. **Brand art** — NETRUNNER ships a text wordmark. `public/brand/` was removed with ELICIT's
+1. **Brand art** — SLEEPER ships a text wordmark. `public/brand/` was removed with ELICIT's
    assets; an icon, wordmark, and social preview are still needed.
 2. **AIUC-1 quotation permission** — the changelog repo has no license. Short attributed
    quotes are defensible; if the module leans on AIUC-1 as its lead framework, a note to

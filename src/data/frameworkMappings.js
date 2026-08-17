@@ -142,6 +142,8 @@ export const FRAMEWORK_REFERENCES = {
     'AML.T0086': 'Exfiltration via AI Agent Tool Invocation',
     'AML.T0098': 'AI Agent Tool Credential Harvesting',
     'AML.T0101': 'Data Destruction via AI Agent Tool Invocation',
+    'AML.T0010.005': 'AI Supply Chain Compromise: AI Agent Tool',
+    'AML.T0011.002': 'User Execution: Poisoned AI Agent Tool',
     'AML.T0110': 'AI Agent Tool Poisoning',
     'AML.T0110.000': 'AI Agent Tool Poisoning: Definition and Instructions',
     'AML.T0110.001': 'AI Agent Tool Poisoning: Implementation',
@@ -243,7 +245,7 @@ export const TECHNIQUE_CONTROL_MAP = {
 // ATTRIBUTION.md before reproducing it).
 //
 // These are the only mappings in this file that OWASP itself asserts. Every
-// other framework relationship in NETRUNNER is project-defined and inferred.
+// other framework relationship in SLEEPER is project-defined and inferred.
 export const OWASP_PUBLISHED_CROSSWALK = {
   'LLM01:2026': {
     asi: ['ASI01', 'ASI02', 'ASI03', 'ASI05', 'ASI06', 'ASI08', 'ASI09'],

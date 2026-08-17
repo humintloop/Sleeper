@@ -1,6 +1,6 @@
-# NETRUNNER LLM SaaS Control Set
+# SLEEPER LLM SaaS Control Set
 
-This directory contains a starter, project-defined control set for NETRUNNER.
+This directory contains a starter, project-defined control set for SLEEPER.
 It is intended to show how adversarial LLM evaluation results can map to SaaS-ready security and assurance controls.
 
 The controls are **not** an official framework. They are deliberately replaceable. When organization-specific AI controls are available, they should supersede this draft.

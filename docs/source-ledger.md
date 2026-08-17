@@ -1,6 +1,6 @@
 # Source Ledger
 
-This ledger records the sources used for NETRUNNER mappings and control-language decisions.
+This ledger records the sources used for SLEEPER mappings and control-language decisions.
 It is a traceability aid, not a legal or audit conclusion.
 
 See [`../ATTRIBUTION.md`](../ATTRIBUTION.md) for concise third-party attribution and license/source notes.
@@ -25,7 +25,7 @@ See [`../ATTRIBUTION.md`](../ATTRIBUTION.md) for concise third-party attribution
 | ISO-42001-OFFICIAL | ISO/IEC 42001:2023 source page | `https://www.iso.org/standard/42001` | AIMS purpose, applicability, and management-system context | Official source / high-level context | 2026-06-15 |
 | ISO-42001-SECTION9-WORKING | User-provided ISO 42001 mapping notes | `sunilp/ai-governance-framework`, `framework/compliance/iso-42001-mapping.md` | Section 9 labels for monitoring/measurement, internal audit, and management review | Third-party implementation guide / inferred mapping | 2026-06-15 |
 | EU-AI-ACT-2024 | Regulation (EU) 2024/1689 | `https://eur-lex.europa.eu/eli/reg/2024/1689/oj` | High-risk readiness references for risk management, logging, oversight, robustness/cybersecurity, QMS, post-market monitoring, and critical infrastructure scope | Official source / relevance mapping | 2026-06-15 |
-| NETRUNNER-CONTROLS | NETRUNNER project-defined SaaS LLM control set | `controls/llm-saas-control-set.yaml` | Control objectives, evidence examples, test methods, retest guidance | Project-defined control | 2026-06-14 |
+| SLEEPER-CONTROLS | SLEEPER project-defined SaaS LLM control set | `controls/llm-saas-control-set.yaml` | Control objectives, evidence examples, test methods, retest guidance | Project-defined control | 2026-06-14 |
 
 ## MITRE ATLAS Technique References
 
@@ -59,6 +59,14 @@ agent threats module; the single-turn probe library does not exercise them.
 | `AML.T0110.001` | Implementation | Poisoned tool implementation relevance |
 | `AML.T0110.002` | Runtime Response | Poisoned tool-result relevance |
 | `AML.T0115.002` | Publish Poisoned AI Artifacts: AI Agent Tools | Malicious published tool / registry relevance |
+| `AML.T0010.005` | AI Supply Chain Compromise: AI Agent Tool | Source-provenance / malicious-server relevance (case 3b) |
+| `AML.T0011.002` | User Execution: Poisoned AI Agent Tool | Poisoned-tool execution relevance (case 3b); ATLAS's own description cross-references `AML.T0010.005` as the supply-chain path by which the tool was introduced |
+
+Verified 2026-08-17 against `dist/v6/ATLAS-2026.07.yaml` (the current `ATLAS-latest.yaml`
+target; no `2026.08` dist exists yet). Both were absent from this table through the week 1
+refresh — the agent threats module's case-3 data (`src/data/agentCases.js`) cited them ahead
+of registration here, tracked via an in-file `ATLAS_IDS_PENDING_REGISTRY` list and a test
+asserting they were still missing. Registered here in the same change that removed that list.
 
 ## MITRE ATLAS Mitigation References
 
@@ -76,6 +84,13 @@ agent threats module; the single-turn probe library does not exercise them.
 | `AML.M0030` | Restrict AI Agent Tool Invocation on Untrusted Data | `dist/v6/ATLAS-2026.07.yaml` | Official mitigation reference for untrusted-content tool gating relevance |
 | `AML.M0032` | Segmentation of AI Agent Components | `dist/v6/ATLAS-2026.07.yaml` | Official mitigation reference for agent component isolation relevance |
 | `AML.M0033` | Input and Output Validation for AI Agent Components | `dist/v6/ATLAS-2026.07.yaml` | Official mitigation reference for validation and sanitization relevance |
+
+`AML.M0031` (Memory Hardening) sits numerically inside this range and is registered, but is
+**not cited by any case in this module** — it covers persistent agent memory/state integrity,
+which is the ASI06 memory-poisoning surface the agent module's threat-case scope explicitly
+defers (`docs/agent-module-plan.md` §"Threat cases"). Recorded here so its absence from the
+technique/mitigation tables above reads as a scope decision, not a missed registration.
+Verified 2026-08-17 against `dist/v6/ATLAS-2026.07.yaml`.
 
 ## OWASP LLM Top 10 References
 
@@ -145,13 +160,13 @@ quarterly; every citation carries the release date it was read from.
 
 ## Project-Defined Mapping Notes
 
-- The NETRUNNER controls are **not** MITRE, OWASP, NIST, ISO, CSA, or EU AI Act controls.
+- The SLEEPER controls are **not** MITRE, OWASP, NIST, ISO, CSA, or EU AI Act controls.
 - MITRE and OWASP entries are used as source-grounded risk and technique references.
 - Mappings from MITRE/OWASP entries to `LLM-*` controls are project-defined and should be treated as inferred unless a future source explicitly defines the relationship.
-- **One exception, added 2026-08-16:** the OWASP Top 10 for LLM Applications 2026 publishes Appendix A, *Related Framework Mappings*, which directly asserts LLM→ASI, LLM→ATLAS tactic, and LLM→NIST AI RMF category relationships. Those are recorded in `OWASP_PUBLISHED_CROSSWALK` (`src/data/frameworkMappings.js`) and are **direct**, not inferred. Everything else in that file remains project-defined. OWASP's NIST AI RMF mapping is at Category level (e.g. `MEASURE 2`, `MAP 4`); NETRUNNER's existing RMF references are at Function level (Govern/Map/Measure/Manage) and remain inferred.
+- **One exception, added 2026-08-16:** the OWASP Top 10 for LLM Applications 2026 publishes Appendix A, *Related Framework Mappings*, which directly asserts LLM→ASI, LLM→ATLAS tactic, and LLM→NIST AI RMF category relationships. Those are recorded in `OWASP_PUBLISHED_CROSSWALK` (`src/data/frameworkMappings.js`) and are **direct**, not inferred. Everything else in that file remains project-defined. OWASP's NIST AI RMF mapping is at Category level (e.g. `MEASURE 2`, `MAP 4`); SLEEPER's existing RMF references are at Function level (Govern/Map/Measure/Manage) and remain inferred.
 - Framework source versions asserted by the app are pinned in `FRAMEWORK_VERSIONS` (`src/data/frameworkMappings.js`). Update that constant and this ledger together.
 - AIUC-1 requirement and control IDs and short requirement names are cited directly. Control language is paraphrased, not reproduced: the `aiunderwriting/AIUC-1-Changelog` repository publishes no license.
-- MITRE ATLAS mitigation references preserve official mitigation IDs and names. NETRUNNER recommended actions and retest guidance are project-defined implementation guidance.
+- MITRE ATLAS mitigation references preserve official mitigation IDs and names. SLEEPER recommended actions and retest guidance are project-defined implementation guidance.
 - ISO/IEC 42001, NIST AI RMF, and EU AI Act references in the app are relevance indicators only. They are not compliance determinations.
 - ISO/IEC 42001 section 9 references are used to frame performance-evaluation evidence: monitoring and measurement, internal audit, and management review.
 - EU AI Act references use a SaaS / critical digital infrastructure readiness lens for CDN, edge, cybersecurity, cloud, and critical digital infrastructure SaaS providers. High-risk status depends on actual system role, intended purpose, jurisdiction, and whether the AI system is used as a safety component or falls into another high-risk category.

@@ -19,8 +19,8 @@ export default function FindingsReport({
   }, {});
   const activeCount = findings.filter(f => (f.reviewerDecision || f.reviewer_decision) !== 'FALSE_POSITIVE').length;
   const clearMessage = activeCount === 1
-    ? 'This will remove NETRUNNER-owned local case data, 1 locally stored finding, assessment metadata, and locally persisted evidence from this browser. Downloaded exports are not deleted.'
-    : `This will remove NETRUNNER-owned local case data, ${activeCount} locally stored findings, assessment metadata, and locally persisted evidence from this browser. Downloaded exports are not deleted.`;
+    ? 'This will remove SLEEPER-owned local case data, 1 locally stored finding, assessment metadata, and locally persisted evidence from this browser. Downloaded exports are not deleted.'
+    : `This will remove SLEEPER-owned local case data, ${activeCount} locally stored findings, assessment metadata, and locally persisted evidence from this browser. Downloaded exports are not deleted.`;
   const clearAnyway = () => {
     setConfirmClear(false);
     clearFindings();

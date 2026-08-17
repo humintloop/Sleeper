@@ -35,7 +35,7 @@ An evaluation case attempts to override the target model's instructions and caus
 - MITRE ATLAS: `AML.M0024` AI Telemetry Logging
 - MITRE ATLAS: `AML.M0033` Input and Output Validation for AI Agent Components
 
-## NETRUNNER Recommended Actions
+## SLEEPER Recommended Actions
 
 - Separate trusted system instructions from untrusted user content.
 - Avoid placing secrets or authorization logic in prompts.

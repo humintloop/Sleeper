@@ -1,5 +1,5 @@
 {
-  "name": "netrunner",
+  "name": "sleeper",
   "version": "0.1.0",
   "description": "Local-first lab for agentic AI threat evaluation, tool-use control testing, and framework-mapped evidence",
   "type": "module",

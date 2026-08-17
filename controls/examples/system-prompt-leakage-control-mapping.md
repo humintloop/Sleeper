@@ -34,7 +34,7 @@ An evaluation case attempts to extract the system prompt, hidden instructions, i
 - MITRE ATLAS: `AML.M0021` Generative AI Guidelines
 - MITRE ATLAS: `AML.M0022` Generative AI Model Alignment
 
-## NETRUNNER Recommended Actions
+## SLEEPER Recommended Actions
 
 - Treat system prompts as potentially discoverable.
 - Remove secrets, credentials, sensitive architecture, and authorization logic from prompt text.

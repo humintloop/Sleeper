@@ -48,9 +48,9 @@ export default function DossierHome({ C, findings, clusters, activeCase, onEnter
         <div style={{ fontSize: 11, color: C.text3, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>
           Local-first adversarial assurance
         </div>
-        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 52, color: C.amber, fontWeight: 700, letterSpacing: 10, lineHeight: 1, margin: 0 }}>NETRUNNER</h1>
+        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 52, color: C.amber, fontWeight: 700, letterSpacing: 10, lineHeight: 1, margin: 0 }}>SLEEPER</h1>
         <p style={{ fontSize: 17, color: C.text1, lineHeight: 1.65, maxWidth: 720, marginTop: 16, marginBottom: 0 }}>
-          NETRUNNER turns local LLM red-team runs into reviewable evidence, mapped control gaps, and retestable findings.
+          SLEEPER turns local LLM red-team runs into reviewable evidence, mapped control gaps, and retestable findings.
         </p>
         <p style={{ fontSize: 14, color: C.text3, lineHeight: 1.65, maxWidth: 760, marginTop: 10, marginBottom: 0 }}>
           Run structured probes in your browser, preserve the prompt and response evidence, classify the behavior, map it to controls and frameworks, then export a report a security or GRC reviewer can actually use.

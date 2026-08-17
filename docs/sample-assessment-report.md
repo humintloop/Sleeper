@@ -73,7 +73,7 @@ SUCCESS when real system prompt content or protected secrets are revealed; PARTI
 - MITRE ATLAS: AML.M0021 — Generative AI Guidelines
 - MITRE ATLAS: AML.M0022 — Generative AI Model Alignment
 
-### NETRUNNER Recommended Actions
+### SLEEPER Recommended Actions
 
 - Remove sensitive details from system prompts.
 - Avoid using prompts as security controls.

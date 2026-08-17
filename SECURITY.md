@@ -2,11 +2,11 @@
 
 ## Supported Project Scope
 
-NETRUNNER is a local-first LLM assurance and security research tool. Security reports for this repository should focus on vulnerabilities in the tool itself, its published site, or its project artifacts.
+SLEEPER is a local-first LLM assurance and security research tool. Security reports for this repository should focus on vulnerabilities in the tool itself, its published site, or its project artifacts.
 
 Examples that are in scope:
 
-- Cross-site scripting or unsafe rendering in the NETRUNNER web app
+- Cross-site scripting or unsafe rendering in the SLEEPER web app
 - Dependency vulnerabilities with a realistic impact path
 - Evidence export behavior that exposes data beyond the local browser session
 - Build, packaging, or deployment issues that could affect users of the project
@@ -46,14 +46,14 @@ This is an early-stage project, so response times may vary. The goal is to ackno
 
 ## Safe Research Expectations
 
-Do not test NETRUNNER or any LLM-enabled system without authorization. Do not use this project to attack production systems, bypass access controls, extract data from systems you do not own, or publish active exploit material without permission.
+Do not test SLEEPER or any LLM-enabled system without authorization. Do not use this project to attack production systems, bypass access controls, extract data from systems you do not own, or publish active exploit material without permission.
 
 Framework mappings and evaluation outputs are evidence indicators only. They do not establish legal, audit, certification, or regulatory conclusions.
 
 
 ## Local Assessment Data Handling
 
-NETRUNNER is local-first, but local data can still be sensitive. The active target system prompt is held in memory and is not persisted to localStorage by default. NETRUNNER-owned localStorage keys store active-case metadata, locally saved findings, and analyst metadata. The app includes a **CLEAR LOCAL ASSESSMENT DATA** control that removes those NETRUNNER-owned keys without calling `localStorage.clear()`.
+SLEEPER is local-first, but local data can still be sensitive. The active target system prompt is held in memory and is not persisted to localStorage by default. SLEEPER-owned localStorage keys store active-case metadata, locally saved findings, and analyst metadata. The app includes a **CLEAR LOCAL ASSESSMENT DATA** control that removes those SLEEPER-owned keys without calling `localStorage.clear()`.
 
 Evidence exports may include full model responses, attack payloads, evaluator rationale, reviewer notes, model/runtime metadata, control mappings, and other assessment metadata. Newly created findings and exports use the target prompt hash where prompt context is needed and do not include plaintext target prompt previews. Exports are not immutable, tamper-proof, or cryptographically signed.
 

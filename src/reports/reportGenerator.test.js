@@ -37,7 +37,7 @@ describe('report export sanitization', () => {
     const json = JSON.stringify(exported);
 
     expect(exported.exportVersion).toBe(1);
-    expect(exported.application).toBe('NETRUNNER');
+    expect(exported.application).toBe('SLEEPER');
     expect(exported.findings[0].promptHash).toBe('abc123');
     expect(exported.findings[0].promptHashAlgorithm).toBe('SHA-256');
     expect(exported.findings[0].victimPromptPreview).toBeUndefined();
