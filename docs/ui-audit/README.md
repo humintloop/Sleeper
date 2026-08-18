@@ -32,6 +32,22 @@ This pass tightened the primary portfolio path while preserving the technical re
 - Remaining opportunity: the CTA begins below the first viewport on smaller phones. This is
   acceptable for an evidence-oriented product, but a shorter hero could move it higher.
 
+### Step 3 — Control comparison after usability feedback: healthy
+
+![Visible Baseline, Partial, and Reference tool-action comparison](./03-visible-comparison-after.jpg)
+
+![Responsive tool-action comparison](./04-visible-comparison-mobile.jpg)
+
+- The original comparison exposed three verdict labels but only one profile&rsquo;s detailed result;
+  tool activity remained hidden inside the technical trace.
+- The revised comparison shows instruction trust, proposed tools, harness decision, and simulated
+  effect for all three profiles side by side.
+- Each profile can open its own full trace and Evidence Contract without running the case again.
+- On mobile, the profiles become a readable vertical story rather than compressing into three
+  narrow columns.
+- Sample Replay explicitly says that the scripted malicious intent is identical in each column;
+  live/local comparisons disclose that they use separate model calls.
+
 ## Flow health
 
 1. **Landing and product explanation — Healthy.** The product name, purpose, simulated-effect
@@ -43,8 +59,9 @@ This pass tightened the primary portfolio path while preserving the technical re
 4. **Target selection — Healthy with a conditional limitation.** Sample Replay is first and works
    without special browser capabilities. Local Model now reports capability problems inside that
    target instead of blocking the whole application.
-5. **Run and comparison — Healthy.** `Compare three profiles` is the primary action. Single-profile
-   and repeat-trial runs are visibly secondary.
+5. **Run and comparison — Healthy.** `Run & compare controls` explains what it runs and presents
+   the attempted tools, decision, and effect side by side. Single-profile and repeat-trial runs
+   are visibly secondary.
 6. **Verdict — Healthy.** The verdict now appears before the technical trace and explains the
    boundary of the claim in plain language.
 7. **Technical trace — Healthy for technical reviewers.** It remains complete but is collapsed by
@@ -73,17 +90,15 @@ This pass tightened the primary portfolio path while preserving the technical re
 
 1. Replace raw verdict enum strings in Recent Runs and exported stakeholder reports with human
    labels while retaining the raw value in JSON.
-2. Add a compact comparison summary showing the Baseline → Partial → Reference progression before
-   the selected-profile verdict card.
-3. Add a branded social-preview image and favicon; the product currently relies on the text
+2. Add a branded social-preview image and favicon; the product currently relies on the text
    wordmark alone.
-4. Run a keyboard-only and screen-reader pass. Screenshots can show layout and contrast risk, but
+3. Run a keyboard-only and screen-reader pass. Screenshots can show layout and contrast risk, but
    cannot establish focus order, announcement quality, or full accessibility compliance.
-5. Add automated contrast checks for the design tokens so muted text does not regress.
+4. Add automated contrast checks for the design tokens so muted text does not regress.
 
 ## Evidence limit
 
-The landing screenshots above were saved and visually re-opened successfully. The setup,
-comparison, verdict, trace, and Evidence Contract were inspected live in both desktop and mobile
-states. The in-app browser's exported files for those scrolled/composited states contained only
-the background layer, so they were rejected rather than used as false screenshot evidence.
+The screenshots above were saved and visually re-opened successfully. The setup, comparison,
+verdict, trace, and Evidence Contract were also inspected live in desktop and mobile states.
+Screenshots that exported only the browser&rsquo;s background layer were rejected rather than used as
+false evidence.

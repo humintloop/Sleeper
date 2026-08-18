@@ -32,6 +32,7 @@ import AgenticTracePanel from './AgenticTracePanel';
 import ControlResultsPanel from './ControlResultsPanel';
 import EvidenceContractPanel from './EvidenceContractPanel';
 import FrameworkCrosswalkPanel from './FrameworkCrosswalkPanel';
+import ComparisonStoryPanel from './ComparisonStoryPanel';
 
 const PROVIDER_DEFAULTS = {
   [PROVIDERS.ANTHROPIC]: { endpoint: 'https://api.anthropic.com/v1/messages', modelId: 'claude-sonnet-5' },
@@ -95,10 +96,13 @@ export default function AgentCaseRunner({ C, onHome }) {
 
   const [result, setResult] = useState(null); // { run, verdict, contract }
   const [comparison, setComparison] = useState({}); // { [profileId]: verdictString }
+  const [comparisonResults, setComparisonResults] = useState({}); // { [profileId]: full assessment }
+  const [comparisonProgress, setComparisonProgress] = useState(null);
   const [trialCount, setTrialCount] = useState(3);
   const [trialSummary, setTrialSummary] = useState(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState(null);
+  const resultsRef = useRef(null);
 
   // Runs previously lived only in this component's state — navigate away and
   // the run was gone with no warning. Persisted separately from the
@@ -248,21 +252,33 @@ export default function AgentCaseRunner({ C, onHome }) {
     if (!outcome) return;
     setResult(outcome);
     setComparison(prev => ({ ...prev, [profileId]: outcome.verdict.verdict }));
+    setComparisonResults(prev => ({ ...prev, [profileId]: outcome }));
     await persistRun(outcome, profileId);
+    window.requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }));
   };
 
   const handleComparative = async () => {
     const next = {};
+    const nextResults = {};
     let last = null;
-    for (const id of RUN_PROFILE_IDS) {
+    setComparisonProgress({ current: RUN_PROFILE_IDS[0], completed: 0, total: RUN_PROFILE_IDS.length });
+    for (const [index, id] of RUN_PROFILE_IDS.entries()) {
+      setComparisonProgress({ current: id, completed: index, total: RUN_PROFILE_IDS.length });
       const outcome = await runOnce(id);
-      if (!outcome) return;
+      if (!outcome) {
+        setComparisonProgress(null);
+        return;
+      }
       next[id] = outcome.verdict.verdict;
+      nextResults[id] = outcome;
       await persistRun(outcome, id);
       if (id === profileId) last = outcome;
     }
     setComparison(next);
+    setComparisonResults(nextResults);
+    setComparisonProgress(null);
     if (last) setResult(last);
+    window.requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }));
   };
 
   const handleRepeated = async () => {
@@ -401,6 +417,9 @@ export default function AgentCaseRunner({ C, onHome }) {
       <div style={section(C)}>
         <div style={fieldLabel(C)}>Control profile</div>
         <ControlProfileSelector C={C} profiles={DISPLAY_PROFILES} selectedId={profileId} onSelect={setProfileId} />
+        <div style={{ color: C.text3, fontSize: 11.5, lineHeight: 1.5, marginTop: 10 }}>
+          Your selection controls which profile gets the full verdict, trace, and Evidence Contract after comparison. The primary comparison still runs all three profiles.
+        </div>
       </div>
 
       <details style={section(C)}>
@@ -542,7 +561,7 @@ export default function AgentCaseRunner({ C, onHome }) {
           background: running ? C.hover : C.brassBg, border: `1px solid ${C.brass}`, color: C.brass,
           fontSize: 13, fontWeight: 800, letterSpacing: .5, cursor: running ? 'not-allowed' : 'pointer', borderRadius: 2,
         }}>
-          {running ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Play size={14} />} {running ? 'RUNNING…' : 'COMPARE THREE PROFILES'}
+          {running ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Play size={14} />} {running ? 'RUNNING…' : 'RUN & COMPARE CONTROLS'}
         </button>
         <button onClick={handleRun} disabled={running} style={{
           display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px',
@@ -552,6 +571,19 @@ export default function AgentCaseRunner({ C, onHome }) {
           RUN SELECTED PROFILE
         </button>
       </div>
+
+      <div style={{ color: C.text3, fontSize: 11.5, lineHeight: 1.5, marginTop: -14 }}>
+        Runs Baseline, Partial, and Reference, then shows the attempted tools, gate decision, and simulated effect side by side.
+      </div>
+
+      {comparisonProgress && (
+        <div role="status" aria-live="polite" style={{ ...section(C), padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <RefreshCw size={13} color={C.brass} style={{ animation: 'spin 1s linear infinite' }} />
+          <div style={{ color: C.text2, fontSize: 12 }}>
+            Running <strong style={{ color: C.text1 }}>{DISPLAY_PROFILES[comparisonProgress.current]?.label}</strong> · {comparisonProgress.completed + 1} of {comparisonProgress.total}
+          </div>
+        </div>
+      )}
 
       <details style={{ ...section(C), padding: '12px 14px' }}>
         <summary style={{ cursor: 'pointer', color: C.text2, fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
@@ -597,11 +629,19 @@ export default function AgentCaseRunner({ C, onHome }) {
         </div>
       )}
 
-      {result && (
-        <>
+      {(result || Object.keys(comparisonResults).length > 0) && (
+        <div ref={resultsRef} style={{ display: 'flex', flexDirection: 'column', gap: 22, scrollMarginTop: 18 }}>
+          <ComparisonStoryPanel
+            C={C}
+            results={comparisonResults}
+            profiles={DISPLAY_PROFILES}
+            selectedId={profileId}
+            onInspect={(id, outcome) => { setProfileId(id); setResult(outcome); }}
+          />
+          {result && <>
           <div>
             <div style={fieldLabel(C)}>Control results &amp; verdict</div>
-            <ControlResultsPanel C={C} verdict={result.verdict} profiles={DISPLAY_PROFILES} comparisonHistory={comparison} />
+            <ControlResultsPanel C={C} verdict={result.verdict} profiles={DISPLAY_PROFILES} comparisonHistory={Object.keys(comparisonResults).length >= 3 ? null : comparison} />
           </div>
 
           <details style={section(C)}>
@@ -617,7 +657,8 @@ export default function AgentCaseRunner({ C, onHome }) {
             <div style={fieldLabel(C)}>Evidence contract</div>
             <EvidenceContractPanel C={C} contract={result.contract} />
           </div>
-        </>
+          </>}
+        </div>
       )}
 
       {history.length > 0 && <RunHistory C={C} history={history} chainStatus={chainStatus} />}
