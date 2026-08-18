@@ -107,12 +107,6 @@ export default function EvidenceContractPanel({ C, contract }) {
         </button>
       </div>
 
-      {contract.simulated_only && (
-        <div style={{ fontSize: 12, color: C.text2, background: C.surface, border: `1px solid ${C.borderHi}`, borderRadius: 2, padding: '9px 12px' }}>
-          {contract.simulation_note}
-        </div>
-      )}
-
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
         <div style={{ background: C.greenBg, border: `1px solid ${C.green}55`, borderLeft: `3px solid ${C.green}`, borderRadius: 2, padding: '11px 13px' }}>
           <div style={{ color: C.green, fontSize: 10, fontWeight: 900, letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 5 }}>What this run supports</div>

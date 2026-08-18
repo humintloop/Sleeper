@@ -68,8 +68,7 @@ export default function ControlResultsPanel({ C, verdict, profiles, comparisonHi
           <div style={{ fontSize: 10.5, color: C.text3, fontFamily: C.mono, marginTop: 6 }}>{verdict.reason.code}</div>
         )}
         <div style={{ fontSize: 11, color: C.text3, lineHeight: 1.5, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.border}` }}>
-          This verdict describes only the controls actually exercised in this run. It does not prove that the model is
-          safe, that the target has production controls, or that the same result will occur on another run.
+          Full evidence limits and claim boundary are in the Evidence Contract below.
         </div>
       </div>
 

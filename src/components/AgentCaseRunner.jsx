@@ -103,6 +103,9 @@ export default function AgentCaseRunner({ C, onHome }) {
   const [running, setRunning] = useState(false);
   const [error, setError] = useState(null);
   const resultsRef = useRef(null);
+  const caseSectionRef = useRef(null);
+  const profileSectionRef = useRef(null);
+  const targetSectionRef = useRef(null);
 
   // Runs previously lived only in this component's state — navigate away and
   // the run was gone with no warning. Persisted separately from the
@@ -340,30 +343,35 @@ export default function AgentCaseRunner({ C, onHome }) {
         </p>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 0, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 10, color: C.text3, letterSpacing: 1.4, textTransform: 'uppercase', marginRight: 4 }}>Jump to</span>
         {[
-          { label: 'Case', done: Boolean(caseId) },
-          { label: 'Profile', done: Boolean(profileId) },
-          { label: 'Target', done: targetReady },
-          { label: 'Run', done: Boolean(result) },
-        ].map((step, i, arr) => (
-          <div key={step.label} style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 9px' }}>
-              <span style={{
-                width: 6, height: 6, borderRadius: 999,
-                background: step.done ? C.brass : C.borderHi,
-                boxShadow: step.done ? `0 0 6px ${C.brass}99` : 'none',
-              }} />
-              <span style={{ fontSize: 11, letterSpacing: .8, fontWeight: step.done ? 800 : 500, color: step.done ? C.brass : C.text3, textTransform: 'uppercase' }}>
-                {step.label}
-              </span>
-            </div>
-            {i < arr.length - 1 && <ChevronLeft size={11} color={C.border} style={{ transform: 'rotate(180deg)', margin: '0 2px' }} />}
-          </div>
+          { label: 'Case', done: Boolean(caseId), ref: caseSectionRef },
+          { label: 'Profile', done: Boolean(profileId), ref: profileSectionRef },
+          { label: 'Target', done: targetReady, ref: targetSectionRef },
+          { label: 'Run', done: Boolean(result), ref: resultsRef },
+        ].map(step => (
+          <button
+            key={step.label}
+            onClick={() => step.ref.current?.scrollIntoView({
+              behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+              block: 'start',
+            })}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 9px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+          >
+            <span style={{
+              width: 6, height: 6, borderRadius: 999,
+              background: step.done ? C.brass : C.borderHi,
+              boxShadow: step.done ? `0 0 6px ${C.brass}99` : 'none',
+            }} />
+            <span style={{ fontSize: 11, letterSpacing: .8, fontWeight: step.done ? 800 : 500, color: step.done ? C.brass : C.text3, textTransform: 'uppercase' }}>
+              {step.label}
+            </span>
+          </button>
         ))}
       </div>
 
-      <div style={section(C)}>
+      <div ref={caseSectionRef} style={section(C)}>
         <div style={fieldLabel(C)}>Case</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
           {AGENT_CASE_ORDER.map(id => {
@@ -414,7 +422,7 @@ export default function AgentCaseRunner({ C, onHome }) {
         )}
       </div>
 
-      <div style={section(C)}>
+      <div ref={profileSectionRef} style={section(C)}>
         <div style={fieldLabel(C)}>Control profile</div>
         <ControlProfileSelector C={C} profiles={DISPLAY_PROFILES} selectedId={profileId} onSelect={setProfileId} />
         <div style={{ color: C.text3, fontSize: 11.5, lineHeight: 1.5, marginTop: 10 }}>
@@ -431,7 +439,7 @@ export default function AgentCaseRunner({ C, onHome }) {
         </div>
       </details>
 
-      <div style={section(C)}>
+      <div ref={targetSectionRef} style={section(C)}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
           <div style={{ ...fieldLabel(C), marginBottom: 0 }}>Target</div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>

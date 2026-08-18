@@ -39,14 +39,16 @@ npm run build
 ```
 
 WebGPU + cross-origin isolation are required for the local-model target only;
-`public/coi-serviceworker.js` forces it on Pages. Desktop browsers only — mobile is blocked
-deliberately by `CompatGate`. The live-API target needs neither WebGPU nor a local download.
+`public/coi-serviceworker.js` forces it on Pages. There is no app-level device gate: when those
+capabilities are unavailable, `AgentCaseRunner` disables just the Local Model option and says
+why, while Sample Replay and Live API stay fully available on any device, mobile included. The
+live-API target needs neither WebGPU nor a local download.
 
 ## Layout
 
 | Path | Role |
 |---|---|
-| `src/App.jsx` | The whole shell. ~225 lines: token object `C`, `STAGE` (`HOME` / `AGENT_LAB` only), `CompatGate`, `GlobalStyle`, and a two-branch render. No business logic lives here anymore — that's all in `src/harness/`. |
+| `src/App.jsx` | The whole shell. ~125 lines: token object `C`, `STAGE` (`HOME` / `AGENT_LAB` only), `GlobalStyle`, and a two-branch render. No compatibility gating or business logic lives here — device/capability checks are scoped to `AgentCaseRunner`'s Local Model target, and everything else is in `src/harness/`. |
 | `src/components/DossierHome.jsx` | Home screen. One entry point: "Run agent case." Headline copy leads with the Baseline-vs-Reference control-profile comparison. |
 | `src/components/AgentCaseRunner.jsx` | **Start here for the UI.** Case + profile + target (live API or local model) → run → trace/verdict/contract, plus run history read from `storage.js`. |
 | `src/harness/runAgentAssessment.js` | **Start here for the logic.** Case + profile + target → run → verdict → contract. `runCaseAcrossProfiles` is the comparative arm. |
