@@ -2,10 +2,8 @@
 // scope, evidence_limitations} — not ORPHEUS's flat control_verdict string.
 //
 // Label and color come from VerdictBanner.jsx's shared verdictDisplay rather
-// than a second local copy of the same mapping — that duplication was the
-// exact confusion docs/coherence-review.md (U4) flagged: the raw enum string
-// rendered here, a different color mapping from the one other verdict
-// surfaces used.
+// than a second local copy of the same mapping — a second copy would let this
+// panel's colors drift from every other verdict surface in the app.
 import { getVerdictColor, getVerdictLabel } from './VerdictBanner';
 
 // This screen's CONTROL_* vocabulary answers "did the exercised control hold?"

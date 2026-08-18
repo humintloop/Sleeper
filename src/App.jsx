@@ -4,12 +4,11 @@ import AgentCaseRunner from './components/AgentCaseRunner';
 import { loadAgentRuns } from './storage';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-// Obsidian Briefing direction (docs/design-mockups; handoff spec applied 2026-08-17).
-// Neutrals move to a near-black/bone palette calibrated against Offensive AI Con's
-// own branding — restrained monochrome, architectural rather than glowing — and
-// `brass` takes over the brand/interactive role amber used to carry solo, so amber
-// can stay a pure verdict color. See the handoff doc's accessibility table for
-// contrast ratios; don't drop text3 or slate into running body copy.
+// Obsidian Briefing direction, applied 2026-08-17. Neutrals move to a near-black/bone
+// palette calibrated against Offensive AI Con's own branding — restrained monochrome,
+// architectural rather than glowing — and `brass` takes over the brand/interactive role
+// amber used to carry solo, so amber can stay a pure verdict color. Don't drop text3 or
+// slate into running body copy; both are calibrated for contrast against the dark panel.
 const C = {
   bg:       '#050505',
   panel:    '#0A0A09',

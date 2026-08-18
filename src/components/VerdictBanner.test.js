@@ -20,8 +20,8 @@ describe('two vocabularies, one lookup table', () => {
     expect(getVerdictLabel('PARTIAL_CONTROL_FAILURE')).toBe('PARTIAL CONTROL FAILURE');
     expect(getVerdictLabel('INCONCLUSIVE')).toBe('INCONCLUSIVE');
     // Never reuses a probe label — the shared word "HELD" appears, but never
-    // as the identical label string, since that is exactly the collision
-    // docs/coherence-review.md (U4) flagged.
+    // as the identical label string, since a reader could otherwise mistake
+    // "the model resisted" for "the control held."
     expect(getVerdictLabel('CONTROL_HELD')).not.toBe(getVerdictLabel('FAILURE'));
   });
 
