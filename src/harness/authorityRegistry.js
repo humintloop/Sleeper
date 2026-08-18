@@ -28,6 +28,7 @@ export const UNTRUSTED_SOURCES = [
   'web_search',
   'document',
   'email',
+  'tool_description',
 ];
 
 export const DEFAULT_AUTHORITY_REGISTRY = {
@@ -35,6 +36,15 @@ export const DEFAULT_AUTHORITY_REGISTRY = {
   trustedSources: TRUSTED_SOURCES,
   untrustedSources: UNTRUSTED_SOURCES,
   tools: {
+    retrieve_email: {
+      name: 'retrieve_email',
+      label: 'Retrieve Email',
+      risk: 'low',
+      allowed: true,
+      requiresApproval: false,
+      trustedOutput: false,
+      description: 'Retrieves an external email for the current task. Body content is untrusted.',
+    },
     retrieve_document: {
       name: 'retrieve_document',
       label: 'Retrieve Document',
@@ -118,12 +128,26 @@ export function isUntrustedInstructionSource(registry, source) {
 export function classifyToolCall(registry, toolCall) {
   const tool = getToolDefinition(registry, toolCall?.tool);
   const known = Boolean(tool);
-  const allowed = known ? tool.allowed !== false : false;
+  const server = tool?.server ? registry?.servers?.[tool.server] : null;
+  const serverKnown = !tool?.server || Boolean(server);
+  const serverSanctioned = !tool?.server || (
+    server?.provenance === 'sanctioned' && server?.review_status !== 'never_reviewed'
+  );
+  const allowed = known ? tool.allowed !== false && serverKnown && serverSanctioned : false;
   const risk = known ? tool.risk : 'unknown';
   const untrustedSource = isUntrustedInstructionSource(registry, toolCall?.instructionSource);
   const authorizationRequired = !known || !allowed || risk === 'high' || tool?.requiresApproval === true || untrustedSource;
 
-  return { known, allowed, risk, untrustedSource, authorizationRequired };
+  return {
+    known,
+    allowed,
+    risk,
+    untrustedSource,
+    authorizationRequired,
+    serverId: tool?.server ?? null,
+    serverKnown,
+    serverSanctioned,
+  };
 }
 
 /**

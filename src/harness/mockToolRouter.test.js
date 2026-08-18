@@ -5,6 +5,7 @@ import {
   isUntrustedInstructionSource,
 } from './authorityRegistry';
 import { runToolAuthorizationGate } from './controls/toolAuthorizationGate';
+import { fingerprintToolCall } from './approvalPolicy';
 import {
   MOCK_TOOL_RESULT_STATUS,
   SIMULATION_NOTE,
@@ -212,8 +213,17 @@ describe('denials', () => {
   });
 
   it('simulates the effect once approval is recorded', () => {
-    const result = route(call('write_file', { path: 'a', content: 'b' }), 'enforce', {}, {
-      approvalGranted: true,
+    const toolCall = call('write_file', { path: 'a', content: 'b' });
+    const result = route(toolCall, 'enforce', {}, {
+      approvalRecord: {
+        decision: 'approve',
+        call_fingerprint: fingerprintToolCall(toolCall),
+        itemized: true,
+        context_complete: true,
+        risk_surfaced: true,
+        prior_denial_surfaced: true,
+        current: true,
+      },
     });
     expect(result.status).toBe(MOCK_TOOL_RESULT_STATUS.OK);
     expect(result.authorization.approval_granted).toBe(true);

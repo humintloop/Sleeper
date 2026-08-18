@@ -2,8 +2,9 @@
 // status / scope, not ORPHEUS's flat field list. Field groups below mirror the
 // actual object shape in src/harness/evidenceContract.js.
 import { Check, Copy, Download, FileJson } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { EVIDENCE_CLASSES as EVIDENCE_CLASS_NAMES } from '../harness/evidenceContract';
+import { verifyContractIntegrity } from '../harness/runProvenance';
 
 function downloadJson(contract) {
   const blob = new Blob([JSON.stringify(contract, null, 2)], { type: 'application/json' });
@@ -46,7 +47,19 @@ function Group({ C, title, children }) {
 
 export default function EvidenceContractPanel({ C, contract }) {
   const [copied, setCopied] = useState(false);
+  const [integrityVerified, setIntegrityVerified] = useState(null);
   const json = useMemo(() => contract ? JSON.stringify(contract, null, 2) : '', [contract]);
+
+  useEffect(() => {
+    let active = true;
+    setIntegrityVerified(null);
+    if (contract?.integrity?.digest) {
+      verifyContractIntegrity(contract).then(valid => {
+        if (active) setIntegrityVerified(valid);
+      });
+    }
+    return () => { active = false; };
+  }, [contract]);
 
   if (!contract) {
     return (
@@ -124,7 +137,52 @@ export default function EvidenceContractPanel({ C, contract }) {
           <Field C={C} label="Mode" value={contract.mode} />
           <Field C={C} label="Target" value={contract.target} />
         </Group>
+
+        {contract.secondary_oracle && (
+          <Group C={C} title="Secondary model oracle">
+            <Field C={C} label="Status" value={contract.secondary_oracle.status} tone={contract.secondary_oracle.status === 'completed' ? undefined : 'ochre'} />
+            <Field C={C} label="Assessment" value={contract.secondary_oracle.assessment ?? 'no valid assessment'} />
+            <Field C={C} label="Blinded judged verdict" value={contract.secondary_oracle.judged_verdict ?? 'no valid verdict'} />
+            <Field C={C} label="Malicious goal adoption" value={contract.secondary_oracle.malicious_goal_adoption ?? 'unclear'} />
+            <Field C={C} label="Unauthorized action intent" value={contract.secondary_oracle.unauthorized_action_intent ?? 'unclear'} />
+            <Field C={C} label="Judge model" value={contract.secondary_oracle.model_id} />
+            <Field C={C} label="Independence effect" value="none — remains I0" tone="ochre" />
+          </Group>
+        )}
+
+        {contract.run_manifest && (
+          <Group C={C} title="Run provenance">
+            <Field C={C} label="Source revision" value={contract.run_manifest.source_revision} tone={contract.run_manifest.source_revision === 'unrecorded' ? 'ochre' : undefined} />
+            <Field C={C} label="Dirty source tree" value={contract.run_manifest.source_dirty === null ? 'unknown' : contract.run_manifest.source_dirty ? 'yes' : 'no'} tone={contract.run_manifest.source_dirty ? 'ochre' : undefined} />
+            <Field C={C} label="Configuration digest" value={contract.run_manifest.configuration_digest} />
+            <Field C={C} label="Case digest" value={contract.run_manifest.case_digest} />
+            <Field C={C} label="Tool schema digest" value={contract.run_manifest.tool_schema_digest} />
+          </Group>
+        )}
+
+        {contract.integrity && (
+          <Group C={C} title="Integrity boundary">
+            <Field C={C} label="Scheme" value={contract.integrity.scheme} />
+            <Field C={C} label="Digest" value={contract.integrity.digest} />
+            <Field C={C} label="Signed" value={contract.integrity.signed ? 'yes' : 'no'} tone="ochre" />
+            <Field C={C} label="Replay resistant" value={contract.integrity.replay_resistant ? 'yes' : 'no'} tone="ochre" />
+            <Field C={C} label="Self-digest verifies" value={integrityVerified === null ? 'checking' : integrityVerified ? 'yes' : 'no'} tone={integrityVerified === false ? 'red' : undefined} />
+            <Field C={C} label="External witness" value={contract.integrity.external_witness?.verified === true ? 'verified' : contract.integrity.external_witness?.verified === false ? 'failed' : 'not configured'} tone={contract.integrity.external_witness?.verified === false ? 'red' : undefined} />
+          </Group>
+        )}
       </div>
+
+      {contract.integrity?.limitation && (
+        <div style={{ fontSize: 11.5, color: C.text3, lineHeight: 1.55 }}>
+          {contract.integrity.limitation}
+        </div>
+      )}
+
+      {integrityVerified === false && (
+        <div role="alert" style={{ fontSize: 12, color: C.red, background: C.redBg, border: `1px solid ${C.red}55`, padding: '9px 12px', borderRadius: 2 }}>
+          This record no longer matches its stored self-digest. Treat it as modified browser-local evidence.
+        </div>
+      )}
 
       {contract.limitations?.length > 0 && (
         <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.5 }}>

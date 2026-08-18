@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { runPiiLeakageGuard } from './piiLeakageGuard';
+import { redactSeededValues, runPiiLeakageGuard } from './piiLeakageGuard';
 
 // Synthetic seeds only. Never seed a scenario with real data.
 const SEEDS = {
@@ -76,5 +76,19 @@ describe('inputs', () => {
   it('does not throw on non-string text', () => {
     expect(() => runPiiLeakageGuard(undefined, 'block_or_redact', SEEDS)).not.toThrow();
     expect(runPiiLeakageGuard(null, 'block_or_redact', SEEDS).sensitive_data_exposed).toBe(false);
+  });
+});
+
+describe('structured argument redaction', () => {
+  it('redacts seeded values from nested values, arrays, and keys', () => {
+    const guarded = redactSeededValues({
+      body: { value: SEEDS.ssn },
+      list: [SEEDS.apiKey],
+      [SEEDS.name]: 'owner',
+    }, SEEDS);
+
+    expect(JSON.stringify(guarded)).not.toContain(SEEDS.ssn);
+    expect(JSON.stringify(guarded)).not.toContain(SEEDS.apiKey);
+    expect(JSON.stringify(guarded)).not.toContain(SEEDS.name);
   });
 });

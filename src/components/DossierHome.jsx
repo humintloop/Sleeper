@@ -7,9 +7,8 @@ import { ChevronRight, FlaskConical, History } from 'lucide-react';
 // as one clear CTA rather than a grid of competing options.
 //
 // Headline copy leads with the control-profile comparison rather than the
-// old single-turn-vs-agent framing: it's the sharper, already-true version of
-// the claim — runCaseAcrossProfiles already runs this exact comparison, same
-// case and model, Baseline vs Reference.
+// old single-turn-vs-agent framing. Outcomes remain observations: independent
+// model runs can decline to act, fail, degrade, or leave controls unexercised.
 export default function DossierHome({ C, onAgentLab, agentRunsCount = 0 }) {
   return (
     <main style={{ width: '100%', maxWidth: 760, margin: '0 auto', padding: '64px 24px 96px', display: 'flex', flexDirection: 'column', gap: 34 }}>
@@ -23,12 +22,13 @@ export default function DossierHome({ C, onAgentLab, agentRunsCount = 0 }) {
           and turns the result into reviewable evidence mapped to control frameworks.
         </p>
         <p style={{ fontSize: 14, color: C.text3, lineHeight: 1.7, maxWidth: 700, marginTop: 10, marginBottom: 0 }}>
-          Run the same case against the same model under two postures — <strong style={{ color: C.text2 }}>Baseline</strong>,
-          no controls active, and <strong style={{ color: C.text2 }}>Reference</strong>, full controls active — and
-          compare. Baseline resolves <strong style={{ color: C.red }}>CONTROL_FAILED</strong>; Reference resolves{' '}
-          <strong style={{ color: C.green }}>CONTROL_HELD</strong>. That comparison is the actual claim: it is not
-          whether a model refuses one adversarial prompt in isolation, but whether the harness and process controls
-          around it are what actually stop the action.
+          Run the same case under <strong style={{ color: C.text2 }}>Baseline</strong>,{' '}
+          <strong style={{ color: C.text2 }}>Partial</strong>, and <strong style={{ color: C.text2 }}>Reference</strong>{' '}
+          postures, then compare what the target attempted, what each deterministic control actually did, and what
+          evidence survived. Use the disclosed Sample Replay for a reliable no-key harness walkthrough, or a live/local
+          model when you need evidence of model decisions.
+          Outcomes are observed, not guaranteed: a run can fail, hold within a stated scope, degrade, or remain{' '}
+          <strong style={{ color: C.blue }}>INCONCLUSIVE</strong> when the model never exercises the control.
         </p>
       </section>
 
@@ -49,9 +49,9 @@ export default function DossierHome({ C, onAgentLab, agentRunsCount = 0 }) {
           </div>
         </div>
         <div style={{ fontSize: 13.5, color: C.text3, lineHeight: 1.65, maxWidth: 600 }}>
-          Pick one of four threat cases and a control profile, point it at a live target or a local model, and
-          watch the ReAct loop decide, turn by turn — tool call, authorization decision, result — through to a
-          verdict and an Evidence Contract.
+          Pick one of four threat cases and a control profile, then use the no-key Sample Replay or point it at a
+          live/local model. Follow tool intent, authorization decisions, and simulated results through to a verdict
+          and an Evidence Contract.
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 4, flexWrap: 'wrap' }}>
           <span style={{ color: C.brass, fontSize: 12.5, fontWeight: 900, letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6 }}>

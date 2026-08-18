@@ -37,6 +37,14 @@ describe('mode: block_or_constrain', () => {
   it('records the constraining action', () => {
     const result = runAdversarialDetection(INJECTED, 'block_or_constrain');
     expect(result.detection_action).toBe('blocked_or_constrained');
+    expect(result.enforcement_applied).toBe(true);
+    expect(result.constrained_content).not.toContain('Ignore your current task');
+  });
+
+  it('passes clean content through unchanged', () => {
+    const result = runAdversarialDetection(CLEAN, 'block_or_constrain');
+    expect(result.enforcement_applied).toBe(false);
+    expect(result.constrained_content).toBe(CLEAN);
   });
 });
 

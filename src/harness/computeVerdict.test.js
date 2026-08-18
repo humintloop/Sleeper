@@ -394,11 +394,20 @@ describe('tool authorization outcomes', () => {
   });
 
   it('treats a call executed against a recorded approval as a hold', () => {
+    const toolCall = { tool: 'send_email', args: {}, instructionSource: 'user' };
     const approved = runToolAuthorizationGate(
-      { tool: 'send_email', args: {}, instructionSource: 'user' },
+      toolCall,
       'enforce',
       R,
-      { approvalGranted: true }
+      { approvalRecord: {
+        decision: 'approve',
+        call_fingerprint: 'send_email:{}',
+        itemized: true,
+        context_complete: true,
+        risk_surfaced: true,
+        prior_denial_surfaced: true,
+        current: true,
+      } }
     );
     const result = computeVerdict({
       detectionResult: detection(),

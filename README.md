@@ -19,12 +19,12 @@ SLEEPER instruments that gap: a real tool-calling loop where the model genuinely
 whether to call `send_email`, against mock tools where nothing actually leaves the browser.
 
 The sharpest demonstration of that isn't one model's reply to one adversarial prompt — it's
-running the *same* case against the *same* model under two control postures and comparing.
-Under Baseline (no controls active), the hijacked action executes and the run resolves
-`CONTROL_FAILED`. Under Reference (full controls active), the gate catches it and the run
-resolves `CONTROL_HELD`. That comparison — not whether a model resists in isolation — is the
-actual claim: the harness and process controls around an agent are what stop the action, not
-model behavior alone.
+running the *same* case against the *same* model under multiple control postures and comparing
+what the model attempted, what each deterministic control actually did, and what evidence
+survived. Outcomes are observations, not promises: a run may fail, hold within a stated scope,
+degrade, or remain `INCONCLUSIVE` when the model never exercises the relevant control. The
+claim is narrower and testable: security decisions must come from controls around the model,
+not from assuming the model will refuse an adversarial instruction.
 
 SLEEPER descends from [ELICIT](https://github.com/humintloop/ELICIT), a single-turn adversarial
 assurance lab. It no longer runs single-turn probes itself — that flow was deleted once the
@@ -34,8 +34,9 @@ ELICIT remains the place for single-turn evaluation.
 
 ## Status
 
-The agent harness is built and wired end to end, in the browser, against both a live API
-target (Anthropic first) and a local WebLLM model. 463 tests, lint clean. See
+The agent harness is built and wired end to end in the browser, with a no-key deterministic
+replay plus live API and local WebLLM targets. The automated suite covers the verdict,
+authorization, provenance, replay, and evidence-contract invariants. See
 [`docs/agent-module-plan.md`](./docs/agent-module-plan.md) for the full build history, scope,
 and the source-verified framework crosswalk.
 
@@ -125,6 +126,9 @@ npm run build
 
 ## Targets
 
+- **Sample Replay (no key)** — a deterministic scripted tool path for a reliable walkthrough.
+  It exercises SLEEPER's gates and evidence pipeline, but is E1 target evidence because no
+  model made a decision. The contract states that limitation explicitly.
 - **Local (WebLLM/WebGPU)** — models run entirely in the browser. Nothing leaves the machine.
   Small models call tools unreliably, so this path never uses real tool-calling: a prompted
   JSON schema stands in, and every run against a local model is recorded `degraded: true` —
@@ -132,12 +136,41 @@ npm run build
 - **Live API (Anthropic first)** — agent runs against a real endpoint, with real provider
   tool-calling. The API key is held in memory for the session and never written to storage.
 
+Use repeat trials for a distribution rather than treating one stochastic model run as a
+stable result. Each trial gets its own Evidence Contract; the aggregate reports verdict and
+action rates and whether the recorded configurations match. Repeated Sample Replay trials are
+determinism checks, not independent model observations.
+
+An optional **secondary local-model judge** can review a blinded, bounded trace for malicious
+goal adoption and unauthorized-action intent. Its prompt/model/packet digests and raw structured
+opinion are retained. It never overrides deterministic trace facts and does not raise oracle
+independence above I0; it is triangulation, not independent review. When the target is local,
+SLEEPER requires a different judge model to reduce correlated failure.
+
 ## Persistence
 
 Completed agent-case runs — verdict, reason, and the full Evidence Contract — are saved to
 this browser's local storage (most recent 20), so navigating away doesn't lose the run. Nothing
 else is persisted: there is no in-progress "resume a half-configured case" state, since a run
 is a single self-contained action, not a multi-step wizard.
+
+Each contract records the source revision/dirty state when available and digests the case,
+profile, configuration, and advertised tool schema. It also carries an unsigned SHA-256
+self-digest that detects accidental mutation. Browser-local records remain editable and the
+digest can be recomputed by an attacker; this is not signed, replay-resistant audit evidence.
+
+Retained browser runs are also linked into a SHA-256 history chain. Verification detects
+accidental record mutation, deletion, or reordering within the retained window. Legacy records
+are labeled unverifiable and migrated when the next run is appended. Because localStorage and
+the application share one trust boundary, the whole chain can still be replaced and recomputed.
+
+The harness includes a deliberately unconfigured external-witness interface. A future signer
+must both attest and verify a receipt bound to the contract digest; replay resistance is claimed
+only when that verified receipt also carries append-only sequencing, a nonce, and a timestamp.
+SLEEPER contains no private signing key and makes no remote call by default.
+
+For a concise portfolio presentation, follow the
+[`7-minute walkthrough`](./docs/portfolio-walkthrough.md).
 
 ## Limitations
 

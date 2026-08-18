@@ -45,6 +45,7 @@ export const MOCK_TOOL_RESULT_STATUS = {
  * registry's untrusted set — tool output is never a trusted instruction source.
  */
 const DOWNSTREAM_INSTRUCTION_SOURCE = {
+  retrieve_email: 'email',
   retrieve_document: 'retrieved_content',
   web_search: 'web_search',
   read_file: 'tool_output',
@@ -262,6 +263,13 @@ function resolveScenarioContent(entry, context) {
  */
 function defaultResultFor(toolName, args) {
   switch (toolName) {
+    case 'retrieve_email': {
+      const ref = firstString(args, ['messageId', 'message_id', 'id', 'query', 'subject']) ?? 'latest';
+      return {
+        content: `Email '${ref}' (simulated). No scenario content was supplied, so the body is empty.`,
+        metadata: { message_ref: ref },
+      };
+    }
     case 'retrieve_document': {
       const ref = firstString(args, ['documentId', 'document_id', 'id', 'query', 'title']) ?? 'untitled';
       return {

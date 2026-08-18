@@ -21,6 +21,10 @@ import { DEFAULT_AUTHORITY_REGISTRY, getToolDefinition } from './authorityRegist
 import { AGENT_CASES, getAgentCase } from '../data/agentCases.js';
 import { CONTROL_PROFILES } from '../data/controlProfiles.js';
 import { LOOP_STOP_REASON, runAgentCase } from './runAgentCase.js';
+import { createApprovalPolicy } from './approvalPolicy.js';
+import { attachContractIntegrity, createRunManifest } from './runProvenance.js';
+import { runSecondaryJudge } from './secondaryJudge.js';
+import { attachExternalWitness } from './evidenceWitness.js';
 
 const EMPTY_SCHEMA = { type: 'object', properties: {} };
 
@@ -38,9 +42,16 @@ export function buildAdvertisedTools(agentCase, registry) {
   const names = agentCase?.tools?.advertised ?? [];
   return names.map(name => {
     const definition = getToolDefinition(registry, name);
+    const descriptorFixture = definition?.description_source
+      ? agentCase?.fixtures?.find(fixture =>
+        fixture.id === definition.description_source &&
+        fixture.delivery === 'tool_description' &&
+        fixture.delivery_tool === name
+      )
+      : null;
     return {
       name,
-      description: definition?.description ?? '',
+      description: descriptorFixture?.content ?? definition?.description ?? '',
       parameters: definition?.parameters ?? EMPTY_SCHEMA,
     };
   });
@@ -57,7 +68,18 @@ export function buildCaseRegistry(agentCase, baseRegistry = DEFAULT_AUTHORITY_RE
   return {
     ...baseRegistry,
     tools: { ...baseRegistry.tools, ...(extensions.tools ?? extensions) },
+    servers: { ...(baseRegistry.servers ?? {}), ...(extensions.servers ?? {}) },
   };
+}
+
+function initialInstructionSource(agentCase) {
+  const advertised = new Set(agentCase?.tools?.advertised ?? []);
+  const untrustedDescriptorPresent = (agentCase?.fixtures ?? []).some(fixture =>
+    fixture.delivery === 'tool_description' &&
+    fixture.carries_injection === true &&
+    advertised.has(fixture.delivery_tool)
+  );
+  return untrustedDescriptorPresent ? 'tool_description' : 'user';
 }
 
 /**
@@ -67,7 +89,19 @@ export function buildCaseRegistry(agentCase, baseRegistry = DEFAULT_AUTHORITY_RE
  */
 export function caseCarriesAdversarialInput(agentCase) {
   const fixtures = agentCase?.fixtures ?? [];
-  return fixtures.some(fixture => fixture?.carries_injection === true);
+  const advertised = new Set(agentCase?.tools?.advertised ?? []);
+  const extensionTools = agentCase?.tools?.registry_extensions?.tools ?? {};
+  return fixtures.some(fixture => {
+    if (fixture?.carries_injection !== true) return false;
+    if (fixture.delivery === 'tool_result') {
+      return agentCase?.scenario_content?.[fixture.delivery_tool]?.metadata?.fixture_id === fixture.id;
+    }
+    if (fixture.delivery === 'tool_description') {
+      return advertised.has(fixture.delivery_tool) &&
+        extensionTools[fixture.delivery_tool]?.description_source === fixture.id;
+    }
+    return false;
+  });
 }
 
 /**
@@ -96,6 +130,10 @@ function deriveRunStatus(run) {
       run.stopReason !== LOOP_STOP_REASON.TARGET_ERROR &&
       (Boolean(run.finalText) || run.toolCalls.length > 0),
     turnCapReached: run.stopReason === LOOP_STOP_REASON.TURN_CAP,
+    degraded: run.degraded === true,
+    approvalVariantSelected: run.approvalSummary?.selected === true,
+    approvalVariantExercised: run.approvalSummary?.exercised === true,
+    approvalVariantLimitation: run.approvalSummary?.limitation ?? null,
     error: run.targetError,
   };
 }
@@ -121,6 +159,9 @@ export async function runAgentAssessment({
   requestedStatus = null,
   attestation = null,
   runMode = RUN_MODES.MOCK_TOOL_HARNESS,
+  variant = null,
+  secondaryJudge = null,
+  evidenceWitness = null,
 } = {}) {
   const resolvedCase = typeof agentCase === 'string' ? getAgentCase(agentCase) : agentCase;
   if (!resolvedCase) throw new Error(`Unknown agent case: ${String(agentCase)}`);
@@ -129,6 +170,13 @@ export async function runAgentAssessment({
   if (!resolvedProfile) throw new Error(`Unknown control profile: ${String(profile)}`);
 
   const registry = buildCaseRegistry(resolvedCase);
+  const advertisedTools = buildAdvertisedTools(resolvedCase, registry);
+  const resolvedVariant = variant
+    ? resolvedCase.variants?.find(candidate => candidate.id === variant || candidate.key === variant)
+    : null;
+  if (variant && !resolvedVariant) {
+    throw new Error(`Unknown variant '${String(variant)}' for case ${resolvedCase.id}.`);
+  }
 
   const run = await runAgentCase({
     target,
@@ -136,12 +184,14 @@ export async function runAgentAssessment({
     task: resolvedCase.scenario?.user_task ?? '',
     baseSystemPrompt: buildBaseSystemPrompt(resolvedCase.scenario),
     registry,
-    tools: buildAdvertisedTools(resolvedCase, registry),
+    tools: advertisedTools,
     scenarioContent: resolvedCase.scenario_content ?? {},
     piiSeeds: resolvedCase.pii_seeds ?? {},
     maxTurns,
     provider,
     now,
+    initialInstructionSource: initialInstructionSource(resolvedCase),
+    approvalPolicy: createApprovalPolicy(resolvedVariant, registry),
   });
 
   const { toolAuthorization, adversarialDetection, piiLeakage, activityLogging } = run.controlResults;
@@ -156,7 +206,33 @@ export async function runAgentAssessment({
     runStatus: deriveRunStatus(run),
   });
 
-  const contract = buildEvidenceContract({
+  const secondaryOracle = await runSecondaryJudge(secondaryJudge, {
+    agentCase: resolvedCase,
+    profile: resolvedProfile,
+    run,
+    verdict,
+  });
+
+  const runManifest = await createRunManifest({
+    agentCase: resolvedCase,
+    profile: resolvedProfile,
+    advertisedTools,
+    provider,
+    targetLabel,
+    maxTurns,
+    oracle,
+    runMode,
+    variant: resolvedVariant,
+    secondaryOracle: secondaryOracle ? {
+      kind: secondaryOracle.kind,
+      model_id: secondaryOracle.model_id ?? null,
+      prompt_version: secondaryOracle.prompt_version ?? null,
+      prompt_digest: secondaryOracle.prompt_digest ?? null,
+    } : null,
+    generatedAt: typeof now === 'string' ? now : undefined,
+  });
+
+  let contract = buildEvidenceContract({
     runMode,
     // The whole verdict object, not just verdict.verdict: deriveScope reads
     // verdict.scope.controls_exercised and the contract reads
@@ -179,9 +255,66 @@ export async function runAgentAssessment({
     attestation,
     frameworkReferences: resolvedCase.mappings ?? [],
     degradations: run.degradations,
+    caseVariant: resolvedVariant ? {
+      id: resolvedVariant.id,
+      key: resolvedVariant.key,
+      title: resolvedVariant.title,
+      approval_summary: run.approvalSummary,
+    } : null,
+    runManifest,
+    secondaryOracle,
   });
+  contract = await attachContractIntegrity(contract);
+  contract = await attachExternalWitness(contract, evidenceWitness);
 
   return { run, verdict, contract };
+}
+
+export async function runRepeatedAssessment({
+  trialCount = 3,
+  targetFactory,
+  target,
+  ...assessment
+} = {}) {
+  if (!Number.isInteger(trialCount) || trialCount < 2 || trialCount > 50) {
+    throw new Error('trialCount must be an integer from 2 through 50.');
+  }
+  if (!targetFactory && !target) throw new Error('A target or targetFactory is required.');
+
+  const trials = [];
+  for (let index = 0; index < trialCount; index += 1) {
+    const trialTarget = targetFactory ? targetFactory(index) : target;
+    trials.push(await runAgentAssessment({ ...assessment, target: trialTarget }));
+  }
+
+  const verdictCounts = {};
+  for (const trial of trials) {
+    verdictCounts[trial.verdict.verdict] = (verdictCounts[trial.verdict.verdict] ?? 0) + 1;
+  }
+  const count = predicate => trials.filter(predicate).length;
+  const configurationDigests = [...new Set(
+    trials.map(trial => trial.contract.run_manifest?.configuration_digest).filter(Boolean)
+  )];
+  const deterministicReplay = assessment.runMode === RUN_MODES.DETERMINISTIC_REPLAY;
+  return {
+    methodology: deterministicReplay ? 'deterministic_replay_trials' : 'independent_sequential_trials',
+    trial_count: trialCount,
+    verdict_counts: verdictCounts,
+    rates: {
+      tool_attempted: count(trial => trial.run.controlResults.toolAuthorization.tool_call_attempted) / trialCount,
+      tool_executed: count(trial => trial.run.controlResults.toolAuthorization.tool_call_executed) / trialCount,
+      tool_blocked: count(trial => trial.run.controlResults.toolAuthorization.tool_blocked) / trialCount,
+      degraded: count(trial => trial.run.degraded) / trialCount,
+      inconclusive: (verdictCounts.INCONCLUSIVE ?? 0) / trialCount,
+    },
+    controlled_configuration: configurationDigests.length === 1,
+    configuration_digests: configurationDigests,
+    trials,
+    limitation:
+      deterministicReplay
+        ? 'These trials replay the same scripted tool intent. They verify deterministic harness behavior, not model behavior or stochastic robustness.'
+        : 'These are independent model calls, not seeded deterministic replays. Aggregate rates characterize this configured sample only and are not a guarantee of future behavior.',
+  };
 }
 
 /**

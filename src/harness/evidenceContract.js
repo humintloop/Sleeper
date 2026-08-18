@@ -81,6 +81,7 @@ export const EVIDENCE_STATUSES = ['mapped', 'executed', 'independently_reviewed'
 /** The run modes in the plan's normative class-assignment table. */
 export const RUN_MODES = {
   MOCK_TOOL_HARNESS: 'mock_tool_harness',
+  DETERMINISTIC_REPLAY: 'deterministic_replay',
   LIVE_API_SINGLE_TURN: 'live_api_single_turn',
   FRAMEWORK_CROSSWALK: 'framework_crosswalk',
 };
@@ -101,6 +102,7 @@ export const VERDICT_VOCABULARIES = {
 
 const DEFAULT_MODE_FOR_RUN_MODE = {
   [RUN_MODES.MOCK_TOOL_HARNESS]: CONTRACT_MODES.AGENT,
+  [RUN_MODES.DETERMINISTIC_REPLAY]: CONTRACT_MODES.AGENT,
   [RUN_MODES.LIVE_API_SINGLE_TURN]: CONTRACT_MODES.SINGLE_TURN,
   [RUN_MODES.FRAMEWORK_CROSSWALK]: CONTRACT_MODES.MAPPING,
 };
@@ -191,6 +193,7 @@ export function deriveEvidenceClass({
   authorizationDecisions = [],
   toolResults = [],
   contentOrigins = [],
+  degraded = false,
 } = {}) {
   if (runMode === RUN_MODES.FRAMEWORK_CROSSWALK) {
     return finalizeClasses({
@@ -218,18 +221,25 @@ export function deriveEvidenceClass({
     });
   }
 
-  // Mock-tool harness.
+  // Mock-tool harness or deterministic walkthrough replay.
   const fixtureBacked = contentOrigins.includes('scenario');
   const originNote = describeContentOrigins(contentOrigins);
   const target = {
-    class: 'E2',
-    class_name: EVIDENCE_CLASSES.E2,
-    subject: 'target_model',
+    class: runMode === RUN_MODES.DETERMINISTIC_REPLAY ? 'E1' : 'E2',
+    class_name: runMode === RUN_MODES.DETERMINISTIC_REPLAY ? EVIDENCE_CLASSES.E1 : EVIDENCE_CLASSES.E2,
+    subject: runMode === RUN_MODES.DETERMINISTIC_REPLAY ? 'scripted_replay_fixture' : 'target_model',
     rationale:
-      `The target's behavior under simulated tool effects was characterized${
-        fixtureBacked ? ' against scenario-supplied content' : ''
-      }. Nothing about the target's own controls was enforced or observed enforcing.${originNote}`,
+      runMode === RUN_MODES.DETERMINISTIC_REPLAY
+        ? `A deterministic scripted path exercised the harness. No model decision was observed.${originNote}`
+        : `The target's behavior under simulated tool effects was characterized${
+          fixtureBacked ? ' against scenario-supplied content' : ''
+        }. Nothing about the target's own controls was enforced or observed enforcing.${originNote}`,
   };
+
+  if (degraded) {
+    target.rationale += ' Tool-call intent was reconstructed from degraded output, so no enforcement-class claim is made.';
+    return finalizeClasses({ target, controlPoint: null });
+  }
 
   if (!gateBlockedSomething(authorizationDecisions, toolResults)) {
     return finalizeClasses({ target, controlPoint: null });
@@ -241,8 +251,7 @@ export function deriveEvidenceClass({
       class: 'E3',
       class_name: EVIDENCE_CLASSES.E3,
       subject: 'sleeper_tool_authorization_gate',
-      rationale:
-        "A proposed tool call was denied at SLEEPER's own authorization gate, which is enforcement evidence for that gate. The control point sits in this harness, not in the target, so the target's class stays E2.",
+      rationale: `A proposed tool call was denied at SLEEPER's own authorization gate, which is enforcement evidence for that gate. The control point sits in this harness, not in the target, so it does not raise the target above ${target.class}.`,
     },
   });
 }
@@ -274,14 +283,33 @@ function finalizeClasses({ target, controlPoint }) {
  * written by this project and reads records this project also emits, so the
  * default is I0 and a caller has to say otherwise explicitly.
  */
-export function deriveIndependence(oracle = 'self_authored') {
-  const level = ORACLE_INDEPENDENCE[oracle] ?? 'I0';
+export function deriveIndependence(oracle = 'self_authored', attestation = null) {
+  const requestedLevel = ORACLE_INDEPENDENCE[oracle] ?? 'I0';
+  const externalArtifactRecorded =
+    isRecord(attestation) &&
+    typeof attestation.reference === 'string' &&
+    attestation.reference.trim().length > 0 &&
+    [attestation.reviewer, attestation.issuer].some(
+      value => typeof value === 'string' && value.trim().length > 0
+    );
+  const downgraded = requestedLevel !== 'I0' && !externalArtifactRecorded;
+  const level = downgraded ? 'I0' : requestedLevel;
   const rationale = {
     I0: 'The controls, their records, and the verdict function are all authored by this project. Nothing here is an independent check on our own implementation.',
     I1: "The oracle was reimplemented independently of the implementation under test, but still runs inside this project's harness.",
     I2: 'The oracle is a sensor outside the target\'s control.',
   }[level];
-  return { level, level_name: INDEPENDENCE_LEVELS[level], oracle, rationale };
+  return {
+    level,
+    level_name: INDEPENDENCE_LEVELS[level],
+    oracle: downgraded ? 'self_authored' : oracle,
+    oracle_requested: oracle,
+    downgraded,
+    rationale,
+    note: downgraded
+      ? `Oracle independence ${requestedLevel} requires a referenced external artifact and identified reviewer or issuer. None was recorded, so this contract remains I0.`
+      : null,
+  };
 }
 
 /**
@@ -304,7 +332,14 @@ export function deriveStatus({ runMode, requestedStatus = null, attestation = nu
     };
   }
   const needsExternalArtifact = requestedStatus === 'independently_reviewed' || requestedStatus === 'certified';
-  if (needsExternalArtifact && !isRecord(attestation)) {
+  const externalArtifactRecorded =
+    isRecord(attestation) &&
+    typeof attestation.reference === 'string' &&
+    attestation.reference.trim().length > 0 &&
+    [attestation.reviewer, attestation.issuer].some(
+      value => typeof value === 'string' && value.trim().length > 0
+    );
+  if (needsExternalArtifact && !externalArtifactRecorded) {
     return {
       status: baseline,
       requested: requestedStatus,
@@ -436,6 +471,11 @@ export function buildExecutionChain({
   const approvalEvents = authorizationDecisions.filter(isRecord).map(decision => ({
     authorization_required: decision.authorization_required === true,
     approval_granted: decision.approval_granted === true,
+    approval_valid: decision.approval_valid === true,
+    approval_invalid_reasons: Array.isArray(decision.approval_invalid_reasons)
+      ? decision.approval_invalid_reasons
+      : [],
+    approval_record: isRecord(decision.approval_record) ? decision.approval_record : null,
   }));
 
   return {
@@ -487,6 +527,9 @@ function normalizeFrameworkReferences(references) {
  * @param {Array}  [input.frameworkReferences]  `{ framework, id, relationship }`.
  * @param {string[]} [input.degradations]  recorded rather than hidden, e.g. the
  *   local-model JSON tool-call fallback.
+ * @param {object} [input.caseVariant] selected executable scenario variant.
+ * @param {object} [input.runManifest] exact case, profile, target and tool-schema provenance.
+ * @param {object} [input.secondaryOracle] optional semantic judge opinion; never changes the primary verdict.
  * @returns {object} a flat, serializable contract.
  */
 export function buildEvidenceContract({
@@ -507,6 +550,9 @@ export function buildEvidenceContract({
   attestation = null,
   frameworkReferences = [],
   degradations = [],
+  caseVariant = null,
+  runManifest = null,
+  secondaryOracle = null,
 } = {}) {
   if (!Object.values(RUN_MODES).includes(runMode)) {
     throw new Error(
@@ -528,8 +574,9 @@ export function buildEvidenceContract({
     authorizationDecisions: decisions,
     toolResults: results,
     contentOrigins,
+    degraded: degradations.length > 0,
   });
-  const independence = deriveIndependence(oracle);
+  const independence = deriveIndependence(oracle, attestation);
   const status = deriveStatus({ runMode, requestedStatus, attestation });
   const scope = deriveScope({ mode: contractMode, verdict });
   const executionChain = buildExecutionChain({
@@ -542,12 +589,18 @@ export function buildEvidenceContract({
   // A mock-tool run is simulated by construction. The router says so on every
   // result it produces, and the contract carries the stronger of the two claims.
   const simulatedOnly =
-    runMode === RUN_MODES.MOCK_TOOL_HARNESS || results.some(result => result?.simulated_only === true);
+    runMode === RUN_MODES.MOCK_TOOL_HARNESS ||
+    runMode === RUN_MODES.DETERMINISTIC_REPLAY ||
+    results.some(result => result?.simulated_only === true);
 
   const limitations = [
     ...(verdict?.evidence_limitations ?? []),
     ...(status.note ? [status.note] : []),
+    ...(independence.note ? [independence.note] : []),
     ...(simulatedOnly ? [SIMULATION_BOUNDARY] : []),
+    ...(runMode === RUN_MODES.DETERMINISTIC_REPLAY
+      ? ['Deterministic replay: tool intent came from a scripted fixture, not a model. No model decision was observed; this demonstrates harness behavior only.']
+      : []),
     ...(independence.level === 'I0'
       ? ['Oracle independence I0: the controls and the verdict function are authored by this project.']
       : []),
@@ -555,11 +608,26 @@ export function buildEvidenceContract({
       ? []
       : [`Execution chain incomplete (AIUC-1 E015). Not retained: ${executionChain.gaps.join(', ')}.`]),
     ...degradations,
+    ...(runManifest?.source_revision === 'unrecorded'
+      ? ['Source revision was not injected at build time; case, profile, configuration, and tool-schema digests remain available.']
+      : []),
+    ...(runManifest?.source_dirty === true
+      ? ['The application was built or served from a dirty working tree; the recorded Git revision does not identify all source changes.']
+      : []),
+    ...(runManifest
+      ? ['The contract receives an unsigned SHA-256 self-digest after assembly. It provides no authenticity, non-repudiation, or replay resistance.']
+      : []),
+    ...(secondaryOracle
+      ? [secondaryOracle.limitation ?? 'A secondary oracle was recorded, but it does not alter the primary verdict or independence level.']
+      : []),
   ];
 
   return {
     contract_version: CONTRACT_VERSION,
     case_id: caseId,
+    case_variant: caseVariant,
+    run_manifest: runManifest,
+    secondary_oracle: secondaryOracle,
     profile_id: profile?.id ?? verdict?.scope?.profile_id ?? null,
     target: targetLabel,
     run_mode: runMode,

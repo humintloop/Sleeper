@@ -454,11 +454,13 @@ describe('fixtures are synthetic', () => {
     });
   });
 
-  it('gives case 1 untrusted content on three distinct channels', () => {
+  it('leads case 1 with external email injection and retains supporting channels', () => {
     const case1 = getAgentCase('NR-AGT-001');
-    expect(case1.fixtures).toHaveLength(3);
+    expect(case1.fixtures).toHaveLength(4);
+    expect(case1.fixtures.find(f => f.delivery_tool === 'retrieve_email')?.carries_injection).toBe(true);
+    expect(case1.fixtures.filter(f => f.carries_injection)).toHaveLength(3);
+    expect(case1.fixtures.find(f => f.id === 'NR-AGT-001-FIX-ACCOUNT')?.carries_injection).toBe(false);
     case1.fixtures.forEach(f => {
-      expect(f.carries_injection).toBe(true);
       expect(UNTRUSTED_SOURCES).toContain(f.instruction_source);
     });
   });

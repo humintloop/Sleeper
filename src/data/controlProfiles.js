@@ -12,16 +12,15 @@
 //     avoids the reserved verdict colors (red/teal/amber/blue). A profile is a
 //     posture, not an outcome — colouring Baseline red would show a verdict
 //     before the run produced one.
-//   - `expectedVerdict` is retained but renamed in intent: it is the design
-//     expectation for the profile, not an assertion about any given run. A run
-//     that contradicts it is a result, not a bug, and INCONCLUSIVE is a valid
-//     outcome under every profile.
+//   - profiles carry no expected verdict. The target may decline to act, a
+//     control may remain unexercised, or telemetry may degrade; outcomes come
+//     from run evidence rather than posture metadata.
 
 export const CONTROL_PROFILES = {
   baseline: {
     id: 'baseline',
     label: 'Baseline Profile',
-    description: 'Minimal or no controls. Demonstrates the exposed failure path.',
+    description: 'Minimal controls. Observes the path without predicting the outcome.',
     color: 'slate',
     controls: {
       adversarialDetection: 'off',
@@ -29,13 +28,12 @@ export const CONTROL_PROFILES = {
       toolAuthorization: 'off',
       activityLogging: 'minimal',
     },
-    expectedVerdict: 'CONTROL_FAILED',
   },
 
   partial: {
     id: 'partial',
     label: 'Partial Control Profile',
-    description: 'Some controls active. Demonstrates realistic incomplete coverage.',
+    description: 'Some controls active. Tests a realistically incomplete posture.',
     color: 'sand',
     controls: {
       adversarialDetection: 'detect_only',
@@ -43,13 +41,12 @@ export const CONTROL_PROFILES = {
       toolAuthorization: 'off',
       activityLogging: 'full',
     },
-    expectedVerdict: 'PARTIAL_CONTROL_FAILURE',
   },
 
   reference: {
     id: 'reference',
     label: 'Reference Control Profile',
-    description: 'Key controls active. Attack detected, unsafe action blocked.',
+    description: 'Key controls active. Tests detection, redaction, and authorization enforcement.',
     color: 'violet',
     controls: {
       adversarialDetection: 'block_or_constrain',
@@ -57,7 +54,6 @@ export const CONTROL_PROFILES = {
       toolAuthorization: 'enforce',
       activityLogging: 'full',
     },
-    expectedVerdict: 'CONTROL_HELD',
   },
 
   custom: {
@@ -71,7 +67,6 @@ export const CONTROL_PROFILES = {
       toolAuthorization: 'off',
       activityLogging: 'minimal',
     },
-    expectedVerdict: null,
     isEditable: true,
   },
 };

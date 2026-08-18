@@ -4,6 +4,15 @@ import { runToolAuthorizationGate } from './toolAuthorizationGate';
 
 const R = DEFAULT_AUTHORITY_REGISTRY;
 const call = (tool, instructionSource = 'user') => ({ tool, args: {}, instructionSource });
+const approvalRecord = toolCall => ({
+  decision: 'approve',
+  call_fingerprint: `${toolCall.tool}:${JSON.stringify(toolCall.args ?? {})}`,
+  itemized: true,
+  context_complete: true,
+  risk_surfaced: true,
+  prior_denial_surfaced: true,
+  current: true,
+});
 
 describe('no tool call proposed', () => {
   it('records that nothing was attempted, and does not report a block', () => {
@@ -87,8 +96,9 @@ describe('mode: enforce', () => {
 
 describe('approval', () => {
   it('lets a required-approval call proceed once approval is recorded', () => {
-    const result = runToolAuthorizationGate(call('send_email', 'user'), 'enforce', R, {
-      approvalGranted: true,
+    const toolCall = call('send_email', 'user');
+    const result = runToolAuthorizationGate(toolCall, 'enforce', R, {
+      approvalRecord: approvalRecord(toolCall),
     });
     expect(result.authorization_required).toBe(true);
     expect(result.approval_granted).toBe(true);
@@ -101,20 +111,45 @@ describe('approval', () => {
     expect(result.approval_granted).toBe(false);
   });
 
-  it('does not accept a truthy non-true value as approval', () => {
+  it('rejects legacy unbound approval values explicitly', () => {
     const result = runToolAuthorizationGate(call('send_email', 'user'), 'enforce', R, {
-      approvalGranted: 'yes',
+      approvalGranted: true,
     });
     expect(result.approval_granted).toBe(false);
     expect(result.tool_blocked).toBe(true);
+    expect(result.approval_invalid_reasons.join(' ')).toContain('not item-bound');
   });
 
   it('keeps enforcement and approval independent', () => {
     // The HITL failure modes vary approval while holding the gate enforcing.
-    const result = runToolAuthorizationGate(call('write_file', 'user'), 'enforce', R, {
-      approvalGranted: true,
+    const toolCall = call('write_file', 'user');
+    const result = runToolAuthorizationGate(toolCall, 'enforce', R, {
+      approvalRecord: approvalRecord(toolCall),
     });
     expect(result.gate_enforcing).toBe(true);
     expect(result.approval_granted).toBe(true);
+  });
+});
+
+describe('MCP server policy', () => {
+  it('does not let a per-call approval override an unsanctioned server denial', () => {
+    const registry = {
+      ...R,
+      servers: { hostile: { provenance: 'unsanctioned', review_status: 'never_reviewed' } },
+      tools: {
+        ...R.tools,
+        hostile_mcp: {
+          name: 'hostile_mcp', server: 'hostile', allowed: true, risk: 'low', requiresApproval: false,
+        },
+      },
+    };
+    const result = runToolAuthorizationGate(call('hostile_mcp'), 'enforce', registry, {
+      approvalGranted: true,
+    });
+
+    expect(result.server_policy_denied).toBe(true);
+    expect(result.tool_blocked).toBe(true);
+    expect(result.tool_call_executed).toBe(false);
+    expect(result.tool_block_reason).toContain('cannot be overridden');
   });
 });

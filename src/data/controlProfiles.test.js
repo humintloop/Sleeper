@@ -86,22 +86,14 @@ describe('posture ordering', () => {
   });
 });
 
-describe('expected verdicts', () => {
-  it('uses the control vocabulary, not the single-turn probe vocabulary', () => {
-    const CONTROL_VOCABULARY = [
-      'CONTROL_HELD',
-      'PARTIAL_CONTROL_FAILURE',
-      'CONTROL_FAILED',
-      'INCONCLUSIVE',
-    ];
+describe('observed verdicts', () => {
+  it('does not predict an outcome from profile configuration', () => {
     for (const profile of Object.values(CONTROL_PROFILES)) {
-      if (profile.expectedVerdict === null) continue;
-      expect(CONTROL_VOCABULARY).toContain(profile.expectedVerdict);
+      expect(profile).not.toHaveProperty('expectedVerdict');
     }
   });
 
-  it('leaves the custom profile without an expectation', () => {
-    expect(CONTROL_PROFILES.custom.expectedVerdict).toBeNull();
+  it('keeps the custom profile editable without predicting an outcome', () => {
     expect(CONTROL_PROFILES.custom.isEditable).toBe(true);
   });
 });

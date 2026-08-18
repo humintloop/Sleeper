@@ -4,7 +4,9 @@
 // missing entirely — everything in src/harness/ (weeks 2-5) had no UI surface
 // until this file.
 //
-// Two target types:
+// Three target types:
+//   - Sample replay: deterministic scripted tool intent. It needs no key and
+//     proves only how this harness handles the path, never model behavior.
 //   - Live API (Anthropic first, per CLAUDE.md): APITargetAdapter, real
 //     provider tool-calling.
 //   - Local model: WebLLMLocalTarget wraps an MLCEngine instance this screen
@@ -13,16 +15,18 @@
 //     models do not call tools reliably, so every local run is `degraded:
 //     true` by construction; that is surfaced on the trace panel, never
 //     hidden.
-import { useRef, useState } from 'react';
-import { MLCEngine } from '@mlc-ai/web-llm';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, History, Play, RefreshCw } from 'lucide-react';
 import { AGENT_CASES, AGENT_CASE_ORDER } from '../data/agentCases';
 import { CONTROL_PROFILES } from '../data/controlProfiles';
 import { VICTIM_MODELS } from '../data/victimModels';
-import { runAgentAssessment } from '../harness/runAgentAssessment';
+import { runAgentAssessment, runRepeatedAssessment } from '../harness/runAgentAssessment';
 import { WebLLMLocalTarget } from '../harness/webllmLocalTarget';
+import { PortfolioReplayTarget } from '../harness/replayTarget';
+import { WebLLMSecondaryJudge } from '../harness/secondaryJudge';
+import { RUN_MODES } from '../harness/evidenceContract';
 import { APITargetAdapter, PROVIDERS } from '../api/adapter';
-import { loadAgentRuns, saveAgentRun } from '../storage';
+import { loadAgentRuns, saveAgentRun, verifyEvidenceChain } from '../storage';
 import ControlProfileSelector from './ControlProfileSelector';
 import AgenticTracePanel from './AgenticTracePanel';
 import ControlResultsPanel from './ControlResultsPanel';
@@ -35,7 +39,7 @@ const PROVIDER_DEFAULTS = {
 };
 
 const RUN_PROFILE_IDS = ['baseline', 'partial', 'reference'];
-const TARGET_TYPES = { LIVE: 'live', LOCAL: 'local' };
+const TARGET_TYPES = { SAMPLE: 'sample', LIVE: 'live', LOCAL: 'local' };
 
 function section(C) {
   return { background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: '16px 18px' };
@@ -64,8 +68,9 @@ function toggleBtn(C, active) {
 export default function AgentCaseRunner({ C, onHome }) {
   const [caseId, setCaseId] = useState(AGENT_CASE_ORDER[0]);
   const [profileId, setProfileId] = useState('reference');
+  const [variantId, setVariantId] = useState(null);
 
-  const [targetType, setTargetType] = useState(TARGET_TYPES.LIVE);
+  const [targetType, setTargetType] = useState(TARGET_TYPES.SAMPLE);
 
   // Live target state.
   const [provider, setProvider] = useState(PROVIDERS.ANTHROPIC);
@@ -79,8 +84,18 @@ export default function AgentCaseRunner({ C, onHome }) {
   const [localStatus, setLocalStatus] = useState('idle'); // idle | loading | ready | error
   const [localProgress, setLocalProgress] = useState('');
 
+  // Optional semantic triangulation. This is intentionally a separate engine
+  // and model selection from the target, and never raises oracle independence.
+  const judgeEngineRef = useRef(null);
+  const [judgeEnabled, setJudgeEnabled] = useState(false);
+  const [judgeModelId, setJudgeModelId] = useState(VICTIM_MODELS[2]?.id || VICTIM_MODELS[1]?.id || VICTIM_MODELS[0].id);
+  const [judgeStatus, setJudgeStatus] = useState('idle');
+  const [judgeProgress, setJudgeProgress] = useState('');
+
   const [result, setResult] = useState(null); // { run, verdict, contract }
   const [comparison, setComparison] = useState({}); // { [profileId]: verdictString }
+  const [trialCount, setTrialCount] = useState(3);
+  const [trialSummary, setTrialSummary] = useState(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState(null);
 
@@ -89,14 +104,29 @@ export default function AgentCaseRunner({ C, onHome }) {
   // single-turn findings store (see storage.js) since the two use different
   // verdict vocabularies and record shapes.
   const [history, setHistory] = useState(() => loadAgentRuns());
+  const [chainStatus, setChainStatus] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    verifyEvidenceChain(history).then(status => {
+      if (active) setChainStatus(status);
+    });
+    return () => { active = false; };
+  }, [history]);
 
   const agentCase = AGENT_CASES[caseId];
+  const selectedVariantId = agentCase?.variants?.length > 0
+    ? (variantId ?? agentCase.variants[0].id)
+    : null;
 
   const loadLocalModel = async () => {
     setLocalStatus('loading');
     setError(null);
     try {
-      if (!engineRef.current) engineRef.current = new MLCEngine();
+      if (!engineRef.current) {
+        const { MLCEngine } = await import('@mlc-ai/web-llm');
+        engineRef.current = new MLCEngine();
+      }
       await engineRef.current.reload(localModelId, { initProgressCallback: p => setLocalProgress(p.text) });
       setLocalStatus('ready');
     } catch (err) {
@@ -105,7 +135,33 @@ export default function AgentCaseRunner({ C, onHome }) {
     }
   };
 
+  const loadJudgeModel = async () => {
+    setJudgeStatus('loading');
+    setError(null);
+    try {
+      if (!judgeEngineRef.current) {
+        const { MLCEngine } = await import('@mlc-ai/web-llm');
+        judgeEngineRef.current = new MLCEngine();
+      }
+      await judgeEngineRef.current.reload(judgeModelId, { initProgressCallback: p => setJudgeProgress(p.text) });
+      setJudgeStatus('ready');
+    } catch (err) {
+      setJudgeStatus('error');
+      setError(err?.message || String(err));
+    }
+  };
+
+  const buildSecondaryJudge = () => judgeEnabled && judgeStatus === 'ready'
+    ? new WebLLMSecondaryJudge({ engine: judgeEngineRef.current, modelId: judgeModelId })
+    : null;
+
   const buildTarget = () => {
+    if (targetType === TARGET_TYPES.SAMPLE) {
+      return new PortfolioReplayTarget({
+        agentCase,
+        variant: agentCase?.variants?.find(item => item.id === selectedVariantId) ?? null,
+      });
+    }
     if (targetType === TARGET_TYPES.LOCAL) {
       return new WebLLMLocalTarget({ engine: engineRef.current });
     }
@@ -113,17 +169,32 @@ export default function AgentCaseRunner({ C, onHome }) {
     return new APITargetAdapter({ endpoint: defaults.endpoint, apiKey: apiKey.trim(), modelId: modelId.trim() || defaults.modelId });
   };
 
-  const targetReady = targetType === TARGET_TYPES.LOCAL ? localStatus === 'ready' : Boolean(apiKey.trim());
-  const targetLabel = targetType === TARGET_TYPES.LOCAL
-    ? `webllm-local:${localModelId}`
-    : `${provider}:${modelId.trim() || PROVIDER_DEFAULTS[provider].modelId}`;
-  const targetProvider = targetType === TARGET_TYPES.LOCAL ? PROVIDERS.GENERIC : provider;
+  const targetReady = targetType === TARGET_TYPES.SAMPLE
+    ? true
+    : targetType === TARGET_TYPES.LOCAL ? localStatus === 'ready' : Boolean(apiKey.trim());
+  const targetLabel = targetType === TARGET_TYPES.SAMPLE
+    ? `deterministic-replay:${caseId}`
+    : targetType === TARGET_TYPES.LOCAL
+      ? `webllm-local:${localModelId}`
+      : `${provider}:${modelId.trim() || PROVIDER_DEFAULTS[provider].modelId}`;
+  const targetProvider = targetType === TARGET_TYPES.LIVE ? provider : PROVIDERS.GENERIC;
+  const targetRunMode = targetType === TARGET_TYPES.SAMPLE
+    ? RUN_MODES.DETERMINISTIC_REPLAY
+    : RUN_MODES.MOCK_TOOL_HARNESS;
 
   const runOnce = async (targetProfileId) => {
     if (!targetReady) {
       setError(targetType === TARGET_TYPES.LOCAL
         ? 'Load a local model before running a case.'
         : 'An API key is required. It is held in memory for this session only and never stored.');
+      return null;
+    }
+    if (judgeEnabled && judgeStatus !== 'ready') {
+      setError('Load the secondary judge model, or disable secondary judging, before running.');
+      return null;
+    }
+    if (judgeEnabled && targetType === TARGET_TYPES.LOCAL && judgeModelId === localModelId) {
+      setError('Choose a judge model different from the local target model to reduce correlated failures.');
       return null;
     }
     setRunning(true);
@@ -135,6 +206,9 @@ export default function AgentCaseRunner({ C, onHome }) {
         target: buildTarget(),
         provider: targetProvider,
         targetLabel,
+        variant: selectedVariantId,
+        runMode: targetRunMode,
+        secondaryJudge: buildSecondaryJudge(),
       });
     } catch (err) {
       setError(err?.message || String(err));
@@ -147,7 +221,7 @@ export default function AgentCaseRunner({ C, onHome }) {
   // Trimmed to case/profile metadata, the verdict, and the contract — not the
   // full event stream/messages, which are large and only useful for the run
   // that is currently on screen, not for a history list.
-  const persistRun = (outcome, targetProfileId) => {
+  const persistRun = async (outcome, targetProfileId) => {
     const record = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       timestamp: new Date().toISOString(),
@@ -161,7 +235,7 @@ export default function AgentCaseRunner({ C, onHome }) {
       degraded: Boolean(outcome.run?.degraded),
       contract: outcome.contract,
     };
-    setHistory(saveAgentRun(record));
+    setHistory(await saveAgentRun(record));
   };
 
   const handleRun = async () => {
@@ -169,7 +243,7 @@ export default function AgentCaseRunner({ C, onHome }) {
     if (!outcome) return;
     setResult(outcome);
     setComparison(prev => ({ ...prev, [profileId]: outcome.verdict.verdict }));
-    persistRun(outcome, profileId);
+    await persistRun(outcome, profileId);
   };
 
   const handleComparative = async () => {
@@ -179,11 +253,50 @@ export default function AgentCaseRunner({ C, onHome }) {
       const outcome = await runOnce(id);
       if (!outcome) return;
       next[id] = outcome.verdict.verdict;
-      persistRun(outcome, id);
+      await persistRun(outcome, id);
       if (id === profileId) last = outcome;
     }
     setComparison(next);
     if (last) setResult(last);
+  };
+
+  const handleRepeated = async () => {
+    if (!targetReady) {
+      setError(targetType === TARGET_TYPES.LOCAL
+        ? 'Load a local model before running trials.'
+        : 'An API key is required. It is held in memory for this session only and never stored.');
+      return;
+    }
+    if (judgeEnabled && judgeStatus !== 'ready') {
+      setError('Load the secondary judge model, or disable secondary judging, before running trials.');
+      return;
+    }
+    if (judgeEnabled && targetType === TARGET_TYPES.LOCAL && judgeModelId === localModelId) {
+      setError('Choose a judge model different from the local target model to reduce correlated failures.');
+      return;
+    }
+    setRunning(true);
+    setError(null);
+    try {
+      const repeated = await runRepeatedAssessment({
+        trialCount,
+        agentCase: caseId,
+        profile: profileId,
+        variant: selectedVariantId,
+        targetFactory: () => buildTarget(),
+        provider: targetProvider,
+        targetLabel,
+        runMode: targetRunMode,
+        secondaryJudge: buildSecondaryJudge(),
+      });
+      for (const outcome of repeated.trials) await persistRun(outcome, profileId);
+      setTrialSummary(repeated);
+      setResult(repeated.trials.at(-1));
+    } catch (err) {
+      setError(err?.message || String(err));
+    } finally {
+      setRunning(false);
+    }
   };
 
   return (
@@ -196,12 +309,13 @@ export default function AgentCaseRunner({ C, onHome }) {
 
       <div>
         <div style={{ fontSize: 11, color: C.text3, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>
-          Agent threat case &middot; live ReAct run
+          Agent threat case &middot; controlled harness run
         </div>
         <h1 style={{ fontSize: 28, color: C.text1, fontWeight: 600, letterSpacing: '0.02em', margin: 0 }}>Run agent case</h1>
         <p style={{ fontSize: 13, color: C.text3, lineHeight: 1.6, maxWidth: 720, marginTop: 10 }}>
-          Real tool-call intent, simulated tool effect — nothing this screen does leaves the browser or acts on
-          anything. The model genuinely decides whether to call a tool; the mock router decides what it sees back.
+          Tool-call intent, simulated tool effect — nothing this screen does leaves the browser or acts on
+          anything. Live and local targets capture model decisions; Sample Replay uses a disclosed script to
+          demonstrate the harness without claiming model evidence.
         </p>
       </div>
 
@@ -235,7 +349,10 @@ export default function AgentCaseRunner({ C, onHome }) {
             const c = AGENT_CASES[id];
             const active = id === caseId;
             return (
-              <button key={id} onClick={() => setCaseId(id)} style={{
+              <button key={id} onClick={() => {
+                setCaseId(id);
+                setVariantId(AGENT_CASES[id]?.variants?.[0]?.id ?? null);
+              }} style={{
                 textAlign: 'left', padding: '10px 12px', borderRadius: 2, cursor: 'pointer',
                 background: active ? C.surface : C.panel,
                 border: `1px solid ${active ? C.brass : C.border}`,
@@ -251,6 +368,28 @@ export default function AgentCaseRunner({ C, onHome }) {
           <p style={{ fontSize: 12.5, color: C.text2, lineHeight: 1.6, marginTop: 12, marginBottom: 0 }}>
             {agentCase.scenario?.narrative}
           </p>
+        )}
+        {agentCase?.variants?.length > 0 && (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ ...fieldLabel(C), marginBottom: 7 }}>Executable approval variant</div>
+            <div style={{ display: 'grid', gap: 7, gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
+              {agentCase.variants.map(variant => {
+                const active = selectedVariantId === variant.id;
+                return (
+                  <button key={variant.id} onClick={() => setVariantId(variant.id)} style={{
+                    textAlign: 'left', padding: '9px 10px', cursor: 'pointer', borderRadius: 2,
+                    background: active ? C.surface : 'transparent',
+                    border: `1px solid ${active ? C.brass : C.border}`,
+                    color: C.text1,
+                  }}>
+                    <div style={{ fontSize: 11, color: active ? C.brass : C.text3, fontFamily: C.mono }}>{variant.id}</div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 2 }}>{variant.title}</div>
+                    <div style={{ fontSize: 11.5, lineHeight: 1.45, color: C.text3, marginTop: 4 }}>{variant.description}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         )}
       </div>
 
@@ -270,14 +409,22 @@ export default function AgentCaseRunner({ C, onHome }) {
           <div style={{ display: 'flex', gap: 6 }}>
             <button style={toggleBtn(C, targetType === TARGET_TYPES.LIVE)} onClick={() => setTargetType(TARGET_TYPES.LIVE)}>LIVE API</button>
             <button style={toggleBtn(C, targetType === TARGET_TYPES.LOCAL)} onClick={() => setTargetType(TARGET_TYPES.LOCAL)}>LOCAL MODEL</button>
+            <button style={toggleBtn(C, targetType === TARGET_TYPES.SAMPLE)} onClick={() => setTargetType(TARGET_TYPES.SAMPLE)}>SAMPLE REPLAY</button>
           </div>
         </div>
 
-        {targetType === TARGET_TYPES.LIVE ? (
+        {targetType === TARGET_TYPES.SAMPLE ? (
+          <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.6 }}>
+            Zero-key deterministic walkthrough. Scripted tool intent exercises the real provenance, authorization,
+            mock-effect, trace, verdict, and Evidence Contract pipeline. It is labeled E1 for the target because no
+            model decision is observed; any E3 claim applies only to SLEEPER&rsquo;s own gate.
+          </div>
+        ) : targetType === TARGET_TYPES.LIVE ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
             <div>
-              <div style={{ ...fieldLabel(C), marginBottom: 4 }}>Provider</div>
+              <label htmlFor="agent-provider" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>Provider</label>
               <select
+                id="agent-provider"
                 value={provider}
                 onChange={e => { const p = e.target.value; setProvider(p); setModelId(PROVIDER_DEFAULTS[p].modelId); }}
                 style={input(C)}
@@ -287,12 +434,13 @@ export default function AgentCaseRunner({ C, onHome }) {
               </select>
             </div>
             <div>
-              <div style={{ ...fieldLabel(C), marginBottom: 4 }}>Model ID</div>
-              <input value={modelId} onChange={e => setModelId(e.target.value)} style={input(C)} />
+              <label htmlFor="agent-model-id" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>Model ID</label>
+              <input id="agent-model-id" value={modelId} onChange={e => setModelId(e.target.value)} style={input(C)} />
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
-              <div style={{ ...fieldLabel(C), marginBottom: 4 }}>API key</div>
+              <label htmlFor="agent-api-key" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>API key</label>
               <input
+                id="agent-api-key"
                 type="password"
                 value={apiKey}
                 onChange={e => setApiKey(e.target.value)}
@@ -314,8 +462,8 @@ export default function AgentCaseRunner({ C, onHome }) {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, alignItems: 'end' }}>
               <div>
-                <div style={{ ...fieldLabel(C), marginBottom: 4 }}>Model</div>
-                <select value={localModelId} onChange={e => { setLocalModelId(e.target.value); setLocalStatus('idle'); }} style={input(C)} disabled={localStatus === 'loading'}>
+                <label htmlFor="agent-local-model" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>Model</label>
+                <select id="agent-local-model" value={localModelId} onChange={e => { setLocalModelId(e.target.value); setLocalStatus('idle'); }} style={input(C)} disabled={localStatus === 'loading'}>
                   {VICTIM_MODELS.map(m => (
                     <option key={m.id} value={m.id}>{m.quickStart ? 'Quick start — ' : ''}{m.name} ({m.size})</option>
                   ))}
@@ -340,6 +488,40 @@ export default function AgentCaseRunner({ C, onHome }) {
         )}
       </div>
 
+      <div style={section(C)}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ ...fieldLabel(C), marginBottom: 4 }}>Secondary local-model judge</div>
+            <div style={{ fontSize: 12, color: C.text3, lineHeight: 1.5, maxWidth: 660 }}>
+              Optional semantic triangulation of goal adoption and unauthorized intent. It cannot override deterministic
+              trace facts and does not raise independence above I0. A distinct model is required for a local target.
+            </div>
+          </div>
+          <button style={toggleBtn(C, judgeEnabled)} onClick={() => setJudgeEnabled(enabled => !enabled)}>
+            {judgeEnabled ? 'ENABLED' : 'DISABLED'}
+          </button>
+        </div>
+        {judgeEnabled && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1fr) auto', gap: 12, alignItems: 'end', marginTop: 12 }}>
+            <div>
+              <label htmlFor="secondary-judge-model" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>Judge model</label>
+              <select id="secondary-judge-model" value={judgeModelId} onChange={event => { setJudgeModelId(event.target.value); setJudgeStatus('idle'); }} style={input(C)} disabled={judgeStatus === 'loading'}>
+                {VICTIM_MODELS.map(model => <option key={model.id} value={model.id}>{model.name} ({model.size})</option>)}
+              </select>
+            </div>
+            <button onClick={loadJudgeModel} disabled={judgeStatus === 'loading' || judgeStatus === 'ready'} style={{
+              ...toggleBtn(C, judgeStatus === 'ready'), minWidth: 150, height: 36,
+              cursor: judgeStatus === 'loading' || judgeStatus === 'ready' ? 'not-allowed' : 'pointer',
+            }}>
+              {judgeStatus === 'ready' ? '● JUDGE LOADED' : judgeStatus === 'loading' ? 'LOADING…' : 'LOAD JUDGE'}
+            </button>
+            {judgeStatus === 'loading' && judgeProgress && (
+              <div style={{ gridColumn: '1 / -1', fontSize: 11.5, color: C.text3, fontFamily: C.mono }}>{judgeProgress}</div>
+            )}
+          </div>
+        )}
+      </div>
+
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <button onClick={handleRun} disabled={running} style={{
           display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px',
@@ -355,10 +537,40 @@ export default function AgentCaseRunner({ C, onHome }) {
         }}>
           RUN ACROSS BASELINE / PARTIAL / REFERENCE
         </button>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 7, color: C.text3, fontSize: 11 }}>
+          TRIALS
+          <input
+            aria-label="Repeat trial count"
+            type="number"
+            min="2"
+            max="10"
+            value={trialCount}
+            onChange={event => setTrialCount(Math.max(2, Math.min(10, Number(event.target.value) || 2)))}
+            style={{ ...input(C), width: 62, padding: '7px 8px' }}
+          />
+        </label>
+        <button onClick={handleRepeated} disabled={running} style={{
+          display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px',
+          background: 'transparent', border: `1px solid ${C.borderHi}`, color: C.text2,
+          fontSize: 13, fontWeight: 700, letterSpacing: .5, cursor: running ? 'not-allowed' : 'pointer', borderRadius: 2,
+        }}>
+          RUN REPEAT TRIALS
+        </button>
       </div>
 
+      {trialSummary && (
+        <div style={{ ...section(C), fontSize: 12, color: C.text2, lineHeight: 1.55 }}>
+          <div style={{ ...fieldLabel(C), marginBottom: 7 }}>Repeat-trial summary</div>
+          <div>{trialSummary.trial_count} independent sequential calls · controlled configuration: {trialSummary.controlled_configuration ? 'yes' : 'no'}</div>
+          <div style={{ marginTop: 4, fontFamily: C.mono }}>
+            {Object.entries(trialSummary.verdict_counts).map(([verdict, count]) => `${verdict}: ${count}`).join(' · ')}
+          </div>
+          <div style={{ marginTop: 5, color: C.text3 }}>{trialSummary.limitation}</div>
+        </div>
+      )}
+
       {error && (
-        <div style={{ padding: '12px 14px', background: C.redBg, border: `1px solid ${C.red}55`, borderLeft: `3px solid ${C.red}`, borderRadius: 2, color: C.red, fontSize: 13 }}>
+        <div role="alert" aria-live="assertive" style={{ padding: '12px 14px', background: C.redBg, border: `1px solid ${C.red}55`, borderLeft: `3px solid ${C.red}`, borderRadius: 2, color: C.red, fontSize: 13 }}>
           {error}
         </div>
       )}
@@ -382,7 +594,7 @@ export default function AgentCaseRunner({ C, onHome }) {
         </>
       )}
 
-      {history.length > 0 && <RunHistory C={C} history={history} />}
+      {history.length > 0 && <RunHistory C={C} history={history} chainStatus={chainStatus} />}
     </div>
   );
 }
@@ -394,7 +606,7 @@ const HISTORY_VERDICT_TONE = {
   INCONCLUSIVE: 'slate',
 };
 
-function RunHistory({ C, history }) {
+function RunHistory({ C, history, chainStatus }) {
   const [expandedId, setExpandedId] = useState(null);
 
   return (
@@ -403,6 +615,12 @@ function RunHistory({ C, history }) {
         <History size={13} color={C.text3} />
         <div style={{ ...fieldLabel(C), marginBottom: 0 }}>Recent runs &middot; this browser</div>
       </div>
+      {chainStatus && (
+        <div role={chainStatus.valid ? undefined : 'alert'} style={{ fontSize: 11.5, color: chainStatus.valid ? C.text3 : C.red, lineHeight: 1.5, marginBottom: 10 }}>
+          Browser hash chain: {chainStatus.status.replaceAll('_', ' ')} · {chainStatus.checked} retained records checked
+          {chainStatus.latest_sequence ? ` · latest sequence ${chainStatus.latest_sequence}` : ''}. {chainStatus.limitation}
+        </div>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {history.map(entry => {
           const tone = C[HISTORY_VERDICT_TONE[entry.verdict]] || C.text3;

@@ -276,9 +276,17 @@ describe('oracle independence', () => {
     expect(independence.rationale).toContain('authored by this project');
   });
 
-  it('records I1 and I2 when the caller declares them', () => {
-    expect(deriveIndependence('independently_reimplemented').level).toBe('I1');
-    expect(deriveIndependence('independent_sensor').level).toBe('I2');
+  it('records I1 and I2 only when a referenced external artifact is supplied', () => {
+    const attestation = { reviewer: 'external-party', reference: 'REV-2026-01' };
+    expect(deriveIndependence('independently_reimplemented', attestation).level).toBe('I1');
+    expect(deriveIndependence('independent_sensor', attestation).level).toBe('I2');
+  });
+
+  it('downgrades an unsupported independence declaration to I0', () => {
+    const independence = deriveIndependence('independent_sensor');
+    expect(independence.level).toBe('I0');
+    expect(independence.downgraded).toBe(true);
+    expect(independence.note).toContain('referenced external artifact');
   });
 
   it('falls back to I0 on an unknown oracle rather than assuming independence', () => {
@@ -312,6 +320,16 @@ describe('status', () => {
     const status = deriveStatus({
       runMode: RUN_MODES.MOCK_TOOL_HARNESS,
       requestedStatus: 'independently_reviewed',
+    });
+    expect(status.status).toBe('executed');
+    expect(status.downgraded).toBe(true);
+  });
+
+  it('rejects an empty attestation object', () => {
+    const status = deriveStatus({
+      runMode: RUN_MODES.MOCK_TOOL_HARNESS,
+      requestedStatus: 'independently_reviewed',
+      attestation: {},
     });
     expect(status.status).toBe('executed');
     expect(status.downgraded).toBe(true);
@@ -503,6 +521,9 @@ describe('execution chain (AIUC-1 E015)', () => {
     expect(chain.approval_events[0]).toEqual({
       authorization_required: true,
       approval_granted: false,
+      approval_valid: false,
+      approval_invalid_reasons: ['no structured approval record'],
+      approval_record: null,
     });
   });
 

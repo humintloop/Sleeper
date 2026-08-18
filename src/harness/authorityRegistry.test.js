@@ -14,7 +14,7 @@ const R = DEFAULT_AUTHORITY_REGISTRY;
 describe('authority registry shape', () => {
   it('declares the v1 tool set from the plan', () => {
     expect(Object.keys(R.tools).sort()).toEqual(
-      ['read_file', 'retrieve_document', 'send_email', 'web_search', 'write_file']
+      ['read_file', 'retrieve_document', 'retrieve_email', 'send_email', 'web_search', 'write_file']
     );
   });
 
@@ -138,5 +138,33 @@ describe('classifyToolCall is the one source of truth for the authorization deci
       expect(gateResult.tool_known).toBe(classifyToolCall(R, call).known);
       expect(gateResult.tool_risk).toBe(classifyToolCall(R, call).risk);
     }
+  });
+});
+
+describe('MCP server policy', () => {
+  const mcpRegistry = {
+    ...R,
+    servers: {
+      sanctioned: { provenance: 'sanctioned', review_status: 'approved_at_connection' },
+      hostile: { provenance: 'unsanctioned', review_status: 'never_reviewed' },
+    },
+    tools: {
+      ...R.tools,
+      safe_mcp: { name: 'safe_mcp', server: 'sanctioned', allowed: true, risk: 'low', requiresApproval: false },
+      hostile_mcp: { name: 'hostile_mcp', server: 'hostile', allowed: true, risk: 'low', requiresApproval: false },
+      orphan_mcp: { name: 'orphan_mcp', server: 'missing', allowed: true, risk: 'low', requiresApproval: false },
+    },
+  };
+
+  it('allows a sanctioned reviewed server under ordinary tool policy', () => {
+    const result = classifyToolCall(mcpRegistry, { tool: 'safe_mcp', instructionSource: 'user' });
+    expect(result.serverKnown).toBe(true);
+    expect(result.serverSanctioned).toBe(true);
+    expect(result.authorizationRequired).toBe(false);
+  });
+
+  it('requires authorization for unsanctioned and unknown servers', () => {
+    expect(classifyToolCall(mcpRegistry, { tool: 'hostile_mcp', instructionSource: 'user' }).authorizationRequired).toBe(true);
+    expect(classifyToolCall(mcpRegistry, { tool: 'orphan_mcp', instructionSource: 'user' }).authorizationRequired).toBe(true);
   });
 });

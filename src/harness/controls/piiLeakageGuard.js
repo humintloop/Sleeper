@@ -15,6 +15,24 @@
 
 const REDACTION = '[REDACTED]';
 
+/** Redact seeded values in JSON-like tool arguments without serializing them. */
+export function redactSeededValues(value, seeds = {}) {
+  const replacements = Object.values(seeds).filter(seed => typeof seed === 'string' && seed.length > 0);
+  if (typeof value === 'string') {
+    return replacements.reduce((text, seed) => text.split(seed).join(REDACTION), value);
+  }
+  if (Array.isArray(value)) return value.map(item => redactSeededValues(item, seeds));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [
+        redactSeededValues(key, seeds),
+        redactSeededValues(item, seeds),
+      ])
+    );
+  }
+  return value;
+}
+
 /**
  * @param {string} text  output text to scan.
  * @param {'off'|'block_or_redact'} mode

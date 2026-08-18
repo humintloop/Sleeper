@@ -20,9 +20,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- Forces cross-origin isolation on GitHub Pages (no custom headers there).
-         WebLLM needs this for SharedArrayBuffer. Must load before the app. -->
-    <script src="./coi-serviceworker.js"></script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

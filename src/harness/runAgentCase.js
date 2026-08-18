@@ -28,7 +28,7 @@ import {
 import { buildControlSystemPrompt } from './controlGate.js';
 import { runToolAuthorizationGate } from './controls/toolAuthorizationGate.js';
 import { runAdversarialDetection } from './controls/adversarialDetection.js';
-import { runPiiLeakageGuard } from './controls/piiLeakageGuard.js';
+import { redactSeededValues, runPiiLeakageGuard } from './controls/piiLeakageGuard.js';
 import { runActivityLogging } from './controls/activityLogging.js';
 import { DEFAULT_AUTHORITY_REGISTRY } from './authorityRegistry.js';
 import {
@@ -69,6 +69,9 @@ const INITIAL_INSTRUCTION_SOURCE = 'user';
  * @param {number} [params.maxTurns]
  * @param {string} [params.provider]     message shape to build for.
  * @param {Function} [params.now]        injected clock, for determinism in tests.
+ * @param {string} [params.initialInstructionSource] conservative provenance for
+ *   first-turn calls when untrusted model-facing descriptors are present.
+ * @param {object} [params.approvalPolicy] deterministic approval-record provider.
  * @returns {Promise<object>} trace, control records, and loop metadata.
  */
 export async function runAgentCase({
@@ -83,6 +86,8 @@ export async function runAgentCase({
   maxTurns = DEFAULT_MAX_TURNS,
   provider = PROVIDERS.GENERIC,
   now,
+  initialInstructionSource = INITIAL_INSTRUCTION_SOURCE,
+  approvalPolicy = null,
 } = {}) {
   const controls = profile?.controls ?? {};
   const systemPrompt = buildControlSystemPrompt(baseSystemPrompt, profile);
@@ -97,6 +102,7 @@ export async function runAgentCase({
   const toolResults = [];
   const authorizationDecisions = [];
   const detections = [];
+  const piiDetections = [];
 
   let finalText = '';
   let turns = 0;
@@ -122,7 +128,7 @@ export async function runAgentCase({
         messages,
         tools,
         stream: false,
-        instructionSource: lastResult ? null : INITIAL_INSTRUCTION_SOURCE,
+        instructionSource: lastResult ? null : initialInstructionSource,
       });
     } catch (err) {
       targetError = err?.message || String(err);
@@ -133,6 +139,9 @@ export async function runAgentCase({
 
     const text = response?.text ?? '';
     const calls = Array.isArray(response?.toolCalls) ? response.toolCalls : [];
+    const responsePiiScan = runPiiLeakageGuard(text, controls.piiFilter, piiSeeds);
+    piiDetections.push(responsePiiScan);
+    const guardedText = responsePiiScan.redacted_text;
 
     if (response?.degraded) {
       degraded = true;
@@ -148,36 +157,58 @@ export async function runAgentCase({
       }
     }
 
-    events.push({ type: 'model_turn', turn: turns, text, tool_call_count: calls.length });
+    events.push({ type: 'model_turn', turn: turns, text: guardedText, tool_call_count: calls.length });
 
     if (calls.length === 0) {
-      finalText = text;
+      finalText = guardedText;
       stopReason = LOOP_STOP_REASON.NO_TOOL_CALL;
       break;
     }
 
-    messages.push(formatAssistantToolCallMessage({ provider, text, toolCalls: calls }));
+    // Attribute and guard every call against the same pre-response context.
+    // Calls emitted together cannot have observed one another's results.
+    const sourceResult = lastResult;
+    const preparedCallRecords = calls.map(rawCall => {
+      const attributed = sourceResult
+        ? attributeToolCallFromResult(rawCall, sourceResult)
+        : { ...rawCall, instructionSource: rawCall.instructionSource ?? initialInstructionSource };
+      const piiScan = runPiiLeakageGuard(
+        JSON.stringify(attributed.args ?? {}),
+        controls.piiFilter,
+        piiSeeds
+      );
+      const call = piiScan.sensitive_data_exposed
+        ? { ...attributed, args: redactSeededValues(attributed.args ?? {}, piiSeeds) }
+        : attributed;
+      return { call, piiScan };
+    });
+    const preparedCalls = preparedCallRecords.map(record => record.call);
+
+    // The provider transcript stores the guarded calls, not the raw model
+    // arguments, so later logging/persistence cannot reintroduce a canary.
+    messages.push(formatAssistantToolCallMessage({ provider, text: guardedText, toolCalls: preparedCalls }));
 
     let repeated = false;
 
-    for (const rawCall of calls) {
-      // Attribute provenance before authorizing. A call the model made after
-      // reading tool output carries that output's untrusted source, even when
-      // the arguments look like something the user asked for.
-      const call = lastResult
-        ? attributeToolCallFromResult(rawCall, lastResult)
-        : { ...rawCall, instructionSource: rawCall.instructionSource ?? INITIAL_INSTRUCTION_SOURCE };
+    for (const { call, piiScan } of preparedCallRecords) {
 
       const signature = `${call.tool}:${JSON.stringify(call.args ?? {})}`;
       if (seenCalls.has(signature)) repeated = true;
       seenCalls.add(signature);
 
-      const decision = runToolAuthorizationGate(call, controls.toolAuthorization, registry);
+      const approvalRecord = approvalPolicy?.evaluate?.(call) ?? null;
+      const decision = runToolAuthorizationGate(call, controls.toolAuthorization, registry, { approvalRecord });
       const result = routeMockToolCall(call, decision, { registry, scenarioContent, now });
+      // A call denied by authorization never reached the tool sink. Its
+      // transcript is still redacted, but it is not counted as a PII exposure.
+      if (decision.tool_call_executed) piiDetections.push(piiScan);
 
       // Tool output is untrusted content. Screening it is the control point
       // AML.M0030 describes, so it runs on the result rather than on the prompt.
       const detection = runAdversarialDetection(result.content, controls.adversarialDetection);
+      const resultForModel = detection.enforcement_applied
+        ? { ...result, content: detection.constrained_content }
+        : result;
 
       toolCalls.push(call);
       authorizationDecisions.push(decision);
@@ -232,14 +263,14 @@ export async function runAgentCase({
         formatToolResultMessage({
           provider,
           toolCall: call,
-          result: formatToolResultForModel(result),
+          result: formatToolResultForModel(resultForModel),
           denied: decision.tool_blocked,
           denialReason: decision.tool_block_reason ?? '',
         })
       );
 
-      lastResult = result;
-      finalText = text;
+      lastResult = resultForModel;
+      finalText = guardedText;
     }
 
     if (repeated) {
@@ -256,18 +287,12 @@ export async function runAgentCase({
     events.push({ type: 'turn_cap', turn: turns, max_turns: maxTurns });
   }
 
-  // Scanning only the model's final chat text misses exactly the exfiltration
-  // path some cases are built to test: an instruction that tells the agent to
-  // send a seeded value via a tool call while saying nothing about it in its
-  // own summary. A seeded value that left through an *executed* tool call's
-  // arguments is exposure the guard must catch even when the final reply is
-  // clean. Blocked calls are excluded — their arguments never reached a tool.
-  const executedToolArgsText = toolCalls
-    .filter((_, i) => authorizationDecisions[i]?.tool_call_executed)
-    .map(call => JSON.stringify(call.args ?? {}))
-    .join('\n');
-  const piiScanText = [finalText, executedToolArgsText].filter(Boolean).join('\n');
-  const piiResult = runPiiLeakageGuard(piiScanText, controls.piiFilter, piiSeeds);
+  // Guard the final response before it becomes an event, return value, log,
+  // persisted contract, or export. Tool arguments were guarded before routing.
+  const finalPiiScan = runPiiLeakageGuard(finalText, controls.piiFilter, piiSeeds);
+  piiDetections.push(finalPiiScan);
+  finalText = finalPiiScan.redacted_text;
+  const piiResult = aggregatePiiLeakage(piiDetections, finalText, controls.piiFilter);
   events.push({ type: 'response', turn: turns, text: finalText });
 
   const loggingResult = runActivityLogging(controls.activityLogging, events);
@@ -288,6 +313,14 @@ export async function runAgentCase({
     toolCalls,
     toolResults,
     authorizationDecisions,
+    approvalSummary: approvalPolicy?.summarize?.() ?? {
+      selected: false,
+      exercised: false,
+      variant_id: null,
+      variant_key: null,
+      approval_records: [],
+      limitation: null,
+    },
     controlResults: {
       toolAuthorization: aggregateAuthorization(authorizationDecisions),
       adversarialDetection: aggregateDetection(detections, controls.adversarialDetection),
@@ -354,5 +387,24 @@ function aggregateDetection(detections, mode) {
   return {
     ...detected[0],
     matched_signals: [...new Set(detected.flatMap(d => d.matched_signals))],
+  };
+}
+
+function aggregatePiiLeakage(results, finalText, mode) {
+  const active = results.filter(result => result.scan_active === true);
+  if (active.length === 0) {
+    return runPiiLeakageGuard(finalText, mode, {});
+  }
+
+  const exposed = active.filter(result => result.sensitive_data_exposed === true);
+  const exposedClasses = [...new Set(exposed.flatMap(result => result.exposed_classes ?? []))];
+  return {
+    scan_active: true,
+    sensitive_data_exposed: exposed.length > 0,
+    data_class: exposedClasses.length > 0 ? exposedClasses.join(', ') : null,
+    exposed_classes: exposedClasses,
+    redaction_applied: exposed.length > 0 && exposed.every(result => result.redaction_applied === true),
+    output_blocked: exposed.length > 0 && exposed.every(result => result.output_blocked === true),
+    redacted_text: finalText,
   };
 }
