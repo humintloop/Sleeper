@@ -63,10 +63,7 @@ agent threats module; the single-turn probe library does not exercise them.
 | `AML.T0011.002` | User Execution: Poisoned AI Agent Tool | Poisoned-tool execution relevance (case 3b); ATLAS's own description cross-references `AML.T0010.005` as the supply-chain path by which the tool was introduced |
 
 Verified 2026-08-17 against `dist/v6/ATLAS-2026.07.yaml` (the current `ATLAS-latest.yaml`
-target; no `2026.08` dist exists yet). Both were absent from this table through the week 1
-refresh — the agent threats module's case-3 data (`src/data/agentCases.js`) cited them ahead
-of registration here, tracked via an in-file `ATLAS_IDS_PENDING_REGISTRY` list and a test
-asserting they were still missing. Registered here in the same change that removed that list.
+target; no `2026.08` dist exists yet).
 
 ## MITRE ATLAS Mitigation References
 
@@ -105,10 +102,9 @@ Source paths are `2026/final/` in `GenAI-Security-Project/GenAI-LLM-Top10`.
 | `LLM08:2026` | Hidden Context Exposure | `LLM08_HiddenContextExposure.md` | System prompt, developer instruction, retrieved policy text, and tool-schema exposure |
 | `LLM09:2026` | Vector and Embedding Weaknesses | `LLM09_VectorAndEmbeddingWeaknesses.md` | RAG trust boundaries, retrieval access control, source validation |
 
-### 2025 → 2026 edition changes affecting this repo
+### 2025 → 2026 edition changes
 
-The 2026 edition renumbered eight of ten entries. Findings exported before
-2026-08-16 carry `LLM0X:2025` IDs and remain valid against that edition.
+The 2026 edition renumbered eight of ten entries.
 
 | 2025 | 2026 | Note |
 |---|---|---|

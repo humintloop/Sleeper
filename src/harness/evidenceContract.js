@@ -1,10 +1,8 @@
 // Evidence Contract
 //
 // What a SLEEPER artifact permits its author to claim, made structural rather
-// than left to prose disclaimers. Three orthogonal axes, adopted from the
-// evidence-class taxonomy in `msaleme/red-team-blue-team-agent-fabric`
-// (Apache 2.0) and specified in docs/agent-module-plan.md §"Borrowed" and
-// §"Reporting":
+// than left to prose disclaimers. Three orthogonal axes, specified in
+// docs/agent-module-plan.md §"Evidence discipline" and §"Reporting":
 //
 //   - evidence class E1–E5: what kind of artifact this is;
 //   - oracle independence I0–I2: who produced the oracle;

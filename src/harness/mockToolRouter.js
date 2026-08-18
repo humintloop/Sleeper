@@ -9,7 +9,7 @@
 // Changes on port:
 //   - `createAgenticSeedTrace()` is deliberately not ported. It hardcoded a
 //     four-step trace branching on a literal case ID; the trace must emerge from
-//     a real model loop (docs/agent-module-plan.md §"ORPHEUS salvage assessment").
+//     a real model loop.
 //   - The router no longer re-runs the authorization gate or re-derives the
 //     registry's approval requirement. It consumes the decision record produced
 //     by `runToolAuthorizationGate` so there is exactly one place a tool call is

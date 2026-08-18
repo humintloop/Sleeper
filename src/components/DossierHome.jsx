@@ -1,10 +1,10 @@
 import { ChevronRight, FlaskConical, History } from 'lucide-react';
 
-// Agent-only home screen (docs/remove-single-turn-flow.md). The single-turn
-// probe entry cards, the "Assessment flow" 5-step strip (probe-only), and the
-// "Evidence coverage" cluster section are gone along with the flow they
-// described. "Run agent case" is the only real entry point now, so this reads
-// as one clear CTA rather than a grid of competing options.
+// Agent-only home screen. The single-turn probe entry cards, the "Assessment
+// flow" 5-step strip (probe-only), and the "Evidence coverage" cluster
+// section are gone along with the flow they described. "Run agent case" is
+// the only real entry point now, so this reads as one clear CTA rather than
+// a grid of competing options.
 //
 // Headline copy leads with the control-profile comparison rather than the
 // old single-turn-vs-agent framing. Outcomes remain observations: independent

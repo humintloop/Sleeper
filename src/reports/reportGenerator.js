@@ -1,8 +1,7 @@
-// Report generation for agent-case runs. Rewritten around the record shape
+// Report generation for agent-case runs. Built around the record shape
 // AgentCaseRunner.jsx persists via src/storage.js's saveAgentRun — verdict,
 // reason, and a full Evidence Contract (E-class/I-class/scope/status) — not
-// the single-turn probe finding shape (techniqueId, promptHash, judgeVerdict,
-// ...) this file used to sanitize. See docs/remove-single-turn-flow.md.
+// a single-turn probe finding shape.
 //
 // The XSS-escaping discipline from the probe-era version is preserved
 // unchanged: reason text, detection signals, and framework rationale can all

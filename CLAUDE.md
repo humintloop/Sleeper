@@ -5,10 +5,7 @@ manipulated into taking an action it should not take, and turns the result into 
 evidence mapped to published control frameworks.
 
 Read [`docs/agent-module-plan.md`](docs/agent-module-plan.md) first. It is the live design
-doc: scope, the source-verified framework crosswalk, the harness architecture, and the build
-history. Read [`docs/remove-single-turn-flow.md`](docs/remove-single-turn-flow.md) too — it
-records why and how the single-turn probe flow was removed; several files that doc references
-no longer exist, which is expected, not a stale link.
+doc: scope, the source-verified framework crosswalk, and the harness architecture.
 
 ## Lineage
 
@@ -22,9 +19,8 @@ Contract) is the only vocabulary this project speaks going forward.
 
 A third fork, [humintloop/ORPHEUS](https://github.com/humintloop/ORPHEUS), has been retired.
 It contained a working agentic harness, control-profile model, Evidence Contract schema, and a
-live OpenAI/Anthropic API adapter that this project ported *from*. See the plan doc's salvage
-assessment for what was taken as-is, what was rewritten, and the defects found in ORPHEUS's
-`computeVerdict.js` and `mockToolRouter.js` that were not carried over.
+live OpenAI/Anthropic API adapter that this project ported *from* — rewriting `computeVerdict.js`
+and the seeding half of `mockToolRouter.js` rather than carrying their defects over.
 
 ## Stack
 
@@ -91,9 +87,8 @@ prohibited claim language explicitly.
 AIUC-1 publishes no license at all. Reproduce identifiers and short names, write the
 surrounding explanation yourself. `ATTRIBUTION.md` records the reasoning.
 
-**Evidence discipline** (adopted from `msaleme/red-team-blue-team-agent-fabric`, Apache 2.0):
-findings carry an evidence class E1–E5, oracle independence I0–I2, and a status
-(mapped/executed/independently reviewed/certified). Nothing here reaches E4 or E5 — enforced by
+**Evidence discipline.** Findings carry an evidence class E1–E5, oracle independence I0–I2, and
+a status (mapped/executed/independently reviewed/certified). Nothing here reaches E4 or E5 — enforced by
 `assertClaimableEvidenceClass` in `evidenceContract.js`, not just documented. An unexercised
 control resolves to `INCONCLUSIVE`, never "held" — if the model never attempted the tool call,
 the tool-authorization control was not tested, and this must survive even when a run also
@@ -116,11 +111,10 @@ live API target or a local WebLLM model, run it, and see the ReAct trace, the ve
 Evidence Contract. `runCaseAcrossProfiles` runs the comparative arm — same case, same model,
 Baseline vs. Reference — which is the headline demonstration, not single-turn-vs-agent.
 
-463 tests, lint clean, build succeeds. The single-turn probe flow (`payloads.js`, `clusters.js`,
-`FindingCard`, `FindingsReport`, the batch/judge machinery, and five other components) was
-deleted outright on 2026-08-17 rather than kept alongside agent mode — see
-[`docs/remove-single-turn-flow.md`](docs/remove-single-turn-flow.md) for the reasoning and the
-sequenced removal this repo actually went through.
+508 tests, lint clean, build succeeds. The single-turn probe flow (`payloads.js`, `clusters.js`,
+`FindingCard`, `FindingsReport`, the batch/judge machinery, and several other components) was
+deleted outright rather than kept alongside agent mode — agents are the only mode now, and
+nothing in the harness executes single-turn probes.
 
 Two framework-mapping judgment calls remain project-defined rather than sourced, and are
 flagged as such in `docs/agent-module-plan.md`: the AIUC-1 3a/3b requirement allocation, and

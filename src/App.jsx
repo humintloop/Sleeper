@@ -51,8 +51,8 @@ const C = {
 };
 
 // ── Stages ────────────────────────────────────────────────────────────────────
-// Agent-only (docs/remove-single-turn-flow.md): the single-turn probe flow's
-// six other stages (CASE/LOADING/SELECT/PROBE/TRIAGE/REPORT) are gone. Each
+// Agent-only: the single-turn probe flow's six other stages
+// (CASE/LOADING/SELECT/PROBE/TRIAGE/REPORT) are gone. Each
 // remaining screen owns its own navigation — DossierHome's entry card,
 // AgentCaseRunner's own HOME link — so there is no persistent header/stage
 // rail left to coordinate between them.

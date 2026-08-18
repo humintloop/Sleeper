@@ -6,8 +6,7 @@
 // "https://api.anthropic.com/v1/messages") — it is used exactly as given and
 // nothing is appended or rewritten.
 //
-// Ported from the retired fork's `src/api/adapter.js` (see
-// docs/agent-module-plan.md §"ORPHEUS salvage assessment"). Changes on port are
+// Ported from the retired fork's `src/api/adapter.js`. Changes on port are
 // recorded at the bottom of this comment; the tool-calling layer is new.
 //
 // Two invariants this module exists to hold:

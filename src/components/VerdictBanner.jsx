@@ -12,8 +12,8 @@ const fallback = {
 };
 
 // Two vocabularies, kept in one lookup table now that this is the only
-// verdict-display component left (docs/remove-single-turn-flow.md). The
-// probe entries (SUCCESS/PARTIAL/FAILURE/FAILED/REVIEW) are retained for any
+// verdict-display component left. The probe entries
+// (SUCCESS/PARTIAL/FAILURE/FAILED/REVIEW) are retained for any
 // exported finding record that still carries the old vocabulary; the
 // CONTROL_* entries are computeVerdict.js's control vocabulary, the one the
 // app actually produces going forward. They answer different questions —

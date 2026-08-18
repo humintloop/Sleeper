@@ -1,6 +1,6 @@
 // Agent-case runs are the only thing this project persists locally now that
-// the single-turn probe flow is gone (docs/remove-single-turn-flow.md).
-// ACTIVE_CASE_KEY / FINDINGS_KEY / ANALYST_KEY and their probe-shaped fields
+// the single-turn probe flow is gone. ACTIVE_CASE_KEY / FINDINGS_KEY /
+// ANALYST_KEY and their probe-shaped fields
 // (probeIndex, clusterId, judgeMode, presetId, analyst) were removed with the
 // probe flow itself — there is no agent-mode equivalent of "resume a
 // half-configured case": AgentCaseRunner is a single self-contained screen,

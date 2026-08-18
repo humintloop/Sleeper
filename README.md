@@ -27,18 +27,18 @@ claim is narrower and testable: security decisions must come from controls aroun
 not from assuming the model will refuse an adversarial instruction.
 
 Sleeper descends from [ELICIT](https://github.com/humintloop/ELICIT), a single-turn adversarial
-assurance lab. It no longer runs single-turn probes itself — that flow was deleted once the
-agent harness could stand fully on its own; see
-[`docs/remove-single-turn-flow.md`](./docs/remove-single-turn-flow.md) for why and what changed.
-ELICIT remains the place for single-turn evaluation.
+assurance lab. It no longer runs single-turn probes itself — the agent harness demonstrates the
+same claim more directly, by comparing control postures against the same case rather than
+comparing single-turn refusal against agentic follow-through. ELICIT remains the place for
+single-turn evaluation.
 
 ## Status
 
 The agent harness is built and wired end to end in the browser, with a no-key deterministic
 replay plus live API and local WebLLM targets. The automated suite covers the verdict,
 authorization, provenance, replay, and evidence-contract invariants. See
-[`docs/agent-module-plan.md`](./docs/agent-module-plan.md) for the full build history, scope,
-and the source-verified framework crosswalk.
+[`docs/agent-module-plan.md`](./docs/agent-module-plan.md) for the architecture and the
+source-verified framework crosswalk.
 
 ## Threat Cases (v1 scope)
 
@@ -71,10 +71,6 @@ Two consequences worth stating up front:
    production system would have blocked anything.
 2. An unexercised control resolves to `INCONCLUSIVE`, never to "held." If the model never
    attempted the tool call, the tool-authorization control was not tested.
-
-Taxonomy adapted from
-[`msaleme/red-team-blue-team-agent-fabric`](https://github.com/msaleme/red-team-blue-team-agent-fabric)
-(Apache 2.0). See [`ATTRIBUTION.md`](./ATTRIBUTION.md).
 
 ## Framework Traceability
 
@@ -183,7 +179,7 @@ For a concise portfolio presentation, follow the
 
 ## Roadmap
 
-See [`docs/agent-module-plan.md`](./docs/agent-module-plan.md) for the full build history.
-Open: AIUC-1 3a/3b crosswalk allocation and two inferred OWASP LLM mappings are this project's
-own judgment calls rather than sourced facts (flagged as such in the plan doc); brand art
-(icon/social preview) is still a text wordmark.
+See [`docs/agent-module-plan.md`](./docs/agent-module-plan.md) for the architecture and
+framework crosswalk. Open: AIUC-1 3a/3b crosswalk allocation and two inferred OWASP LLM
+mappings are this project's own judgment calls rather than sourced facts (flagged as such in
+the plan doc); there's a favicon but no social-preview asset, and the wordmark is text-only.
