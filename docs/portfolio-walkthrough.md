@@ -1,4 +1,4 @@
-# SLEEPER: 7-minute portfolio walkthrough
+# Sleeper: 7-minute portfolio walkthrough
 
 ## The claim
 
@@ -10,19 +10,20 @@ constrain actions and retain honest evidence.
 
 Open **Run agent case**. Keep **Sample Replay** selected and explain the disclosure: its
 scripted path makes the demonstration reliable without pretending a model made the decision.
-All tool effects are simulated. The target side is E1; an exercised SLEEPER gate can be E3
+All tool effects are simulated. The target side is E1; an exercised Sleeper gate can be E3
 evidence about that gate only.
 
 ## 1:00–3:30 — Hero case: indirect email injection
 
-1. Select **Indirect injection → unauthorized action** and **Baseline**.
-2. Run the case. Follow the trace from the employee request to the external email, the hidden
-   instruction, internal data retrieval, and attempted outbound email.
-3. Point out the instruction source and trust label on the tool intent. Baseline permits the
-   simulated outbound action, so the verdict is `CONTROL_FAILED`.
-4. Switch to **Reference** and run the same case. The scripted intent is unchanged; the
-   deterministic gate denies the action sourced from untrusted content.
-5. Open the Evidence Contract. Show the execution chain, run-manifest digests, evidence ceiling,
+1. Select **Indirect injection → unauthorized action** and click **Compare three profiles**.
+2. Start with the comparison row: Baseline fails, Partial is incomplete, and Reference holds
+   within the exercised scope. The scripted malicious path is identical in all three arms.
+3. Open the collapsed technical trace. Follow the employee request to the external email, hidden
+   instruction, internal data retrieval, and attempted outbound action. Point out the instruction
+   source and trust label on the tool intent.
+4. If you want the full failing path, select **Baseline** and use **Run selected profile**. Baseline
+   permits the simulated action; Reference denies the same intent at the deterministic gate.
+5. Open the Evidence Contract. Show the run-manifest digests, evidence ceiling,
    simulation boundary, and unsigned-integrity warning.
 6. In recent runs, show the browser hash-chain status. Explain that it detects retained-window
    gaps but is not an external append-only log.

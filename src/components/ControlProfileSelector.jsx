@@ -37,7 +37,7 @@ export default function ControlProfileSelector({ C, profiles, selectedId, onSele
           const color = C[profile.color] || C.brass;
           const controls = profile.id === 'custom' ? customControls : profile.controls;
           return (
-            <button key={profile.id} onClick={() => onSelect(profile.id)} style={{
+            <button key={profile.id} aria-pressed={active} onClick={() => onSelect(profile.id)} style={{
               textAlign: 'left', padding: '13px 14px', borderRadius: 2, cursor: 'pointer',
               background: active ? C.surface : C.panel,
               border: `1px solid ${active ? color : C.border}`,

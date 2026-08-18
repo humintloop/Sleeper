@@ -16,19 +16,17 @@ export default function DossierHome({ C, onAgentLab, agentRunsCount = 0 }) {
         <div style={{ fontSize: 11, color: C.text3, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>
           Local-first agent assurance
         </div>
-        <h1 style={{ fontFamily: C.sans, fontSize: 52, color: C.text1, fontWeight: 600, letterSpacing: '0.05em', lineHeight: 1, margin: 0 }}>SLEEPER</h1>
+        <h1 style={{ fontFamily: C.sans, fontSize: 52, color: C.text1, fontWeight: 600, letterSpacing: '0.02em', lineHeight: 1, margin: 0 }}>Sleeper</h1>
         <p style={{ fontSize: 17, color: C.text1, lineHeight: 1.65, maxWidth: 680, marginTop: 16, marginBottom: 0 }}>
-          SLEEPER tests whether a tool-using agent can be manipulated into taking an action it should not take,
+          Sleeper tests whether a tool-using agent can be manipulated into taking an action it should not take,
           and turns the result into reviewable evidence mapped to control frameworks.
         </p>
         <p style={{ fontSize: 14, color: C.text3, lineHeight: 1.7, maxWidth: 700, marginTop: 10, marginBottom: 0 }}>
-          Run the same case under <strong style={{ color: C.text2 }}>Baseline</strong>,{' '}
+          Compare the same attack under <strong style={{ color: C.text2 }}>Baseline</strong>,{' '}
           <strong style={{ color: C.text2 }}>Partial</strong>, and <strong style={{ color: C.text2 }}>Reference</strong>{' '}
-          postures, then compare what the target attempted, what each deterministic control actually did, and what
-          evidence survived. Use the disclosed Sample Replay for a reliable no-key harness walkthrough, or a live/local
-          model when you need evidence of model decisions.
-          Outcomes are observed, not guaranteed: a run can fail, hold within a stated scope, degrade, or remain{' '}
-          <strong style={{ color: C.blue }}>INCONCLUSIVE</strong> when the model never exercises the control.
+          controls. See what the agent tried, what the gate allowed or denied, and what evidence survived. Start with
+          the no-key Sample Replay; use a live or local model when you need model-behavior evidence. Results are observed,
+          not guaranteed, and an unexercised control stays <strong style={{ color: C.blue }}>INCONCLUSIVE</strong>.
         </p>
       </section>
 
@@ -49,9 +47,8 @@ export default function DossierHome({ C, onAgentLab, agentRunsCount = 0 }) {
           </div>
         </div>
         <div style={{ fontSize: 13.5, color: C.text3, lineHeight: 1.65, maxWidth: 600 }}>
-          Pick one of four threat cases and a control profile, then use the no-key Sample Replay or point it at a
-          live/local model. Follow tool intent, authorization decisions, and simulated results through to a verdict
-          and an Evidence Contract.
+          Pick a threat case, compare control postures, and follow attempted actions through authorization, verdict,
+          and evidence. Every tool effect is simulated.
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 4, flexWrap: 'wrap' }}>
           <span style={{ color: C.brass, fontSize: 12.5, fontWeight: 900, letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6 }}>

@@ -1,6 +1,6 @@
 # Source Ledger
 
-This ledger records the sources used for SLEEPER mappings and control-language decisions.
+This ledger records the sources used for Sleeper mappings and control-language decisions.
 It is a traceability aid, not a legal or audit conclusion.
 
 See [`../ATTRIBUTION.md`](../ATTRIBUTION.md) for concise third-party attribution and license/source notes.
@@ -25,7 +25,7 @@ See [`../ATTRIBUTION.md`](../ATTRIBUTION.md) for concise third-party attribution
 | ISO-42001-OFFICIAL | ISO/IEC 42001:2023 source page | `https://www.iso.org/standard/42001` | AIMS purpose, applicability, and management-system context | Official source / high-level context | 2026-06-15 |
 | ISO-42001-SECTION9-WORKING | User-provided ISO 42001 mapping notes | `sunilp/ai-governance-framework`, `framework/compliance/iso-42001-mapping.md` | Section 9 labels for monitoring/measurement, internal audit, and management review | Third-party implementation guide / inferred mapping | 2026-06-15 |
 | EU-AI-ACT-2024 | Regulation (EU) 2024/1689 | `https://eur-lex.europa.eu/eli/reg/2024/1689/oj` | High-risk readiness references for risk management, logging, oversight, robustness/cybersecurity, QMS, post-market monitoring, and critical infrastructure scope | Official source / relevance mapping | 2026-06-15 |
-| SLEEPER-CONTROLS | SLEEPER project-defined SaaS LLM control set | `controls/llm-saas-control-set.yaml` | Control objectives, evidence examples, test methods, retest guidance | Project-defined control | 2026-06-14 |
+| SLEEPER-CONTROLS | Sleeper project-defined SaaS LLM control set | `controls/llm-saas-control-set.yaml` | Control objectives, evidence examples, test methods, retest guidance | Project-defined control | 2026-06-14 |
 
 ## MITRE ATLAS Technique References
 
@@ -160,13 +160,13 @@ quarterly; every citation carries the release date it was read from.
 
 ## Project-Defined Mapping Notes
 
-- The SLEEPER controls are **not** MITRE, OWASP, NIST, ISO, CSA, or EU AI Act controls.
+- The Sleeper controls are **not** MITRE, OWASP, NIST, ISO, CSA, or EU AI Act controls.
 - MITRE and OWASP entries are used as source-grounded risk and technique references.
 - Mappings from MITRE/OWASP entries to `LLM-*` controls are project-defined and should be treated as inferred unless a future source explicitly defines the relationship.
-- **One exception, added 2026-08-16:** the OWASP Top 10 for LLM Applications 2026 publishes Appendix A, *Related Framework Mappings*, which directly asserts LLM→ASI, LLM→ATLAS tactic, and LLM→NIST AI RMF category relationships. Those are recorded in `OWASP_PUBLISHED_CROSSWALK` (`src/data/frameworkMappings.js`) and are **direct**, not inferred. Everything else in that file remains project-defined. OWASP's NIST AI RMF mapping is at Category level (e.g. `MEASURE 2`, `MAP 4`); SLEEPER's existing RMF references are at Function level (Govern/Map/Measure/Manage) and remain inferred.
+- **One exception, added 2026-08-16:** the OWASP Top 10 for LLM Applications 2026 publishes Appendix A, *Related Framework Mappings*, which directly asserts LLM→ASI, LLM→ATLAS tactic, and LLM→NIST AI RMF category relationships. Those are recorded in `OWASP_PUBLISHED_CROSSWALK` (`src/data/frameworkMappings.js`) and are **direct**, not inferred. Everything else in that file remains project-defined. OWASP's NIST AI RMF mapping is at Category level (e.g. `MEASURE 2`, `MAP 4`); Sleeper's existing RMF references are at Function level (Govern/Map/Measure/Manage) and remain inferred.
 - Framework source versions asserted by the app are pinned in `FRAMEWORK_VERSIONS` (`src/data/frameworkMappings.js`). Update that constant and this ledger together.
 - AIUC-1 requirement and control IDs and short requirement names are cited directly. Control language is paraphrased, not reproduced: the `aiunderwriting/AIUC-1-Changelog` repository publishes no license.
-- MITRE ATLAS mitigation references preserve official mitigation IDs and names. SLEEPER recommended actions and retest guidance are project-defined implementation guidance.
+- MITRE ATLAS mitigation references preserve official mitigation IDs and names. Sleeper recommended actions and retest guidance are project-defined implementation guidance.
 - ISO/IEC 42001, NIST AI RMF, and EU AI Act references in the app are relevance indicators only. They are not compliance determinations.
 - ISO/IEC 42001 section 9 references are used to frame performance-evaluation evidence: monitoring and measurement, internal audit, and management review.
 - EU AI Act references use a SaaS / critical digital infrastructure readiness lens for CDN, edge, cybersecurity, cloud, and critical digital infrastructure SaaS providers. High-risk status depends on actual system role, intended purpose, jurisdiction, and whether the AI system is used as a safety component or falls into another high-risk category.

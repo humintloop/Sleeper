@@ -89,7 +89,7 @@ export function createAgentRunsExport(runs = [], metadata = {}) {
   return {
     exportVersion: AGENT_RUNS_EXPORT_VERSION,
     generatedAt: new Date().toISOString(),
-    application: 'SLEEPER',
+    application: 'Sleeper',
     assessmentId: metadata.assessmentId || null,
     runs: runs.map(sanitizeAgentRunForExport),
   };
@@ -157,10 +157,9 @@ Assessment ID: ${inline(metadata.assessmentId || `assessment-${date.slice(0, 10)
 This report summarizes locally executed agent-case runs. Each run gives a model real tool
 definitions and control profile enforcement, and watches whether it acts on an instruction
 that should not be trusted. The verdict vocabulary here (CONTROL_HELD / PARTIAL_CONTROL_FAILURE
-/ CONTROL_FAILED / INCONCLUSIVE) answers "did the control hold" — a different question from the
-single-turn probe vocabulary this project used to also carry (MODEL HELD / PROBE SUCCEEDED),
-which answered "did the model resist." An unexercised control is never reported as a hold: a run
-that never reached its target, or never attempted the action under test, is INCONCLUSIVE.
+/ CONTROL_FAILED / INCONCLUSIVE) answers "did the exercised control hold?" An unexercised control
+is never reported as a hold: a run that never reached its target, or never attempted the action
+under test, is INCONCLUSIVE.
 
 - Runs logged: ${sanitized.length}
 - Control held: ${heldCount}
@@ -233,7 +232,7 @@ export function generateAgentAssuranceBriefHtml(runs = [], metadata = {}) {
 <html>
 <head>
 <meta charset="utf-8" />
-<title>SLEEPER Assurance Brief</title>
+<title>Sleeper Assurance Brief</title>
 <style>
 body{margin:0;background:#0A0C16;color:#E6D6C8;font-family:"JetBrains Mono",ui-monospace,monospace;line-height:1.55}
 .banner{background:#C87844;color:#0A0C16;padding:10px 24px;font-weight:900;letter-spacing:2px;text-align:center}
@@ -255,7 +254,7 @@ pre{white-space:pre-wrap;background:#0A0C16;border:1px solid #1C2238;padding:12p
 <body>
 <div class="banner">UNCLASSIFIED // AI ASSURANCE WORKPAPER // LOCAL-FIRST EVIDENCE</div>
 <main>
-  <h1>SLEEPER ASSURANCE BRIEF</h1>
+  <h1>Sleeper Assurance Brief</h1>
   <div class="meta">
     <p><b>Generated</b>${escapeHtml(generatedAt)}</p>
     <p><b>Assessment ID</b>${escapeHtml(metadata.assessmentId || 'Not recorded')}</p>

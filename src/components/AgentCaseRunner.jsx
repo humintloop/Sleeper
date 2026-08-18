@@ -39,6 +39,7 @@ const PROVIDER_DEFAULTS = {
 };
 
 const RUN_PROFILE_IDS = ['baseline', 'partial', 'reference'];
+const DISPLAY_PROFILES = Object.fromEntries(RUN_PROFILE_IDS.map(id => [id, CONTROL_PROFILES[id]]));
 const TARGET_TYPES = { SAMPLE: 'sample', LIVE: 'live', LOCAL: 'local' };
 
 function section(C) {
@@ -181,6 +182,10 @@ export default function AgentCaseRunner({ C, onHome }) {
   const targetRunMode = targetType === TARGET_TYPES.SAMPLE
     ? RUN_MODES.DETERMINISTIC_REPLAY
     : RUN_MODES.MOCK_TOOL_HARNESS;
+  const localCompatibilityIssues = [
+    typeof navigator !== 'undefined' && !('gpu' in navigator) && 'WebGPU is unavailable in this browser.',
+    typeof crossOriginIsolated !== 'undefined' && !crossOriginIsolated && 'Cross-origin isolation is inactive.',
+  ].filter(Boolean);
 
   const runOnce = async (targetProfileId) => {
     if (!targetReady) {
@@ -300,7 +305,7 @@ export default function AgentCaseRunner({ C, onHome }) {
   };
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px 60px', display: 'flex', flexDirection: 'column', gap: 22 }}>
+    <div className="agent-runner" style={{ flex: 1, overflowY: 'auto', padding: '24px 28px 60px', display: 'flex', flexDirection: 'column', gap: 22 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <button onClick={onHome} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: C.text3, fontSize: 12, cursor: 'pointer', padding: 0 }}>
           <ChevronLeft size={14} /> HOME
@@ -349,7 +354,7 @@ export default function AgentCaseRunner({ C, onHome }) {
             const c = AGENT_CASES[id];
             const active = id === caseId;
             return (
-              <button key={id} onClick={() => {
+              <button key={id} aria-pressed={active} onClick={() => {
                 setCaseId(id);
                 setVariantId(AGENT_CASES[id]?.variants?.[0]?.id ?? null);
               }} style={{
@@ -376,7 +381,7 @@ export default function AgentCaseRunner({ C, onHome }) {
               {agentCase.variants.map(variant => {
                 const active = selectedVariantId === variant.id;
                 return (
-                  <button key={variant.id} onClick={() => setVariantId(variant.id)} style={{
+                  <button key={variant.id} aria-pressed={active} onClick={() => setVariantId(variant.id)} style={{
                     textAlign: 'left', padding: '9px 10px', cursor: 'pointer', borderRadius: 2,
                     background: active ? C.surface : 'transparent',
                     border: `1px solid ${active ? C.brass : C.border}`,
@@ -394,22 +399,26 @@ export default function AgentCaseRunner({ C, onHome }) {
       </div>
 
       <div style={section(C)}>
-        <div style={fieldLabel(C)}>Framework mapping</div>
-        <FrameworkCrosswalkPanel C={C} agentCase={agentCase} />
+        <div style={fieldLabel(C)}>Control profile</div>
+        <ControlProfileSelector C={C} profiles={DISPLAY_PROFILES} selectedId={profileId} onSelect={setProfileId} />
       </div>
 
-      <div style={section(C)}>
-        <div style={fieldLabel(C)}>Control profile</div>
-        <ControlProfileSelector C={C} profiles={CONTROL_PROFILES} selectedId={profileId} onSelect={setProfileId} customControls={CONTROL_PROFILES.custom.controls} onCustomChange={() => {}} />
-      </div>
+      <details style={section(C)}>
+        <summary style={{ cursor: 'pointer', color: C.text2, fontSize: 12, fontWeight: 800, letterSpacing: 1.1, textTransform: 'uppercase' }}>
+          Framework mapping <span style={{ color: C.text3, fontWeight: 500, letterSpacing: 0, textTransform: 'none' }}>— review references and relationship strength</span>
+        </summary>
+        <div style={{ marginTop: 14 }}>
+          <FrameworkCrosswalkPanel C={C} agentCase={agentCase} />
+        </div>
+      </details>
 
       <div style={section(C)}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
           <div style={{ ...fieldLabel(C), marginBottom: 0 }}>Target</div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button style={toggleBtn(C, targetType === TARGET_TYPES.LIVE)} onClick={() => setTargetType(TARGET_TYPES.LIVE)}>LIVE API</button>
-            <button style={toggleBtn(C, targetType === TARGET_TYPES.LOCAL)} onClick={() => setTargetType(TARGET_TYPES.LOCAL)}>LOCAL MODEL</button>
-            <button style={toggleBtn(C, targetType === TARGET_TYPES.SAMPLE)} onClick={() => setTargetType(TARGET_TYPES.SAMPLE)}>SAMPLE REPLAY</button>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <button aria-pressed={targetType === TARGET_TYPES.SAMPLE} style={toggleBtn(C, targetType === TARGET_TYPES.SAMPLE)} onClick={() => setTargetType(TARGET_TYPES.SAMPLE)}>SAMPLE REPLAY</button>
+            <button aria-pressed={targetType === TARGET_TYPES.LIVE} style={toggleBtn(C, targetType === TARGET_TYPES.LIVE)} onClick={() => setTargetType(TARGET_TYPES.LIVE)}>LIVE API</button>
+            <button aria-pressed={targetType === TARGET_TYPES.LOCAL} style={toggleBtn(C, targetType === TARGET_TYPES.LOCAL)} onClick={() => setTargetType(TARGET_TYPES.LOCAL)}>LOCAL MODEL</button>
           </div>
         </div>
 
@@ -417,7 +426,7 @@ export default function AgentCaseRunner({ C, onHome }) {
           <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.6 }}>
             Zero-key deterministic walkthrough. Scripted tool intent exercises the real provenance, authorization,
             mock-effect, trace, verdict, and Evidence Contract pipeline. It is labeled E1 for the target because no
-            model decision is observed; any E3 claim applies only to SLEEPER&rsquo;s own gate.
+            model decision is observed; any E3 claim applies only to Sleeper&rsquo;s own gate.
           </div>
         ) : targetType === TARGET_TYPES.LIVE ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
@@ -452,6 +461,11 @@ export default function AgentCaseRunner({ C, onHome }) {
           </div>
         ) : (
           <div>
+            {localCompatibilityIssues.length > 0 && (
+              <div role="status" style={{ fontSize: 12, color: C.ochre, lineHeight: 1.55, marginBottom: 10, padding: '9px 11px', background: C.amberBg, border: `1px solid ${C.ochre}55`, borderRadius: 2 }}>
+                Local inference is unavailable here: {localCompatibilityIssues.join(' ')} Sample Replay and Live API remain fully available.
+              </div>
+            )}
             <div style={{ fontSize: 12, color: C.text3, lineHeight: 1.5, marginBottom: 10 }}>
               Small local models do not call tools reliably, so this path never uses real tool-calling — a
               prompted JSON schema stands in, and the loop reads the model&rsquo;s tool-call intent out of that JSON
@@ -469,13 +483,13 @@ export default function AgentCaseRunner({ C, onHome }) {
                   ))}
                 </select>
               </div>
-              <button onClick={loadLocalModel} disabled={localStatus === 'loading' || localStatus === 'ready'} style={{
+              <button onClick={loadLocalModel} disabled={localStatus === 'loading' || localStatus === 'ready' || localCompatibilityIssues.length > 0} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 14px',
                 background: localStatus === 'ready' ? C.greenBg : C.surface,
                 border: `1px solid ${localStatus === 'ready' ? C.green : C.borderHi}`,
                 color: localStatus === 'ready' ? C.green : C.text1,
                 fontSize: 12, fontWeight: 800, letterSpacing: .5, borderRadius: 2,
-                cursor: localStatus === 'loading' || localStatus === 'ready' ? 'not-allowed' : 'pointer',
+                cursor: localStatus === 'loading' || localStatus === 'ready' || localCompatibilityIssues.length > 0 ? 'not-allowed' : 'pointer',
               }}>
                 {localStatus === 'loading' && <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} />}
                 {localStatus === 'ready' ? '● LOADED' : localStatus === 'loading' ? 'LOADING…' : 'LOAD MODEL'}
@@ -497,7 +511,7 @@ export default function AgentCaseRunner({ C, onHome }) {
               trace facts and does not raise independence above I0. A distinct model is required for a local target.
             </div>
           </div>
-          <button style={toggleBtn(C, judgeEnabled)} onClick={() => setJudgeEnabled(enabled => !enabled)}>
+          <button aria-pressed={judgeEnabled} style={toggleBtn(C, judgeEnabled)} onClick={() => setJudgeEnabled(enabled => !enabled)}>
             {judgeEnabled ? 'ENABLED' : 'DISABLED'}
           </button>
         </div>
@@ -523,40 +537,48 @@ export default function AgentCaseRunner({ C, onHome }) {
       </div>
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        <button onClick={handleRun} disabled={running} style={{
+        <button onClick={handleComparative} disabled={running} style={{
           display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px',
           background: running ? C.hover : C.brassBg, border: `1px solid ${C.brass}`, color: C.brass,
           fontSize: 13, fontWeight: 800, letterSpacing: .5, cursor: running ? 'not-allowed' : 'pointer', borderRadius: 2,
         }}>
-          {running ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Play size={14} />} {running ? 'RUNNING…' : 'RUN CASE'}
+          {running ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Play size={14} />} {running ? 'RUNNING…' : 'COMPARE THREE PROFILES'}
         </button>
-        <button onClick={handleComparative} disabled={running} style={{
+        <button onClick={handleRun} disabled={running} style={{
           display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px',
           background: 'transparent', border: `1px solid ${C.borderHi}`, color: C.text2,
           fontSize: 13, fontWeight: 700, letterSpacing: .5, cursor: running ? 'not-allowed' : 'pointer', borderRadius: 2,
         }}>
-          RUN ACROSS BASELINE / PARTIAL / REFERENCE
-        </button>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 7, color: C.text3, fontSize: 11 }}>
-          TRIALS
-          <input
-            aria-label="Repeat trial count"
-            type="number"
-            min="2"
-            max="10"
-            value={trialCount}
-            onChange={event => setTrialCount(Math.max(2, Math.min(10, Number(event.target.value) || 2)))}
-            style={{ ...input(C), width: 62, padding: '7px 8px' }}
-          />
-        </label>
-        <button onClick={handleRepeated} disabled={running} style={{
-          display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px',
-          background: 'transparent', border: `1px solid ${C.borderHi}`, color: C.text2,
-          fontSize: 13, fontWeight: 700, letterSpacing: .5, cursor: running ? 'not-allowed' : 'pointer', borderRadius: 2,
-        }}>
-          RUN REPEAT TRIALS
+          RUN SELECTED PROFILE
         </button>
       </div>
+
+      <details style={{ ...section(C), padding: '12px 14px' }}>
+        <summary style={{ cursor: 'pointer', color: C.text2, fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
+          Repeat trials <span style={{ color: C.text3, fontWeight: 500, letterSpacing: 0, textTransform: 'none' }}>— check outcome variance</span>
+        </summary>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 7, color: C.text3, fontSize: 11 }}>
+            TRIALS
+            <input
+              aria-label="Repeat trial count"
+              type="number"
+              min="2"
+              max="10"
+              value={trialCount}
+              onChange={event => setTrialCount(Math.max(2, Math.min(10, Number(event.target.value) || 2)))}
+              style={{ ...input(C), width: 62, padding: '7px 8px' }}
+            />
+          </label>
+          <button onClick={handleRepeated} disabled={running} style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
+            background: 'transparent', border: `1px solid ${C.borderHi}`, color: C.text2,
+            fontSize: 12, fontWeight: 700, letterSpacing: .5, cursor: running ? 'not-allowed' : 'pointer', borderRadius: 2,
+          }}>
+            RUN REPEAT TRIALS
+          </button>
+        </div>
+      </details>
 
       {trialSummary && (
         <div style={{ ...section(C), fontSize: 12, color: C.text2, lineHeight: 1.55 }}>
@@ -578,14 +600,18 @@ export default function AgentCaseRunner({ C, onHome }) {
       {result && (
         <>
           <div>
-            <div style={fieldLabel(C)}>ReAct loop &middot; event stream</div>
-            <AgenticTracePanel C={C} run={result.run} />
+            <div style={fieldLabel(C)}>Control results &amp; verdict</div>
+            <ControlResultsPanel C={C} verdict={result.verdict} profiles={DISPLAY_PROFILES} comparisonHistory={comparison} />
           </div>
 
-          <div>
-            <div style={fieldLabel(C)}>Control results &amp; verdict</div>
-            <ControlResultsPanel C={C} verdict={result.verdict} profiles={CONTROL_PROFILES} comparisonHistory={comparison} />
-          </div>
+          <details style={section(C)}>
+            <summary style={{ cursor: 'pointer', color: C.text2, fontSize: 12, fontWeight: 800, letterSpacing: 1.1, textTransform: 'uppercase' }}>
+              Technical event trace <span style={{ color: C.text3, fontWeight: 500, letterSpacing: 0, textTransform: 'none' }}>— {result.run?.events?.length ?? 0} recorded events</span>
+            </summary>
+            <div style={{ marginTop: 14 }}>
+              <AgenticTracePanel C={C} run={result.run} />
+            </div>
+          </details>
 
           <div>
             <div style={fieldLabel(C)}>Evidence contract</div>

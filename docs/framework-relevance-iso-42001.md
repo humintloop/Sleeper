@@ -1,6 +1,6 @@
 # ISO/IEC 42001 Relevance Notes
 
-These notes explain how SLEEPER uses ISO/IEC 42001 references. They are traceability aids, not certification claims.
+These notes explain how Sleeper uses ISO/IEC 42001 references. They are traceability aids, not certification claims.
 
 ## Source Basis
 
@@ -13,9 +13,9 @@ The official ISO page describes ISO/IEC 42001 as an AI management system standar
 - 9.2 Internal audit
 - 9.3 Management review
 
-## How SLEEPER Uses Section 9
+## How Sleeper Uses Section 9
 
-SLEEPER turns local adversarial testing into performance-evaluation evidence:
+Sleeper turns local adversarial testing into performance-evaluation evidence:
 
 - **9.1 Monitoring, measurement, analysis, and evaluation:** case results, verdicts, model metadata, response evidence, trendable control gaps, and retest outcomes.
 - **9.2 Internal audit:** run IDs, case versions, mapped controls, reviewer decisions, and retained evidence that can support an audit sample.
@@ -23,4 +23,4 @@ SLEEPER turns local adversarial testing into performance-evaluation evidence:
 
 ## Important Boundary
 
-SLEEPER does not determine ISO/IEC 42001 conformance. It helps show where an AI management system would need evidence that controls are working, failing, or improving over time.
+Sleeper does not determine ISO/IEC 42001 conformance. It helps show where an AI management system would need evidence that controls are working, failing, or improving over time.

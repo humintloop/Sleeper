@@ -45,6 +45,14 @@ function Group({ C, title, children }) {
   );
 }
 
+function humanize(value) {
+  return String(value ?? '')
+    .replaceAll('_', ' ')
+    .replace(/\b\w/g, letter => letter.toUpperCase())
+    .replaceAll('Pii', 'PII')
+    .replaceAll('Api', 'API');
+}
+
 export default function EvidenceContractPanel({ C, contract }) {
   const [copied, setCopied] = useState(false);
   const [integrityVerified, setIntegrityVerified] = useState(null);
@@ -105,6 +113,21 @@ export default function EvidenceContractPanel({ C, contract }) {
         </div>
       )}
 
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
+        <div style={{ background: C.greenBg, border: `1px solid ${C.green}55`, borderLeft: `3px solid ${C.green}`, borderRadius: 2, padding: '11px 13px' }}>
+          <div style={{ color: C.green, fontSize: 10, fontWeight: 900, letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 5 }}>What this run supports</div>
+          <div style={{ color: C.text1, fontSize: 12.5, lineHeight: 1.5 }}>
+            {(contract.scope?.covers || []).map(humanize).join(', ') || 'No positive control claim.'}
+          </div>
+        </div>
+        <div style={{ background: C.surface, border: `1px solid ${C.borderHi}`, borderLeft: `3px solid ${C.borderHi}`, borderRadius: 2, padding: '11px 13px' }}>
+          <div style={{ color: C.text2, fontSize: 10, fontWeight: 900, letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 5 }}>What it does not support</div>
+          <div style={{ color: C.text2, fontSize: 12.5, lineHeight: 1.5 }}>
+            {(contract.scope?.does_not_cover || []).map(humanize).join(', ') || 'No additional exclusions recorded.'}
+          </div>
+        </div>
+      </div>
+
       <div style={{ display: 'grid', gap: 10 }}>
         <Group C={C} title="Evidence class">
           <Field C={C} label="Target" value={`${ev.target?.class} (${ev.target?.class_name}) — ${ev.target?.subject}`} />
@@ -117,7 +140,7 @@ export default function EvidenceContractPanel({ C, contract }) {
 
         <div style={{ fontSize: 11, color: C.text3, lineHeight: 1.6, background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: '10px 12px' }}>
           <span style={{ color: C.text2, fontWeight: 700 }}>What this means: </span>
-          Evidence class (E1&ndash;E5) is how strong a claim this run&rsquo;s evidence supports &mdash; E1 is a mapping,
+          Evidence class (E1&ndash;E5) is how strong a claim this run&rsquo;s evidence supports &mdash; E1 is an observation,
           E2 is characterizing real behavior, E3 is watching a control actually block something. This project
           never reaches E4 (replay-resistant persistence) or E5 (isolation boundary) &mdash; that ceiling is
           enforced in code, not just stated here. Independence (I0&ndash;I2) is who built the check: I0 means
@@ -127,8 +150,8 @@ export default function EvidenceContractPanel({ C, contract }) {
 
         <Group C={C} title="Scope">
           <Field C={C} label="Vocabulary" value={contract.scope?.vocabulary} />
-          <Field C={C} label="Covers" value={contract.scope?.covers?.join(', ') || '(none)'} tone="green" />
-          <Field C={C} label="Does not cover" value={contract.scope?.does_not_cover?.join(', ') || '(none)'} tone="slate" />
+          <Field C={C} label="Covers" value={contract.scope?.covers?.map(humanize).join(', ') || '(none)'} tone="green" />
+          <Field C={C} label="Does not cover" value={contract.scope?.does_not_cover?.map(humanize).join(', ') || '(none)'} tone="slate" />
         </Group>
 
         <Group C={C} title="Run">
@@ -195,7 +218,12 @@ export default function EvidenceContractPanel({ C, contract }) {
 
       <div style={{ fontSize: 11.5, color: C.text3, fontStyle: 'italic' }}>{contract.claim_boundary}</div>
 
-      <pre style={{ margin: 0, maxHeight: 320, overflow: 'auto', padding: 14, background: C.ink, border: `1px solid ${C.border}`, borderRadius: 2, color: C.brass, fontSize: 11, lineHeight: 1.55, fontFamily: C.mono, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{json}</pre>
+      <details style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: '11px 13px' }}>
+        <summary style={{ cursor: 'pointer', color: C.text2, fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
+          Raw contract JSON
+        </summary>
+        <pre style={{ margin: '12px 0 0', maxHeight: 320, overflow: 'auto', padding: 14, background: C.ink, border: `1px solid ${C.border}`, borderRadius: 2, color: C.brass, fontSize: 11, lineHeight: 1.55, fontFamily: C.mono, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{json}</pre>
+      </details>
     </div>
   );
 }

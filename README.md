@@ -1,4 +1,4 @@
-# SLEEPER — Local-First Agent Assurance Lab
+# Sleeper — Local-First Agent Assurance Lab
 
 > Run agents against adversarial content in the browser. Watch the tool calls. Map the control gap.
 
@@ -6,7 +6,7 @@
 
 ## What This Is
 
-SLEEPER tests whether an AI agent can be manipulated into taking an action it should not
+Sleeper tests whether an AI agent can be manipulated into taking an action it should not
 take, and turns the result into reviewable evidence mapped to published control frameworks.
 
 The question is not "did the model say something bad." It is:
@@ -15,7 +15,7 @@ The question is not "did the model say something bad." It is:
 > does anything stop it?
 
 An agent's security properties live in the gap between what it *says* and what it *does*.
-SLEEPER instruments that gap: a real tool-calling loop where the model genuinely decides
+Sleeper instruments that gap: a real tool-calling loop where the model genuinely decides
 whether to call `send_email`, against mock tools where nothing actually leaves the browser.
 
 The sharpest demonstration of that isn't one model's reply to one adversarial prompt — it's
@@ -26,7 +26,7 @@ degrade, or remain `INCONCLUSIVE` when the model never exercises the relevant co
 claim is narrower and testable: security decisions must come from controls around the model,
 not from assuming the model will refuse an adversarial instruction.
 
-SLEEPER descends from [ELICIT](https://github.com/humintloop/ELICIT), a single-turn adversarial
+Sleeper descends from [ELICIT](https://github.com/humintloop/ELICIT), a single-turn adversarial
 assurance lab. It no longer runs single-turn probes itself — that flow was deleted once the
 agent harness could stand fully on its own; see
 [`docs/remove-single-turn-flow.md`](./docs/remove-single-turn-flow.md) for why and what changed.
@@ -57,16 +57,16 @@ identity spoofing.
 Every finding records what it actually permits you to claim, on three axes:
 
 - **Evidence class (E1–E5).** Observation → runtime characterization → enforcement →
-  persistence/replay resistance → isolation. Nothing SLEEPER produces reaches E4 or E5, and
+  persistence/replay resistance → isolation. Nothing Sleeper produces reaches E4 or E5, and
   it says so — enforced in code, not just documented.
 - **Oracle independence (I0–I2).** Who produced the verdict: self-authored, independently
-  reimplemented, or an independent sensor the target does not control. SLEEPER is I0.
+  reimplemented, or an independent sensor the target does not control. Sleeper is I0.
 - **Status.** Mapped / executed / independently reviewed / certified. A framework crosswalk is
   E1 material regardless of how many requirements it covers.
 
 Two consequences worth stating up front:
 
-1. When SLEEPER blocks a tool call, that is enforcement **by SLEEPER's own gate**, and
+1. When Sleeper blocks a tool call, that is enforcement **by Sleeper's own gate**, and
    evidence about the target's behavior only. A mock-tool run does not establish that a
    production system would have blocked anything.
 2. An unexercised control resolves to `INCONCLUSIVE`, never to "held." If the model never
@@ -97,7 +97,7 @@ have explicit permission to test. Do not use against production AI systems witho
 authorization.
 
 Framework mappings are control traceability aids. They are **not** legal conclusions, audit
-determinations, certification evidence, or findings of noncompliance. No SLEEPER output is a
+determinations, certification evidence, or findings of noncompliance. No Sleeper output is a
 conformity assessment against any standard.
 
 Mock tools never take real actions — no email is sent, no file is written, no API is called.
@@ -127,7 +127,7 @@ npm run build
 ## Targets
 
 - **Sample Replay (no key)** — a deterministic scripted tool path for a reliable walkthrough.
-  It exercises SLEEPER's gates and evidence pipeline, but is E1 target evidence because no
+  It exercises Sleeper's gates and evidence pipeline, but is E1 target evidence because no
   model made a decision. The contract states that limitation explicitly.
 - **Local (WebLLM/WebGPU)** — models run entirely in the browser. Nothing leaves the machine.
   Small models call tools unreliably, so this path never uses real tool-calling: a prompted
@@ -145,7 +145,7 @@ An optional **secondary local-model judge** can review a blinded, bounded trace 
 goal adoption and unauthorized-action intent. Its prompt/model/packet digests and raw structured
 opinion are retained. It never overrides deterministic trace facts and does not raise oracle
 independence above I0; it is triangulation, not independent review. When the target is local,
-SLEEPER requires a different judge model to reduce correlated failure.
+Sleeper requires a different judge model to reduce correlated failure.
 
 ## Persistence
 
@@ -167,7 +167,7 @@ the application share one trust boundary, the whole chain can still be replaced 
 The harness includes a deliberately unconfigured external-witness interface. A future signer
 must both attest and verify a receipt bound to the contract digest; replay resistance is claimed
 only when that verified receipt also carries append-only sequencing, a nonce, and a timestamp.
-SLEEPER contains no private signing key and makes no remote call by default.
+Sleeper contains no private signing key and makes no remote call by default.
 
 For a concise portfolio presentation, follow the
 [`7-minute walkthrough`](./docs/portfolio-walkthrough.md).

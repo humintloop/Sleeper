@@ -78,7 +78,7 @@ describe('report export sanitization', () => {
   it('exports an explicit JSON schema for a list of runs', () => {
     const exported = createAgentRunsExport([adversarialRun], { assessmentId: 'assessment-1' });
     expect(exported.exportVersion).toBe(1);
-    expect(exported.application).toBe('SLEEPER');
+    expect(exported.application).toBe('Sleeper');
     expect(exported.runs).toHaveLength(1);
     expect(exported.runs[0].caseId).toBe('NR-AGT-001');
   });

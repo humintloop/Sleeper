@@ -46,7 +46,7 @@ const C = {
   ink:      '#050505',
   text1:    '#F4F2EA',
   text2:    '#B6B2A4',
-  text3:    '#726E62',
+  text3:    '#8B877A',
   mono:     '"Geist Mono", ui-monospace, monospace',
   sans:     '"Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
 };
@@ -58,60 +58,6 @@ const C = {
 // AgentCaseRunner's own HOME link — so there is no persistent header/stage
 // rail left to coordinate between them.
 const STAGE = { HOME: 'home', AGENT_LAB: 'agent_lab' };
-
-function CompatGate({ C }) {
-  const isMobile = typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-  const hasWebGPU = typeof navigator !== 'undefined' && 'gpu' in navigator;
-  const hasIsolation = typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated;
-  const issues = [
-    isMobile && 'Mobile devices do not have sufficient GPU memory for in-browser models',
-    !hasWebGPU && 'WebGPU is not available in this browser',
-    !hasIsolation && 'Cross-origin isolation is not active (SharedArrayBuffer unavailable)',
-  ].filter(Boolean);
-
-  if (issues.length === 0) return null;
-
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
-      background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 24,
-    }}>
-      <div style={{ maxWidth: 480, width: '100%', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <div style={{ fontFamily: C.sans, fontSize: 28, fontWeight: 600, letterSpacing: '0.35em', color: C.text1 }}>SLEEPER</div>
-
-        <div style={{ padding: '16px 18px', background: C.redBg, border: `1px solid ${C.red}55`, borderLeft: `3px solid ${C.red}`, borderRadius: 2 }}>
-          <div style={{ fontSize: 12, color: C.red, fontWeight: 800, letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 8 }}>
-            {isMobile ? 'Mobile not supported' : 'Browser not supported'}
-          </div>
-          <div style={{ fontSize: 14, color: C.text1, lineHeight: 1.6 }}>
-            {isMobile
-              ? 'SLEEPER runs large language models directly in your browser using WebGPU. Mobile devices do not yet have the GPU memory required to load models locally.'
-              : 'This browser is missing required capabilities to run in-browser models.'}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {issues.map((issue, i) => (
-            <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13, color: C.text2 }}>
-              <span style={{ color: C.red, fontWeight: 800, flexShrink: 0 }}>✕</span>
-              <span>{issue}</span>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ padding: '14px 16px', background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2 }}>
-          <div style={{ fontSize: 12, color: C.text3, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Use instead</div>
-          <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.65 }}>
-            {isMobile
-              ? <>Open SLEEPER on a <strong style={{ color: C.text1 }}>desktop or laptop</strong> running Chrome, Edge, or Arc. WebGPU and sufficient GPU memory are required to load models locally.</>
-              : <>Try <strong style={{ color: C.text1 }}>Chrome, Edge, or Arc</strong> on desktop. Make sure hardware acceleration is enabled in browser settings.</>}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ═══ Global style ═════════════════════════════════════════════════════════════
 function GlobalStyle({ C }) {
@@ -139,6 +85,7 @@ function GlobalStyle({ C }) {
       }
       @media (max-width: 760px) {
         .home-hero-grid { grid-template-columns: minmax(0, 1fr) !important; }
+        .agent-runner { padding: 20px 16px 48px !important; gap: 16px !important; }
       }
     `}</style>
   );
@@ -160,8 +107,6 @@ export default function App() {
       color: C.text1, fontFamily: C.sans, lineHeight: 1.5, overflow: 'hidden',
     }}>
       <GlobalStyle C={C} />
-      <CompatGate C={C} />
-
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
         {stage === STAGE.HOME && (
           <DossierHome

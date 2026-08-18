@@ -104,7 +104,7 @@ export class WebLLMSecondaryJudge {
       independence_effect: 'none',
       independence_level: 'I0',
       limitation:
-        'Secondary model opinion authored and configured by this project. It triangulates semantic interpretation but does not independently validate SLEEPER or override deterministic run facts.',
+        'Secondary model opinion authored and configured by this project. It triangulates semantic interpretation but does not independently validate Sleeper or override deterministic run facts.',
     };
   }
 }

@@ -8,12 +8,8 @@
 // surfaces used.
 import { getVerdictColor, getVerdictLabel } from './VerdictBanner';
 
-// This screen's CONTROL_* vocabulary answers "did the control hold" — a
-// different question from the single-turn probe vocabulary (MODEL HELD /
-// PROBE SUCCEEDED / etc., "did the model resist") this project used to also
-// carry. The word HELD is shared on purpose (see
-// docs/agent-module-plan.md §"Reporting") but the two must never be read as
-// the same claim, so this label is spelled out rather than assumed obvious.
+// This screen's CONTROL_* vocabulary answers "did the exercised control hold?"
+// Keep that scope explicit without referring to a deleted legacy workflow.
 const VERDICT_PLAIN_LANGUAGE = {
   CONTROL_HELD: 'The control held — the exercised controls caught the attempted action.',
   PARTIAL_CONTROL_FAILURE: 'Partial control failure — at least one control failed while others held.',
@@ -41,6 +37,13 @@ function OutcomeTag({ C, outcome }) {
   );
 }
 
+function humanizeReason(text = '') {
+  return text
+    .replaceAll('adversarial_detection', 'adversarial input detection')
+    .replaceAll('tool_authorization', 'tool-use authorization')
+    .replaceAll('pii_leakage_guard', 'PII leakage prevention');
+}
+
 export default function ControlResultsPanel({ C, verdict, profiles, comparisonHistory }) {
   if (!verdict) return null;
   const color = getVerdictColor(verdict.verdict, C);
@@ -50,7 +53,7 @@ export default function ControlResultsPanel({ C, verdict, profiles, comparisonHi
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ padding: '14px 16px', borderRadius: 2, background: C.surface, border: `1px solid ${color}55`, borderLeft: `3px solid ${color}` }}>
         <div style={{ fontSize: 10, color: C.text3, letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 6 }}>
-          Verdict &mdash; control vocabulary, not probe vocabulary
+          Outcome for exercised controls
         </div>
         <div style={{ fontSize: 20, color, fontWeight: 900, letterSpacing: .3, marginBottom: 4 }}>
           {getVerdictLabel(verdict.verdict)}
@@ -59,15 +62,14 @@ export default function ControlResultsPanel({ C, verdict, profiles, comparisonHi
           {VERDICT_PLAIN_LANGUAGE[verdict.verdict]}
         </div>
         {verdict.reason?.text && (
-          <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.5 }}>{verdict.reason.text}</div>
+          <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.5 }}>{humanizeReason(verdict.reason.text)}</div>
         )}
         {verdict.reason?.code && (
           <div style={{ fontSize: 10.5, color: C.text3, fontFamily: C.mono, marginTop: 6 }}>{verdict.reason.code}</div>
         )}
         <div style={{ fontSize: 11, color: C.text3, lineHeight: 1.5, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.border}` }}>
-          This answers &ldquo;did the control hold,&rdquo; a different question from the single-turn probe
-          screens&rsquo; MODEL HELD / PROBE SUCCEEDED vocabulary, which answers &ldquo;did the model resist.&rdquo;
-          The word HELD appears in both by design &mdash; they are not the same claim.
+          This verdict describes only the controls actually exercised in this run. It does not prove that the model is
+          safe, that the target has production controls, or that the same result will occur on another run.
         </div>
       </div>
 

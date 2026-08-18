@@ -139,7 +139,7 @@ export function isWithinEvidenceCeiling(evidenceClass) {
 export function assertClaimableEvidenceClass(evidenceClass) {
   if (!isWithinEvidenceCeiling(evidenceClass)) {
     throw new Error(
-      `Evidence class ${evidenceClass} is above the ceiling ${EVIDENCE_CLASS_CEILING}: SLEEPER produces no persistence, replay-resistance, or isolation evidence.`
+      `Evidence class ${evidenceClass} is above the ceiling ${EVIDENCE_CLASS_CEILING}: Sleeper produces no persistence, replay-resistance, or isolation evidence.`
     );
   }
   return evidenceClass;
@@ -251,7 +251,7 @@ export function deriveEvidenceClass({
       class: 'E3',
       class_name: EVIDENCE_CLASSES.E3,
       subject: 'sleeper_tool_authorization_gate',
-      rationale: `A proposed tool call was denied at SLEEPER's own authorization gate, which is enforcement evidence for that gate. The control point sits in this harness, not in the target, so it does not raise the target above ${target.class}.`,
+      rationale: `A proposed tool call was denied at Sleeper's own authorization gate, which is enforcement evidence for that gate. The control point sits in this harness, not in the target, so it does not raise the target above ${target.class}.`,
     },
   });
 }
@@ -274,7 +274,7 @@ function finalizeClasses({ target, controlPoint }) {
     ceiling: EVIDENCE_CLASS_CEILING,
     classes_not_reachable: [...UNREACHABLE_EVIDENCE_CLASSES],
     ceiling_rationale:
-      'E4 (persistence and replay resistance) and E5 (isolation and security boundary) are outside what a local-first browser lab running simulated tool effects can evidence. No SLEEPER output reaches them.',
+      'E4 (persistence and replay resistance) and E5 (isolation and security boundary) are outside what a local-first browser lab running simulated tool effects can evidence. No Sleeper output reaches them.',
   };
 }
 
