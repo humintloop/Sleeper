@@ -3,18 +3,33 @@
 // keeps AgenticTracePanel's card-per-event visual pattern.
 import { AlertTriangle, ArrowRight, Ban, MessageSquare, Radar, ShieldAlert, Wrench } from 'lucide-react';
 
+// Three tiers, per the investigation-workspace spec: `observed` is a literal
+// record of what happened (a prompt sent, a call proposed, a result
+// returned) with no judgment applied; `derived` is computed from observed
+// facts by this harness's own deterministic policy (a gate decision, a
+// detection match, the case-condition evaluator); `analyst_interpretation`
+// is reserved for a human or secondary-model opinion layered on top — no
+// event type emits one today (the secondary judge's opinion is a separate
+// contract field, not a trace event), so the legend says that plainly
+// rather than forcing something into a tier it doesn't belong in.
+const CLASSIFICATION_LABEL = {
+  observed: 'OBSERVED',
+  derived: 'DERIVED',
+  analyst_interpretation: 'ANALYST INTERPRETATION',
+};
+
 const EVENT_META = {
-  prompt: { icon: MessageSquare, label: 'Control gate', tone: 'text3' },
-  model_turn: { icon: MessageSquare, label: 'Model turn', tone: 'text1' },
-  tool_call: { icon: Wrench, label: 'Tool call proposed', tone: 'brass' },
-  authorization_decision: { icon: ShieldAlert, label: 'Authorization decision', tone: 'brass' },
-  tool_result: { icon: ArrowRight, label: 'Tool result', tone: 'text2' },
-  detection: { icon: Radar, label: 'Adversarial detection', tone: 'brass' },
-  case_evaluation: { icon: Radar, label: 'Case-condition evaluation', tone: 'ochre' },
-  loop_guard: { icon: Ban, label: 'Loop guard', tone: 'red' },
-  turn_cap: { icon: AlertTriangle, label: 'Turn cap reached', tone: 'red' },
-  target_error: { icon: AlertTriangle, label: 'Target error', tone: 'red' },
-  response: { icon: MessageSquare, label: 'Final response', tone: 'text1' },
+  prompt: { icon: MessageSquare, label: 'Control gate', tone: 'text3', classification: 'observed' },
+  model_turn: { icon: MessageSquare, label: 'Model turn', tone: 'text1', classification: 'observed' },
+  tool_call: { icon: Wrench, label: 'Tool call proposed', tone: 'brass', classification: 'observed' },
+  authorization_decision: { icon: ShieldAlert, label: 'Authorization decision', tone: 'brass', classification: 'derived' },
+  tool_result: { icon: ArrowRight, label: 'Tool result', tone: 'text2', classification: 'observed' },
+  detection: { icon: Radar, label: 'Adversarial detection', tone: 'brass', classification: 'derived' },
+  case_evaluation: { icon: Radar, label: 'Case-condition evaluation', tone: 'ochre', classification: 'derived' },
+  loop_guard: { icon: Ban, label: 'Loop guard', tone: 'red', classification: 'derived' },
+  turn_cap: { icon: AlertTriangle, label: 'Turn cap reached', tone: 'red', classification: 'derived' },
+  target_error: { icon: AlertTriangle, label: 'Target error', tone: 'red', classification: 'observed' },
+  response: { icon: MessageSquare, label: 'Final response', tone: 'text1', classification: 'observed' },
 };
 
 // Plain-language glosses for the enum values the harness emits. The raw code
@@ -151,17 +166,31 @@ export default function AgenticTracePanel({ C, run }) {
         </div>
       )}
 
+      <div style={{ fontSize: 10.5, color: C.text3, lineHeight: 1.5, padding: '8px 10px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 2 }}>
+        <strong style={{ color: C.text2 }}>OBSERVED</strong> — a literal record of what happened, no judgment applied.{' '}
+        <strong style={{ color: C.text2 }}>DERIVED</strong> — computed from observed facts by this harness&rsquo;s own
+        deterministic policy (a gate decision, a detection match, the case-condition evaluator). No event below is an{' '}
+        <strong style={{ color: C.text2 }}>analyst interpretation</strong> — that tier exists in this taxonomy but nothing
+        in this trace produces one; a secondary-model opinion, if enabled, lives on the Evidence Contract, not here.
+      </div>
+
       {events.map((event, i) => {
         const meta = EVENT_META[event.type] || EVENT_META.model_turn;
         const Icon = meta.icon;
         const color = C[meta.tone] || C.text2;
+        const classification = event.classification || meta.classification;
         return (
           <div key={i} style={{ display: 'flex', gap: 10, background: C.panel, border: `1px solid ${C.border}`, borderLeft: `3px solid ${color}`, borderRadius: 2, padding: '10px 12px' }}>
             <Icon size={14} color={color} style={{ flexShrink: 0, marginTop: 2 }} />
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' }}>
                 <span style={{ color, fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>{meta.label}</span>
                 <span style={{ color: C.text3, fontSize: 10, fontFamily: C.mono }}>T{event.turn}</span>
+                {classification && (
+                  <span style={{ color: C.text3, fontSize: 9, fontWeight: 700, letterSpacing: .8, border: `1px solid ${C.borderHi}`, borderRadius: 2, padding: '1px 5px' }}>
+                    {CLASSIFICATION_LABEL[classification] || classification.toUpperCase()}
+                  </span>
+                )}
               </div>
               <div style={{ color: C.text2, fontSize: 12.5, lineHeight: 1.5, overflowWrap: 'anywhere' }}>
                 <EventDetail C={C} event={event} />
