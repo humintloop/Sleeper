@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import DossierHome from './components/DossierHome';
+import IncidentMemoHome from './components/IncidentMemoHome';
+import SceneWalkthrough from './components/SceneWalkthrough';
 import AgentCaseRunner from './components/AgentCaseRunner';
 import { loadAgentRuns } from './storage';
 
@@ -128,11 +129,16 @@ const C = {
 
 // ── Stages ────────────────────────────────────────────────────────────────────
 // Agent-only: the single-turn probe flow's six other stages
-// (CASE/LOADING/SELECT/PROBE/TRIAGE/REPORT) are gone. Each
-// remaining screen owns its own navigation — DossierHome's entry card,
-// AgentCaseRunner's own HOME link — so there is no persistent header/stage
-// rail left to coordinate between them.
-const STAGE = { HOME: 'home', AGENT_LAB: 'agent_lab' };
+// (CASE/LOADING/SELECT/PROBE/TRIAGE/REPORT) are gone.
+//
+// Three now, and they are a narrative in that order — consequence, then how,
+// then proof. HOME is the incident memo: what happened, for someone deciding
+// whether to roll an assistant out. SCENE plays the same run in the interface
+// it would have happened in. AGENT_LAB is the evidence, unchanged. A reader
+// who already believes the premise skips straight to the lab from the memo,
+// and each screen still owns its own back navigation, so there is no
+// persistent header/stage rail to coordinate between them.
+const STAGE = { HOME: 'home', SCENE: 'scene', AGENT_LAB: 'agent_lab' };
 
 // ═══ Global style ═════════════════════════════════════════════════════════════
 function GlobalStyle({ C }) {
@@ -158,9 +164,14 @@ function GlobalStyle({ C }) {
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
       }
+      @media (max-width: 980px) {
+        .scene-grid { grid-template-columns: minmax(0, 1fr) !important; }
+        .scene-grid > * { border-right: none !important; }
+      }
       @media (max-width: 760px) {
         .home-hero-grid { grid-template-columns: minmax(0, 1fr) !important; }
         .agent-runner { padding: 20px 16px 48px !important; gap: 16px !important; }
+        .scene { padding: 20px 16px 48px !important; }
       }
     `}</style>
   );
@@ -168,6 +179,10 @@ function GlobalStyle({ C }) {
 
 export default function App() {
   const [stage, setStage] = useState(STAGE.HOME);
+  // The run the scene produced, handed to the lab so the evidence opens on the
+  // very run the visitor just watched rather than on a fresh one that merely
+  // resembles it. Null whenever the lab is entered directly.
+  const [handoff, setHandoff] = useState(null);
 
   return (
     <div style={{
@@ -184,15 +199,32 @@ export default function App() {
       <GlobalStyle C={C} />
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
         {stage === STAGE.HOME && (
-          <DossierHome
+          <IncidentMemoHome
             C={C}
-            onAgentLab={() => setStage(STAGE.AGENT_LAB)}
+            onScene={() => setStage(STAGE.SCENE)}
+            onAgentLab={() => { setHandoff(null); setStage(STAGE.AGENT_LAB); }}
             agentRunsCount={loadAgentRuns().length}
           />
         )}
 
+        {stage === STAGE.SCENE && (
+          <SceneWalkthrough
+            C={C}
+            onHome={() => setStage(STAGE.HOME)}
+            onEvidence={outcome => { setHandoff(outcome); setStage(STAGE.AGENT_LAB); }}
+          />
+        )}
+
         {stage === STAGE.AGENT_LAB && (
-          <AgentCaseRunner C={C} onHome={() => setStage(STAGE.HOME)} />
+          <AgentCaseRunner
+            C={C}
+            onHome={() => setStage(STAGE.HOME)}
+            // Remounts when a different run arrives, so the runner's initial
+            // state genuinely re-seeds from it instead of the handoff being
+            // read once and ignored on every later entry.
+            key={handoff?.manifestDigest ?? 'direct'}
+            handoff={handoff}
+          />
         )}
       </div>
     </div>

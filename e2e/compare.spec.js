@@ -1,11 +1,11 @@
 // Critical flow 4: Compare -> exact original run contexts are preserved,
 // even after the live form settings change underneath the comparison.
 import { test, expect } from '@playwright/test';
-import { reopenSetup } from './helpers.js';
+import { openLab, reopenSetup } from './helpers.js';
 
 test('comparison members keep their own completed identity after the control profile selection changes', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: /Run agent case/ }).click();
+  await openLab(page);
   await page.getByRole('button', { name: 'RUN & COMPARE CONTROLS' }).click();
   await expect(page.getByText('current', { exact: true })).toBeVisible({ timeout: 15_000 });
 

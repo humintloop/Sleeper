@@ -13,3 +13,15 @@ export async function reopenSetup(page) {
   const changeSetup = page.getByRole('button', { name: 'Change setup' });
   if (await changeSetup.count() > 0) await changeSetup.click();
 }
+
+/**
+ * Get from the opening memo into the evidence lab.
+ *
+ * The home screen is the incident memo now, not a "Run agent case" card. Its
+ * primary action walks the visitor through the scene; the secondary one goes
+ * straight to the lab, which is the entry every test below wants. Tests that
+ * care about the narrative path use the scene explicitly.
+ */
+export async function openLab(page) {
+  await page.getByRole('button', { name: /Skip the story/ }).click();
+}

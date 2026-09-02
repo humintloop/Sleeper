@@ -6,11 +6,11 @@
 // the same stale-export contract independently
 // (evidenceContractExport.js / reportExport.js).
 import { test, expect } from '@playwright/test';
-import { reopenSetup } from './helpers.js';
+import { openLab, reopenSetup } from './helpers.js';
 
 async function runToCurrent(page) {
   await page.goto('/');
-  await page.getByRole('button', { name: /Run agent case/ }).click();
+  await openLab(page);
   await page.getByRole('button', { name: 'RUN & COMPARE CONTROLS' }).click();
   await expect(page.getByText('current', { exact: true })).toBeVisible({ timeout: 15_000 });
 }

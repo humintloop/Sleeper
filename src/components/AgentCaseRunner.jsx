@@ -51,6 +51,7 @@ import RunContextSummary from './RunContextSummary';
 import InvestigationWorkspace from './InvestigationWorkspace';
 import ReportPanel from './ReportPanel';
 import RunHistory from './RunHistory';
+import { STORY_CASE_ID, STORY_PROFILE_ID } from '../data/storyScene';
 
 const PROVIDER_DEFAULTS = {
   [PROVIDERS.ANTHROPIC]: { endpoint: 'https://api.anthropic.com/v1/messages', modelId: 'claude-sonnet-5' },
@@ -103,9 +104,17 @@ function toggleBtn(C, active) {
   };
 }
 
-export default function AgentCaseRunner({ C, onHome }) {
-  const [caseId, setCaseId] = useState(AGENT_CASE_ORDER[0]);
-  const [profileId, setProfileId] = useState('reference');
+/**
+ * `handoff` is a completed run from the scene walkthrough. When one arrives the
+ * runner opens on it — that exact result object, not a fresh run that resembles
+ * it — with setup collapsed and the form already matching the configuration
+ * that produced it, so the visitor lands on CURRENT rather than being told
+ * their own run is stale. src/data/storyScene.js owns the arguments that keep
+ * those two configurations identical.
+ */
+export default function AgentCaseRunner({ C, onHome, handoff = null }) {
+  const [caseId, setCaseId] = useState(handoff ? STORY_CASE_ID : AGENT_CASE_ORDER[0]);
+  const [profileId, setProfileId] = useState(handoff ? STORY_PROFILE_ID : 'reference');
   const [variantId, setVariantId] = useState(null);
 
   const [targetType, setTargetType] = useState(TARGET_TYPES.SAMPLE);
@@ -114,7 +123,7 @@ export default function AgentCaseRunner({ C, onHome }) {
   // is a form until you press Run and a result after — leaving six sections of
   // configuration sitting above the answer means the answer opens below the
   // fold, which on a projector means it is not on screen at all.
-  const [setupOpen, setSetupOpen] = useState(true);
+  const [setupOpen, setSetupOpen] = useState(!handoff);
 
   // Live target state.
   const [provider, setProvider] = useState(PROVIDERS.ANTHROPIC);
@@ -149,9 +158,13 @@ export default function AgentCaseRunner({ C, onHome }) {
   const [judgeStatus, setJudgeStatus] = useState('idle');
   const [judgeProgress, setJudgeProgress] = useState('');
 
-  const [result, setResult] = useState(null); // { run, verdict, contract }
-  const [comparison, setComparison] = useState({}); // { [profileId]: verdictString }
-  const [comparisonResults, setComparisonResults] = useState({}); // { [profileId]: full assessment }
+  const [result, setResult] = useState(handoff ?? null); // { run, verdict, contract }
+  const [comparison, setComparison] = useState(
+    handoff ? { [STORY_PROFILE_ID]: handoff.verdict?.verdict } : {},
+  ); // { [profileId]: verdictString }
+  const [comparisonResults, setComparisonResults] = useState(
+    handoff ? { [STORY_PROFILE_ID]: handoff } : {},
+  ); // { [profileId]: full assessment }
   const [comparisonProgress, setComparisonProgress] = useState(null);
   const [trialCount, setTrialCount] = useState(3);
   const [trialSummary, setTrialSummary] = useState(null);

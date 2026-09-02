@@ -11,11 +11,12 @@
 //       reading as a clean result — i.e. the display layer cannot silently
 //       drop the flag Phase 1's runAgentCase.js always records honestly.
 import { test, expect } from '@playwright/test';
+import { openLab } from './helpers.js';
 
 test.describe('error and degraded paths stay visibly labeled', () => {
   test('running against Live API with no key set reports an error, not a fabricated result', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: /Run agent case/ }).click();
+    await openLab(page);
     await page.getByRole('button', { name: 'LIVE API' }).click();
 
     await page.getByRole('button', { name: 'RUN SELECTED PROFILE' }).click();
@@ -47,7 +48,7 @@ test.describe('error and degraded paths stay visibly labeled', () => {
       localStorage.setItem('sleeper-agent-runs', JSON.stringify([record]));
     });
     await page.reload();
-    await page.getByRole('button', { name: /Run agent case/ }).click();
+    await openLab(page);
 
     const historyRow = page.getByText('External Email Injection to Internal Data Exfiltration').last();
     await expect(historyRow).toBeVisible();

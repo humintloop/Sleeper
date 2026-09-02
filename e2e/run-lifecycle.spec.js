@@ -5,11 +5,11 @@
 //   3. Rerun -> new identity and current result.
 // Sample Replay only: deterministic, no API key, no WebGPU dependency.
 import { test, expect } from '@playwright/test';
-import { reopenSetup } from './helpers.js';
+import { openLab, reopenSetup } from './helpers.js';
 
 async function openRunAgentCase(page) {
   await page.goto('/');
-  await page.getByRole('button', { name: /Run agent case/ }).click();
+  await openLab(page);
   await expect(page.getByRole('heading', { name: 'Run agent case' })).toBeVisible();
 }
 
