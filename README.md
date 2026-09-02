@@ -6,6 +6,15 @@
 
 ---
 
+## Quickest look
+
+No install, no key: [**open the hosted demo**](https://humintloop.github.io/Sleeper/) → **Run agent
+case** → pick a case → **RUN & COMPARE CONTROLS** → open the **Evidence Contract**. Sample Replay
+is selected by default and needs neither an API key nor WebGPU, so a reviewer can reach the
+profile-comparison view in well under 60 seconds. The local WebLLM target additionally needs a
+WebGPU browser and downloads a model on first use; the live-API target needs your own key, held
+in memory for the session only and never written to storage.
+
 ## What This Is
 
 Sleeper tests whether an AI agent can be manipulated into taking an action it should not
