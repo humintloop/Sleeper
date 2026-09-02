@@ -45,6 +45,32 @@ function targetIdentity(outcome) {
 }
 
 /**
+ * The one sentence this whole screen exists to produce.
+ *
+ * `findMaterialDifferences` below enumerates every field that differs, which
+ * is what a reviewer needs when they are already reading closely. This is the
+ * other job: whether turning controls on changed anything at all, stated once,
+ * before the reader has parsed three columns of flow steps.
+ *
+ * Deliberately phrased as an observation about this run, never as a claim
+ * about the controls in general — see CLAUDE.md on conformance language.
+ */
+export function summarizeControlDelta(results, profileOrder = PROFILE_ORDER) {
+  const present = profileOrder.filter(id => results?.[id]);
+  if (present.length < 2) return null;
+  const verdictChanged = new Set(present.map(id => results[id]?.verdict?.verdict ?? null)).size > 1;
+  const gateChanged = new Set(present.map(id => summarizeRun(results[id]).blocked)).size > 1;
+  const headline = verdictChanged && gateChanged
+    ? 'The control profile changed both the gate decision and the verdict.'
+    : verdictChanged
+      ? 'The control profile changed the verdict.'
+      : gateChanged
+        ? 'The control profile changed the gate decision, but every profile reached the same verdict.'
+        : 'No profile differed from any other on gate decision or verdict in this run.';
+  return { verdictChanged, gateChanged, changed: verdictChanged || gateChanged, headline };
+}
+
+/**
  * A concise summary of what actually differs between the compared members —
  * not every field, just the ones a reader would otherwise have to diff by
  * eye across cards: verdict, whether the gate blocked the path, and whether
@@ -99,6 +125,38 @@ function summarizeRun(outcome) {
   const deniedTools = unique(toolResults.filter(event => event.status === 'denied').map(event => event.tool));
 
   return { attemptedTools, untrustedSources, blocked, executedTools, deniedTools };
+}
+
+function DeltaStrip({ C, results, profiles, delta }) {
+  const present = PROFILE_ORDER.filter(id => results?.[id]);
+  return (
+    <div style={{ border: `1px solid ${C.border}`, borderTop: `2px solid ${delta.changed ? C.brass : C.borderHi}`, background: C.panel, borderRadius: C.radius, padding: '13px 15px' }}>
+      <div style={{ color: C.text1, fontSize: C.size.head, fontWeight: 600, lineHeight: 1.35, maxWidth: 760 }}>
+        {delta.headline}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${present.length}, minmax(0, 1fr))`, gap: 1, background: C.border, marginTop: 13 }}>
+        {present.map(id => {
+          const outcome = results[id];
+          const verdict = outcome?.verdict?.verdict;
+          const color = getVerdictColor(verdict, C);
+          const { blocked } = summarizeRun(outcome);
+          return (
+            <div key={id} style={{ background: C.surface, padding: '10px 12px', minWidth: 0 }}>
+              <div style={{ color: C[profiles?.[id]?.color] || C.brass, fontSize: C.size.micro, fontWeight: 800 }}>
+                {profiles?.[id]?.label || id}
+              </div>
+              <div style={{ color, fontSize: C.size.small, fontWeight: 800, fontFamily: C.mono, marginTop: 6, overflowWrap: 'anywhere' }}>
+                {getVerdictLabel(verdict)}
+              </div>
+              <div style={{ color: blocked ? C.green : C.red, fontSize: C.size.micro, marginTop: 5 }}>
+                {blocked ? 'Path blocked' : 'Path not blocked'}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function FlowStep({ C, icon: Icon, label, children, tone = 'text2', last = false }) {
@@ -204,6 +262,7 @@ export default function ComparisonStoryPanel({ C, results, profiles, selectedId,
   if (available.length === 0) return null;
   const deterministic = available.every(id => results[id]?.contract?.run_mode === 'deterministic_replay');
   const differences = findMaterialDifferences(results, PROFILE_ORDER);
+  const delta = summarizeControlDelta(results, PROFILE_ORDER);
 
   return (
     <section aria-labelledby="comparison-story-title" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -218,6 +277,7 @@ export default function ComparisonStoryPanel({ C, results, profiles, selectedId,
             : ' Live and local targets use separate model calls, so model behavior may vary between columns.'}
         </div>
       </div>
+      {delta && <DeltaStrip C={C} results={results} profiles={profiles} delta={delta} />}
       {differences.length > 0 && (
         <div role="status" style={{ background: C.surface, border: `1px solid ${C.borderHi}`, borderLeft: `3px solid ${C.brass}`, borderRadius: 2, padding: '10px 13px' }}>
           <div style={{ color: C.text3, fontSize: C.size.micro, fontWeight: 800, letterSpacing: .2, marginBottom: 6 }}>
