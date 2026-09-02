@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "deploy": "npm run build && gh-pages -d dist",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "analyze": "ANALYZE=true vite build",
+    "check-budget": "node scripts/check-bundle-budget.mjs"
   },
   "dependencies": {
     "@mlc-ai/web-llm": "^0.2.73",
@@ -26,6 +28,7 @@
     "eslint-plugin-react-refresh": "^0.5.3",
     "gh-pages": "^6.1.1",
     "globals": "^17.7.0",
+    "rollup-plugin-visualizer": "^7.1.1",
     "vite": "^5.4.1",
     "vitest": "^3.2.6"
   }

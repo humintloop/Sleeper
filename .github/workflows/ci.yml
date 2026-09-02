@@ -17,6 +17,7 @@ jobs:
       - run: npm test
       - run: npm run lint
       - run: npm run build
+      - run: npm run check-budget
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         with:

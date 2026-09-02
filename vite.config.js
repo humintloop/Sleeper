@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { visualizer } from 'rollup-plugin-visualizer';
 import { execFileSync } from 'node:child_process';
 
 function gitMetadata() {
@@ -15,7 +16,18 @@ function gitMetadata() {
 const git = gitMetadata();
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Opt-in bundle inspection: `ANALYZE=true npm run build` writes
+    // dist/bundle-stats.html instead of speculatively "optimizing" without
+    // evidence of what's actually large (the handoff doc's own instruction).
+    process.env.ANALYZE === 'true' && visualizer({
+      filename: 'dist/bundle-stats.html',
+      gzipSize: true,
+      brotliSize: true,
+      template: 'treemap',
+    }),
+  ].filter(Boolean),
   define: {
     'import.meta.env.VITE_GIT_COMMIT': JSON.stringify(git.revision),
     'import.meta.env.VITE_GIT_DIRTY': JSON.stringify(git.dirty),
