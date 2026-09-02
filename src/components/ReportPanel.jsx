@@ -97,7 +97,7 @@ export default function ReportPanel({
 
   if (runs.length === 0) {
     return (
-      <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: 18, color: C.text3, fontSize: 13 }}>
+      <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: 18, color: C.text3, fontSize: C.size.small }}>
         {scope === 'comparison' ? 'No comparison results yet — run Compare first.' : 'Run a case to build a report here.'}
       </div>
     );
@@ -105,7 +105,7 @@ export default function ReportPanel({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div style={{ color: C.text2, fontSize: 12.5, lineHeight: 1.55 }}>
+      <div style={{ color: C.text2, fontSize: C.size.small, lineHeight: 1.55 }}>
         Human-readable export for handoff — distinct from the machine Evidence Contract JSON on the
         Evidence tab. Includes run identity, configuration digest, case-condition evaluation, and every
         limitation the contract carries; nothing here claims more than the contract does.
@@ -121,7 +121,7 @@ export default function ReportPanel({
       </div>
 
       {scopeIsStale && (
-        <div role="status" style={{ fontSize: 12, color: C.ochre, background: C.amberBg, border: `1px solid ${C.ochre}55`, padding: '9px 12px', borderRadius: 2 }}>
+        <div role="status" style={{ fontSize: C.size.small, color: C.ochre, background: C.amberBg, border: `1px solid ${C.ochre}55`, padding: '9px 12px', borderRadius: 2 }}>
           Historical: the current execution settings differ from this completed {scope === 'comparison' ? 'comparison set' : 'run'}.
           Export requires explicit confirmation and is labeled historical.
         </div>
@@ -136,7 +136,7 @@ export default function ReportPanel({
       </div>
 
       {pending && (
-        <div role="alert" style={{ fontSize: 12, color: C.text1, background: C.amberBg, border: `1px solid ${C.ochre}55`, padding: '10px 12px', borderRadius: 2 }}>
+        <div role="alert" style={{ fontSize: C.size.small, color: C.text1, background: C.amberBg, border: `1px solid ${C.ochre}55`, padding: '10px 12px', borderRadius: 2 }}>
           Export this {scope === 'comparison' ? 'comparison set' : 'run'} as historical evidence? It will retain its
           original completed identity and will not describe the settings currently selected.
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
@@ -151,7 +151,7 @@ export default function ReportPanel({
 
 function scopeBtn(C, active) {
   return {
-    padding: '7px 14px', fontSize: 11.5, fontWeight: 800, letterSpacing: .5, cursor: 'pointer', borderRadius: 2,
+    padding: '7px 14px', fontSize: C.size.micro, fontWeight: 800, letterSpacing: .5, cursor: 'pointer', borderRadius: 2,
     background: active ? C.brassBg : 'transparent', border: `1px solid ${active ? C.brass : C.borderHi}`,
     color: active ? C.brass : C.text2,
   };
@@ -159,7 +159,7 @@ function scopeBtn(C, active) {
 
 function ghostBtn(C) {
   return {
-    display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', fontSize: 11.5, fontWeight: 800,
+    display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', fontSize: C.size.micro, fontWeight: 800,
     letterSpacing: .5, cursor: 'pointer', borderRadius: 2, background: 'transparent', border: `1px solid ${C.borderHi}`, color: C.text1,
   };
 }

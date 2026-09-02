@@ -65,19 +65,19 @@ function section(C) {
 }
 
 function fieldLabel(C) {
-  return { fontSize: 11, color: C.text3, letterSpacing: 1.2, fontWeight: 700, textTransform: 'uppercase', marginBottom: 6 };
+  return { fontSize: C.size.micro, color: C.text3, letterSpacing: 1.2, fontWeight: 700, textTransform: 'uppercase', marginBottom: 6 };
 }
 
 function input(C) {
   return {
     width: '100%', background: C.surface, border: `1px solid ${C.borderHi}`, color: C.text1,
-    fontSize: 13, padding: '8px 10px', borderRadius: 2, fontFamily: C.mono,
+    fontSize: C.size.small, padding: '8px 10px', borderRadius: 2, fontFamily: C.mono,
   };
 }
 
 function toggleBtn(C, active) {
   return {
-    padding: '7px 14px', fontSize: 12, fontWeight: 800, letterSpacing: .5, cursor: 'pointer', borderRadius: 2,
+    padding: '7px 14px', fontSize: C.size.small, fontWeight: 800, letterSpacing: .5, cursor: 'pointer', borderRadius: 2,
     background: active ? C.brassBg : 'transparent',
     border: `1px solid ${active ? C.brass : C.borderHi}`,
     color: active ? C.brass : C.text2,
@@ -416,17 +416,17 @@ export default function AgentCaseRunner({ C, onHome }) {
   return (
     <div className="agent-runner" style={{ flex: 1, overflowY: 'auto', padding: '24px 28px 60px', display: 'flex', flexDirection: 'column', gap: 22 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <button onClick={onHome} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: C.text3, fontSize: 12, cursor: 'pointer', padding: 0 }}>
+        <button onClick={onHome} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: C.text3, fontSize: C.size.small, cursor: 'pointer', padding: 0 }}>
           <ChevronLeft size={14} /> HOME
         </button>
       </div>
 
       <div>
-        <div style={{ fontSize: 11, color: C.text3, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>
+        <div style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>
           Agent threat case &middot; controlled harness run
         </div>
-        <h1 style={{ fontSize: 28, color: C.text1, fontWeight: 600, letterSpacing: '0.02em', margin: 0 }}>Run agent case</h1>
-        <p style={{ fontSize: 13, color: C.text3, lineHeight: 1.6, maxWidth: 720, marginTop: 10 }}>
+        <h1 style={{ fontSize: C.size.title, color: C.text1, fontWeight: 600, letterSpacing: '0.02em', margin: 0 }}>Run agent case</h1>
+        <p style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.6, maxWidth: 720, marginTop: 10 }}>
           Tool-call intent, simulated tool effect — nothing this screen does leaves the browser or acts on
           anything. Live and local targets capture model decisions; Sample Replay uses a disclosed script to
           demonstrate the harness without claiming model evidence.
@@ -434,7 +434,7 @@ export default function AgentCaseRunner({ C, onHome }) {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 10, color: C.text3, letterSpacing: 1.4, textTransform: 'uppercase', marginRight: 4 }}>Jump to</span>
+        <span style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: 1.4, textTransform: 'uppercase', marginRight: 4 }}>Jump to</span>
         {[
           { label: 'Case', done: Boolean(caseId), ref: caseSectionRef },
           { label: 'Profile', done: Boolean(profileId), ref: profileSectionRef },
@@ -454,7 +454,7 @@ export default function AgentCaseRunner({ C, onHome }) {
               background: step.done ? C.brass : C.borderHi,
               boxShadow: step.done ? `0 0 6px ${C.brass}99` : 'none',
             }} />
-            <span style={{ fontSize: 11, letterSpacing: .8, fontWeight: step.done ? 800 : 500, color: step.done ? C.brass : C.text3, textTransform: 'uppercase' }}>
+            <span style={{ fontSize: C.size.micro, letterSpacing: .8, fontWeight: step.done ? 800 : 500, color: step.done ? C.brass : C.text3, textTransform: 'uppercase' }}>
               {step.label}
             </span>
           </button>
@@ -477,14 +477,14 @@ export default function AgentCaseRunner({ C, onHome }) {
                 border: `1px solid ${active ? C.brass : C.border}`,
                 borderLeft: `3px solid ${active ? C.brass : C.border}`,
               }}>
-                <div style={{ fontFamily: C.mono, fontSize: 11, color: active ? C.brass : C.text3, marginBottom: 3 }}>{id}</div>
-                <div style={{ fontSize: 13, color: C.text1, fontWeight: 600 }}>{c.title}</div>
+                <div style={{ fontFamily: C.mono, fontSize: C.size.micro, color: active ? C.brass : C.text3, marginBottom: 3 }}>{id}</div>
+                <div style={{ fontSize: C.size.small, color: C.text1, fontWeight: 600 }}>{c.title}</div>
               </button>
             );
           })}
         </div>
         {agentCase && (
-          <p style={{ fontSize: 12.5, color: C.text2, lineHeight: 1.6, marginTop: 12, marginBottom: 0 }}>
+          <p style={{ fontSize: C.size.small, color: C.text2, lineHeight: 1.6, marginTop: 12, marginBottom: 0 }}>
             {agentCase.scenario?.narrative}
           </p>
         )}
@@ -501,9 +501,9 @@ export default function AgentCaseRunner({ C, onHome }) {
                     border: `1px solid ${active ? C.brass : C.border}`,
                     color: C.text1,
                   }}>
-                    <div style={{ fontSize: 11, color: active ? C.brass : C.text3, fontFamily: C.mono }}>{variant.id}</div>
-                    <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 2 }}>{variant.title}</div>
-                    <div style={{ fontSize: 11.5, lineHeight: 1.45, color: C.text3, marginTop: 4 }}>{variant.description}</div>
+                    <div style={{ fontSize: C.size.micro, color: active ? C.brass : C.text3, fontFamily: C.mono }}>{variant.id}</div>
+                    <div style={{ fontSize: C.size.small, fontWeight: 700, marginTop: 2 }}>{variant.title}</div>
+                    <div style={{ fontSize: C.size.micro, lineHeight: 1.45, color: C.text3, marginTop: 4 }}>{variant.description}</div>
                   </button>
                 );
               })}
@@ -515,13 +515,13 @@ export default function AgentCaseRunner({ C, onHome }) {
       <div ref={profileSectionRef} style={section(C)}>
         <div style={fieldLabel(C)}>Control profile</div>
         <ControlProfileSelector C={C} profiles={DISPLAY_PROFILES} selectedId={profileId} onSelect={setProfileId} disabled={running} />
-        <div style={{ color: C.text3, fontSize: 11.5, lineHeight: 1.5, marginTop: 10 }}>
+        <div style={{ color: C.text3, fontSize: C.size.micro, lineHeight: 1.5, marginTop: 10 }}>
           Your selection controls which profile gets the full verdict, trace, and Evidence Contract after comparison. The primary comparison still runs all three profiles.
         </div>
       </div>
 
       <details style={section(C)}>
-        <summary style={{ cursor: 'pointer', color: C.text2, fontSize: 12, fontWeight: 800, letterSpacing: 1.1, textTransform: 'uppercase' }}>
+        <summary style={{ cursor: 'pointer', color: C.text2, fontSize: C.size.small, fontWeight: 800, letterSpacing: 1.1, textTransform: 'uppercase' }}>
           Framework mapping <span style={{ color: C.text3, fontWeight: 500, letterSpacing: 0, textTransform: 'none' }}>— review references and relationship strength</span>
         </summary>
         <div style={{ marginTop: 14 }}>
@@ -540,7 +540,7 @@ export default function AgentCaseRunner({ C, onHome }) {
         </div>
 
         {targetType === TARGET_TYPES.SAMPLE ? (
-          <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.6 }}>
+          <div style={{ fontSize: C.size.small, color: C.text2, lineHeight: 1.6 }}>
             Zero-key deterministic walkthrough. Scripted tool intent exercises the real provenance, authorization,
             mock-effect, trace, verdict, and Evidence Contract pipeline. It is labeled E1 for the target because no
             model decision is observed; any E3 claim applies only to Sleeper&rsquo;s own gate.
@@ -581,13 +581,13 @@ export default function AgentCaseRunner({ C, onHome }) {
         ) : (
           <div>
             {localCompatibilityIssues.length > 0 && (
-              <div role="status" style={{ fontSize: 12, color: C.ochre, lineHeight: 1.55, marginBottom: 10, padding: '9px 11px', background: C.amberBg, border: `1px solid ${C.ochre}55`, borderRadius: 2 }}>
+              <div role="status" style={{ fontSize: C.size.small, color: C.ochre, lineHeight: 1.55, marginBottom: 10, padding: '9px 11px', background: C.amberBg, border: `1px solid ${C.ochre}55`, borderRadius: 2 }}>
                 <div>
                   Local inference is unavailable here: {localCompatibilityIssues.join(' ')} Sample Replay and Live API remain fully available.
                 </div>
                 {typeof crossOriginIsolated !== 'undefined' && !crossOriginIsolated && (
                   <button onClick={retryCrossOriginIsolation} disabled={coiRetrying} style={{
-                    marginTop: 8, padding: '5px 10px', fontSize: 11, fontWeight: 800, letterSpacing: .5,
+                    marginTop: 8, padding: '5px 10px', fontSize: C.size.micro, fontWeight: 800, letterSpacing: .5,
                     background: 'transparent', border: `1px solid ${C.ochre}`, color: C.ochre, borderRadius: 2,
                     cursor: coiRetrying ? 'not-allowed' : 'pointer',
                   }}>
@@ -596,7 +596,7 @@ export default function AgentCaseRunner({ C, onHome }) {
                 )}
               </div>
             )}
-            <div style={{ fontSize: 12, color: C.text3, lineHeight: 1.5, marginBottom: 10 }}>
+            <div style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.5, marginBottom: 10 }}>
               Small local models do not call tools reliably, so this path never uses real tool-calling — a
               prompted JSON schema stands in, and the loop reads the model&rsquo;s tool-call intent out of that JSON
               instead. Every run against a local model is flagged{' '}
@@ -618,7 +618,7 @@ export default function AgentCaseRunner({ C, onHome }) {
                 background: localStatus === 'ready' ? C.greenBg : C.surface,
                 border: `1px solid ${localStatus === 'ready' ? C.green : C.borderHi}`,
                 color: localStatus === 'ready' ? C.green : C.text1,
-                fontSize: 12, fontWeight: 800, letterSpacing: .5, borderRadius: 2,
+                fontSize: C.size.small, fontWeight: 800, letterSpacing: .5, borderRadius: 2,
                 cursor: localStatus === 'loading' || localStatus === 'ready' || localCompatibilityIssues.length > 0 ? 'not-allowed' : 'pointer',
               }}>
                 {localStatus === 'loading' && <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} />}
@@ -626,7 +626,7 @@ export default function AgentCaseRunner({ C, onHome }) {
               </button>
             </div>
             {localStatus === 'loading' && localProgress && (
-              <div style={{ fontSize: 11.5, color: C.text3, marginTop: 8, fontFamily: C.mono }}>{localProgress}</div>
+              <div style={{ fontSize: C.size.micro, color: C.text3, marginTop: 8, fontFamily: C.mono }}>{localProgress}</div>
             )}
           </div>
         )}
@@ -636,7 +636,7 @@ export default function AgentCaseRunner({ C, onHome }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           <div>
             <div style={{ ...fieldLabel(C), marginBottom: 4 }}>Secondary local-model judge</div>
-            <div style={{ fontSize: 12, color: C.text3, lineHeight: 1.5, maxWidth: 660 }}>
+            <div style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.5, maxWidth: 660 }}>
               Optional semantic triangulation of goal adoption and unauthorized intent. It cannot override deterministic
               trace facts and does not raise independence above I0. A distinct model is required for a local target.
             </div>
@@ -660,7 +660,7 @@ export default function AgentCaseRunner({ C, onHome }) {
               {judgeStatus === 'ready' ? '● JUDGE LOADED' : judgeStatus === 'loading' ? 'LOADING…' : 'LOAD JUDGE'}
             </button>
             {judgeStatus === 'loading' && judgeProgress && (
-              <div style={{ gridColumn: '1 / -1', fontSize: 11.5, color: C.text3, fontFamily: C.mono }}>{judgeProgress}</div>
+              <div style={{ gridColumn: '1 / -1', fontSize: C.size.micro, color: C.text3, fontFamily: C.mono }}>{judgeProgress}</div>
             )}
           </div>
         )}
@@ -670,38 +670,38 @@ export default function AgentCaseRunner({ C, onHome }) {
         <button onClick={handleComparative} disabled={running} style={{
           display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px',
           background: running ? C.hover : C.brassBg, border: `1px solid ${C.brass}`, color: C.brass,
-          fontSize: 13, fontWeight: 800, letterSpacing: .5, cursor: running ? 'not-allowed' : 'pointer', borderRadius: 2,
+          fontSize: C.size.small, fontWeight: 800, letterSpacing: .5, cursor: running ? 'not-allowed' : 'pointer', borderRadius: 2,
         }}>
           {running ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Play size={14} />} {running ? 'RUNNING…' : 'RUN & COMPARE CONTROLS'}
         </button>
         <button onClick={handleRun} disabled={running} style={{
           display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px',
           background: 'transparent', border: `1px solid ${C.borderHi}`, color: C.text2,
-          fontSize: 13, fontWeight: 700, letterSpacing: .5, cursor: running ? 'not-allowed' : 'pointer', borderRadius: 2,
+          fontSize: C.size.small, fontWeight: 700, letterSpacing: .5, cursor: running ? 'not-allowed' : 'pointer', borderRadius: 2,
         }}>
           RUN SELECTED PROFILE
         </button>
       </div>
 
-      <div style={{ color: C.text3, fontSize: 11.5, lineHeight: 1.5, marginTop: -14 }}>
+      <div style={{ color: C.text3, fontSize: C.size.micro, lineHeight: 1.5, marginTop: -14 }}>
         Runs Baseline, Partial, and Reference, then shows the attempted tools, gate decision, and simulated effect side by side.
       </div>
 
       {comparisonProgress && (
         <div role="status" aria-live="polite" style={{ ...section(C), padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
           <RefreshCw size={13} color={C.brass} style={{ animation: 'spin 1s linear infinite' }} />
-          <div style={{ color: C.text2, fontSize: 12 }}>
+          <div style={{ color: C.text2, fontSize: C.size.small }}>
             Running <strong style={{ color: C.text1 }}>{DISPLAY_PROFILES[comparisonProgress.current]?.label}</strong> · {comparisonProgress.completed + 1} of {comparisonProgress.total}
           </div>
         </div>
       )}
 
       <details style={{ ...section(C), padding: '12px 14px' }}>
-        <summary style={{ cursor: 'pointer', color: C.text2, fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
+        <summary style={{ cursor: 'pointer', color: C.text2, fontSize: C.size.micro, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
           Repeat trials <span style={{ color: C.text3, fontWeight: 500, letterSpacing: 0, textTransform: 'none' }}>— check outcome variance</span>
         </summary>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 7, color: C.text3, fontSize: 11 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 7, color: C.text3, fontSize: C.size.micro }}>
             TRIALS
             <input
               aria-label="Repeat trial count"
@@ -717,7 +717,7 @@ export default function AgentCaseRunner({ C, onHome }) {
           <button onClick={handleRepeated} disabled={running} style={{
             display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
             background: 'transparent', border: `1px solid ${C.borderHi}`, color: C.text2,
-            fontSize: 12, fontWeight: 700, letterSpacing: .5, cursor: running ? 'not-allowed' : 'pointer', borderRadius: 2,
+            fontSize: C.size.small, fontWeight: 700, letterSpacing: .5, cursor: running ? 'not-allowed' : 'pointer', borderRadius: 2,
           }}>
             RUN REPEAT TRIALS
           </button>
@@ -725,7 +725,7 @@ export default function AgentCaseRunner({ C, onHome }) {
       </details>
 
       {trialSummary && (
-        <div style={{ ...section(C), fontSize: 12, color: C.text2, lineHeight: 1.55 }}>
+        <div style={{ ...section(C), fontSize: C.size.small, color: C.text2, lineHeight: 1.55 }}>
           <div style={{ ...fieldLabel(C), marginBottom: 7 }}>Repeat-trial summary</div>
           <div>{trialSummary.trial_count} independent sequential calls · controlled configuration: {trialSummary.controlled_configuration ? 'yes' : 'no'}</div>
           <div style={{ marginTop: 4, fontFamily: C.mono }}>
@@ -736,7 +736,7 @@ export default function AgentCaseRunner({ C, onHome }) {
       )}
 
       {error && (
-        <div role="alert" aria-live="assertive" style={{ padding: '12px 14px', background: C.redBg, border: `1px solid ${C.red}55`, borderLeft: `3px solid ${C.red}`, borderRadius: 2, color: C.red, fontSize: 13 }}>
+        <div role="alert" aria-live="assertive" style={{ padding: '12px 14px', background: C.redBg, border: `1px solid ${C.red}55`, borderLeft: `3px solid ${C.red}`, borderRadius: 2, color: C.red, fontSize: C.size.small }}>
           {error}
         </div>
       )}
@@ -766,7 +766,7 @@ export default function AgentCaseRunner({ C, onHome }) {
                 content: (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     {staleComparisonMembers.length > 0 && (
-                      <div role="status" style={{ ...section(C), borderLeft: `3px solid ${C.ochre}`, color: C.text2, fontSize: 12, lineHeight: 1.5 }}>
+                      <div role="status" style={{ ...section(C), borderLeft: `3px solid ${C.ochre}`, color: C.text2, fontSize: C.size.small, lineHeight: 1.5 }}>
                         Historical comparison: {staleComparisonMembers.map(member => `${member.profileId} (${member.changes.map(change => change.path).join(', ')})`).join(' · ')}. Members retain their original completed manifest identities.
                       </div>
                     )}
@@ -849,7 +849,7 @@ function RunHistory({ C, history, chainStatus }) {
         <div style={{ ...fieldLabel(C), marginBottom: 0 }}>Recent runs &middot; this browser</div>
       </div>
       {chainStatus && (
-        <div role={chainStatus.valid ? undefined : 'alert'} style={{ fontSize: 11.5, color: chainStatus.valid ? C.text3 : C.red, lineHeight: 1.5, marginBottom: 10 }}>
+        <div role={chainStatus.valid ? undefined : 'alert'} style={{ fontSize: C.size.micro, color: chainStatus.valid ? C.text3 : C.red, lineHeight: 1.5, marginBottom: 10 }}>
           Browser hash chain: {chainStatus.status.replaceAll('_', ' ')} · {chainStatus.checked} retained records checked
           {chainStatus.latest_sequence ? ` · latest sequence ${chainStatus.latest_sequence}` : ''}. {chainStatus.limitation}
         </div>
@@ -867,18 +867,18 @@ function RunHistory({ C, history, chainStatus }) {
                   padding: '9px 12px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
                 }}
               >
-                <span style={{ color: tone, fontSize: 11, fontWeight: 800, letterSpacing: .5 }}>{entry.verdict}</span>
-                <span style={{ color: C.text1, fontSize: 12.5, fontWeight: 600 }}>{entry.caseTitle}</span>
-                <span style={{ color: C.text3, fontSize: 11.5 }}>{entry.profileLabel}</span>
-                {entry.degraded && <span style={{ color: C.red, fontSize: 10, fontWeight: 700 }}>DEGRADED</span>}
-                <span style={{ marginLeft: 'auto', color: C.text3, fontSize: 11, fontFamily: C.mono }}>
+                <span style={{ color: tone, fontSize: C.size.micro, fontWeight: 800, letterSpacing: .5 }}>{entry.verdict}</span>
+                <span style={{ color: C.text1, fontSize: C.size.small, fontWeight: 600 }}>{entry.caseTitle}</span>
+                <span style={{ color: C.text3, fontSize: C.size.micro }}>{entry.profileLabel}</span>
+                {entry.degraded && <span style={{ color: C.red, fontSize: C.size.micro, fontWeight: 700 }}>DEGRADED</span>}
+                <span style={{ marginLeft: 'auto', color: C.text3, fontSize: C.size.micro, fontFamily: C.mono }}>
                   {new Date(entry.timestamp).toLocaleString()}
                 </span>
               </button>
               {expanded && (
                 <div style={{ padding: '0 12px 12px' }}>
                   {entry.reasonText && (
-                    <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.5, marginBottom: 10 }}>{entry.reasonText}</div>
+                    <div style={{ fontSize: C.size.small, color: C.text2, lineHeight: 1.5, marginBottom: 10 }}>{entry.reasonText}</div>
                   )}
                   <EvidenceContractPanel C={C} contract={entry.contract} />
                 </div>

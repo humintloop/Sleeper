@@ -26,8 +26,8 @@ function Field({ C, label, value, mono = false }) {
   if (!value) return null;
   return (
     <div style={{ minWidth: 0 }}>
-      <div style={{ fontSize: 9.5, color: C.text3, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 12, color: C.text1, fontFamily: mono ? C.mono : C.sans, overflowWrap: 'anywhere' }}>{value}</div>
+      <div style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: C.size.small, color: C.text1, fontFamily: mono ? C.mono : C.sans, overflowWrap: 'anywhere' }}>{value}</div>
     </div>
   );
 }
@@ -66,11 +66,11 @@ export default function RunContextSummary({
         <Field C={C} label="Configuration digest" value={configurationDigest ? `${configurationDigest.slice(0, 16)}…` : 'calculating…'} mono />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <span style={{ color: tone, fontSize: 11, fontWeight: 900, letterSpacing: 1, textTransform: 'uppercase' }}>{state}</span>
-        <span style={{ color: C.text3, fontSize: 11.5 }}>{assessmentState?.message}</span>
+        <span style={{ color: tone, fontSize: C.size.micro, fontWeight: 900, letterSpacing: 1, textTransform: 'uppercase' }}>{state}</span>
+        <span style={{ color: C.text3, fontSize: C.size.micro }}>{assessmentState?.message}</span>
         {state === 'stale' && onRerun && (
           <button onClick={onRerun} disabled={running} style={{
-            marginLeft: 'auto', padding: '5px 12px', fontSize: 11, fontWeight: 800, letterSpacing: .5,
+            marginLeft: 'auto', padding: '5px 12px', fontSize: C.size.micro, fontWeight: 800, letterSpacing: .5,
             background: C.amberBg, border: `1px solid ${C.ochre}`, color: C.ochre, borderRadius: 2,
             cursor: running ? 'not-allowed' : 'pointer',
           }}>
@@ -79,7 +79,7 @@ export default function RunContextSummary({
         )}
       </div>
       {state === 'stale' && assessmentState?.changes?.length > 0 && (
-        <ul style={{ margin: 0, paddingLeft: 18, color: C.text2, fontSize: 11.5, lineHeight: 1.5 }}>
+        <ul style={{ margin: 0, paddingLeft: 18, color: C.text2, fontSize: C.size.micro, lineHeight: 1.5 }}>
           {assessmentState.changes.map(change => (
             <li key={change.path}><strong>{change.label}</strong>: {change.before} → {change.after}</li>
           ))}

@@ -22,7 +22,7 @@ function RelationshipTag({ C, relationship }) {
   const color = direct ? C.green : C.text3;
   return (
     <span style={{
-      fontSize: 9.5, color, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase',
+      fontSize: C.size.micro, color, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase',
       border: `1px solid ${color}55`, borderRadius: 2, padding: '1px 6px',
     }}>
       {direct ? 'direct' : 'inferred'}
@@ -33,18 +33,18 @@ function RelationshipTag({ C, relationship }) {
 function MappingRow({ C, mapping }) {
   return (
     <div style={{ display: 'flex', gap: 10, padding: '8px 10px', borderBottom: `1px solid ${C.border}`, alignItems: 'flex-start' }}>
-      <div style={{ flex: '0 0 130px', fontFamily: C.mono, fontSize: 11, color: mapping.role === 'primary' ? C.brass : C.text2, fontWeight: mapping.role === 'primary' ? 800 : 600 }}>
+      <div style={{ flex: '0 0 130px', fontFamily: C.mono, fontSize: C.size.micro, color: mapping.role === 'primary' ? C.brass : C.text2, fontWeight: mapping.role === 'primary' ? 800 : 600 }}>
         {mapping.id}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 2 }}>
-          <span style={{ fontSize: 12.5, color: C.text1, fontWeight: 600 }}>{mapping.name || mapping.id}</span>
+          <span style={{ fontSize: C.size.small, color: C.text1, fontWeight: 600 }}>{mapping.name || mapping.id}</span>
           {mapping.role === 'primary' && (
-            <span style={{ fontSize: 9.5, color: C.brass, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase' }}>lead</span>
+            <span style={{ fontSize: C.size.micro, color: C.brass, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase' }}>lead</span>
           )}
           <RelationshipTag C={C} relationship={mapping.relationship} />
         </div>
-        {mapping.rationale && <div style={{ fontSize: 11.5, color: C.text3, lineHeight: 1.5 }}>{mapping.rationale}</div>}
+        {mapping.rationale && <div style={{ fontSize: C.size.micro, color: C.text3, lineHeight: 1.5 }}>{mapping.rationale}</div>}
       </div>
     </div>
   );
@@ -53,7 +53,7 @@ function MappingRow({ C, mapping }) {
 function FrameworkGroup({ C, framework, mappings, defaultOpen }) {
   return (
     <details open={defaultOpen} style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, overflow: 'hidden' }}>
-      <summary style={{ cursor: 'pointer', padding: '9px 12px', fontSize: 11.5, color: C.text2, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase', background: C.surface }}>
+      <summary style={{ cursor: 'pointer', padding: '9px 12px', fontSize: C.size.micro, color: C.text2, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase', background: C.surface }}>
         {FRAMEWORK_LABEL[framework] || framework} <span style={{ color: C.text3, fontWeight: 500, textTransform: 'none' }}>({mappings.length})</span>
       </summary>
       <div>
@@ -80,8 +80,8 @@ export default function FrameworkCrosswalkPanel({ C, agentCase }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {agentCase.primary_framework_note && (
-        <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.55, background: C.surface, border: `1px solid ${C.brass}44`, borderLeft: `3px solid ${C.brass}`, borderRadius: 2, padding: '9px 12px' }}>
-          <span style={{ color: C.brass, fontWeight: 800, letterSpacing: .5, textTransform: 'uppercase', fontSize: 10.5, marginRight: 6 }}>
+        <div style={{ fontSize: C.size.small, color: C.text2, lineHeight: 1.55, background: C.surface, border: `1px solid ${C.brass}44`, borderLeft: `3px solid ${C.brass}`, borderRadius: 2, padding: '9px 12px' }}>
+          <span style={{ color: C.brass, fontWeight: 800, letterSpacing: .5, textTransform: 'uppercase', fontSize: C.size.micro, marginRight: 6 }}>
             {FRAMEWORK_LABEL[primaryFramework] || primaryFramework} leads
           </span>
           {agentCase.primary_framework_note}
@@ -101,12 +101,12 @@ export default function FrameworkCrosswalkPanel({ C, agentCase }) {
       {crosswalk?.rows?.length > 0 && (
         <div style={{ background: C.panel, border: `1px solid ${C.green}44`, borderRadius: 2, padding: '10px 12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: 10.5, color: C.green, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase' }}>OWASP-published crosswalk</span>
+            <span style={{ fontSize: C.size.micro, color: C.green, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase' }}>OWASP-published crosswalk</span>
             <RelationshipTag C={C} relationship="direct" />
           </div>
-          <div style={{ fontSize: 11.5, color: C.text3, lineHeight: 1.5, marginBottom: 8 }}>{crosswalk.note}</div>
+          <div style={{ fontSize: C.size.micro, color: C.text3, lineHeight: 1.5, marginBottom: 8 }}>{crosswalk.note}</div>
           {crosswalk.rows.map((row, i) => (
-            <div key={i} style={{ fontSize: 11.5, color: C.text2, padding: '6px 0', borderTop: i > 0 ? `1px solid ${C.border}` : 'none' }}>
+            <div key={i} style={{ fontSize: C.size.micro, color: C.text2, padding: '6px 0', borderTop: i > 0 ? `1px solid ${C.border}` : 'none' }}>
               <div style={{ fontFamily: C.mono, color: C.text1, fontWeight: 700, marginBottom: 4 }}>{row.owasp_llm}</div>
               {row.asi?.length > 0 && <div>ASI: <span style={{ fontFamily: C.mono }}>{row.asi.join(', ')}</span></div>}
               {row.atlas_tactics_primary?.length > 0 && <div>ATLAS tactics: <span style={{ fontFamily: C.mono }}>{row.atlas_tactics_primary.join(', ')}</span></div>}
@@ -118,14 +118,14 @@ export default function FrameworkCrosswalkPanel({ C, agentCase }) {
 
       {asiRefs.length > 0 && (
         <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: '10px 12px' }}>
-          <div style={{ fontSize: 10.5, color: C.text3, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase', marginBottom: 4 }}>ASI cross-reference</div>
-          <div style={{ fontSize: 11, color: C.text3, lineHeight: 1.5, marginBottom: 8 }}>
+          <div style={{ fontSize: C.size.micro, color: C.text3, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase', marginBottom: 4 }}>ASI cross-reference</div>
+          <div style={{ fontSize: C.size.micro, color: C.text3, lineHeight: 1.5, marginBottom: 8 }}>
             OWASP&rsquo;s Agentic (ASI) top 10 was published before the 2026 LLM edition, so its own text cites the
             older LLM numbering. The ID as OWASP printed it stays exact; the current-edition equivalent is
             this project&rsquo;s own translation, kept alongside rather than substituted in.
           </div>
           {asiRefs.map((ref, i) => (
-            <div key={i} style={{ fontSize: 11.5, color: C.text2, lineHeight: 1.6, marginBottom: i < asiRefs.length - 1 ? 8 : 0 }}>
+            <div key={i} style={{ fontSize: C.size.micro, color: C.text2, lineHeight: 1.6, marginBottom: i < asiRefs.length - 1 ? 8 : 0 }}>
               <span style={{ color: C.brass, fontFamily: C.mono }}>{ref.asi}</span> ({ref.asi_name}) published against{' '}
               <span style={{ fontFamily: C.mono }}>{ref.published?.llm_id}</span> <RelationshipTag C={C} relationship="direct" />, current edition equivalent{' '}
               <span style={{ fontFamily: C.mono }}>{ref.current_edition?.llm_id}</span> <RelationshipTag C={C} relationship="inferred" />
@@ -135,7 +135,7 @@ export default function FrameworkCrosswalkPanel({ C, agentCase }) {
       )}
 
       {agentCase.claim_boundary && (
-        <div style={{ fontSize: 11, color: C.text3, fontStyle: 'italic', lineHeight: 1.5 }}>{agentCase.claim_boundary}</div>
+        <div style={{ fontSize: C.size.micro, color: C.text3, fontStyle: 'italic', lineHeight: 1.5 }}>{agentCase.claim_boundary}</div>
       )}
     </div>
   );

@@ -20,12 +20,23 @@ import { loadAgentRuns } from './storage';
 // was and wasn't done in this pass.
 const C = {
   // Surfaces — canvas → raised → inset, darkest to least-dark.
+  //
+  // The elevation ramp was widened on 2026-09-02. The previous values
+  // (panel #0A0A09, surface #0D0D0C) sat ~3 points of luminance above the
+  // canvas — a 1.03:1 surface-to-surface ratio, which is not perceptible on
+  // a projector and made every bordered panel read as a floating outline on
+  // flat black rather than as a raised plane. The ramp below is ~1.09:1
+  // canvas→raised and ~1.06:1 raised→inset-content, which is visible without
+  // turning the app grey. Every text and boundary token was re-measured
+  // against the new surfaces (see docs/accessibility-audit.md):
+  //   text3 #8B877A  → 5.21:1 on panel, 4.90:1 on surface (AA normal text)
+  //   borderHi #666663 → 3.26:1 on panel, 3.06:1 on surface (WCAG 1.4.11)
   bg:       '#050505', // canvas
-  panel:    '#0A0A09', // raised
-  surface:  '#0D0D0C', // raised, slightly lighter (form fields, nested content)
-  hover:    '#15150F', // hover state over a raised surface
+  panel:    '#121211', // raised
+  surface:  '#191917', // raised, slightly lighter (form fields, nested content)
+  hover:    '#212119', // hover state over a raised surface
   ink:      '#050505', // inset (code/JSON blocks) — same value as canvas, named for role not reuse
-  border:   '#212120', // quiet divider — decorative, not a component boundary
+  border:   '#2A2A27', // quiet divider — decorative, not a component boundary
   // Default interactive-component boundary. Was #3A3A37 (1.74:1 against
   // panel — fails WCAG 1.4.11's 3:1 non-text threshold, measured in
   // docs/accessibility-audit.md) — used on a large number of actually-
@@ -81,6 +92,26 @@ const C = {
   // text, none are narrative prose set in mono.
   mono:     '"Geist Mono", ui-monospace, monospace',
   sans:     '"Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
+
+  // Type scale — five steps, and deliberately only five. Before this the app
+  // used 9.5/10/10.5/11/11.5/12/12.5/13/14 — nine sizes inside a 4.5px band,
+  // where a half-pixel "step" is hierarchy the reader cannot actually see and
+  // the author still has to maintain. Each step below is a ≥18% jump, which
+  // reads as a level. Anything smaller than `micro` is not a size, it is a
+  // rounding error; anything between two steps belongs on one of them.
+  //
+  //   micro — IDs, digests, timestamps, metadata, eyebrow labels
+  //   small — dense UI copy, card bodies, controls
+  //   body  — narrative prose, the default
+  //   head  — panel and card titles
+  //   title — screen title, one per screen
+  size: {
+    micro: 11,
+    small: 13,
+    body:  15,
+    head:  19,
+    title: 28,
+  },
 
   // Radii — 2px (near-square, architectural) is the only radius used across
   // every panel/card/button/input in the app today (60+ call sites), with a

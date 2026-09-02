@@ -20,15 +20,15 @@ function ghostBtn(C) {
   return {
     display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 11px',
     background: 'transparent', border: `1px solid ${C.borderHi}`, color: C.text2,
-    fontSize: 11, fontWeight: 700, letterSpacing: .5, cursor: 'pointer', borderRadius: 2,
+    fontSize: C.size.micro, fontWeight: 700, letterSpacing: .5, cursor: 'pointer', borderRadius: 2,
   };
 }
 
 function Field({ C, label, value, tone }) {
   return (
     <div style={{ minWidth: 0 }}>
-      <div style={{ color: C.text3, fontSize: 10, marginBottom: 2 }}>{label}</div>
-      <div style={{ color: tone ? C[tone] || C.text1 : C.text1, fontSize: 12, fontWeight: 800, fontFamily: C.mono, overflowWrap: 'anywhere' }}>
+      <div style={{ color: C.text3, fontSize: C.size.micro, marginBottom: 2 }}>{label}</div>
+      <div style={{ color: tone ? C[tone] || C.text1 : C.text1, fontSize: C.size.small, fontWeight: 800, fontFamily: C.mono, overflowWrap: 'anywhere' }}>
         {value === null || value === undefined || value === '' ? 'NULL' : String(value)}
       </div>
     </div>
@@ -38,7 +38,7 @@ function Field({ C, label, value, tone }) {
 function Group({ C, title, children }) {
   return (
     <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: '12px 14px' }}>
-      <div style={{ color: C.text3, fontSize: 10.5, fontWeight: 800, letterSpacing: 1.3, textTransform: 'uppercase', marginBottom: 9 }}>{title}</div>
+      <div style={{ color: C.text3, fontSize: C.size.micro, fontWeight: 800, letterSpacing: 1.3, textTransform: 'uppercase', marginBottom: 9 }}>{title}</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 7 }}>
         {children}
       </div>
@@ -82,10 +82,10 @@ export default function EvidenceContractPanel({
   if (!contract) {
     return (
       <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: 18 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.text3, fontSize: 12, fontWeight: 800, letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.text3, fontSize: C.size.small, fontWeight: 800, letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 8 }}>
           <FileJson size={14} /> Evidence Contract
         </div>
-        <div style={{ color: C.text2, fontSize: 13, lineHeight: 1.55 }}>
+        <div style={{ color: C.text2, fontSize: C.size.small, lineHeight: 1.55 }}>
           Run a case to generate a contract. It records what this run&rsquo;s evidence permits its author to claim — never more.
         </div>
       </div>
@@ -125,10 +125,10 @@ export default function EvidenceContractPanel({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.brass, fontSize: 12, fontWeight: 900, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.brass, fontSize: C.size.small, fontWeight: 900, letterSpacing: 1.5, textTransform: 'uppercase' }}>
             <FileJson size={14} /> Evidence Contract
           </div>
-          <div style={{ color: C.text3, fontSize: 12, marginTop: 3, fontFamily: C.mono }}>{contract.case_id} · {contract.profile_id}</div>
+          <div style={{ color: C.text3, fontSize: C.size.small, marginTop: 3, fontFamily: C.mono }}>{contract.case_id} · {contract.profile_id}</div>
         </div>
         <button onClick={() => performExport('copy')} style={ghostBtn(C)}>
           {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'COPIED' : 'COPY JSON'}
@@ -139,13 +139,13 @@ export default function EvidenceContractPanel({
       </div>
 
       {historical && (
-        <div role="status" style={{ fontSize: 12, color: C.ochre, background: C.amberBg, border: `1px solid ${C.ochre}55`, padding: '9px 12px', borderRadius: 2 }}>
+        <div role="status" style={{ fontSize: C.size.small, color: C.ochre, background: C.amberBg, border: `1px solid ${C.ochre}55`, padding: '9px 12px', borderRadius: 2 }}>
           Historical result: the current execution settings differ from this completed run. Copy and download require explicit confirmation and are labeled historical.
         </div>
       )}
 
       {pendingExport && (
-        <div role="alert" style={{ fontSize: 12, color: C.text1, background: C.amberBg, border: `1px solid ${C.ochre}55`, padding: '10px 12px', borderRadius: 2 }}>
+        <div role="alert" style={{ fontSize: C.size.small, color: C.text1, background: C.amberBg, border: `1px solid ${C.ochre}55`, padding: '10px 12px', borderRadius: 2 }}>
           Export the completed run as historical evidence? It will retain its original manifest and configuration digest and will not describe the settings currently selected.
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <button onClick={() => performExport(pendingExport, true)} style={ghostBtn(C)}>CONFIRM HISTORICAL {pendingExport.toUpperCase()}</button>
@@ -156,14 +156,14 @@ export default function EvidenceContractPanel({
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
         <div style={{ background: C.greenBg, border: `1px solid ${C.green}55`, borderLeft: `3px solid ${C.green}`, borderRadius: 2, padding: '11px 13px' }}>
-          <div style={{ color: C.green, fontSize: 10, fontWeight: 900, letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 5 }}>What this run supports</div>
-          <div style={{ color: C.text1, fontSize: 12.5, lineHeight: 1.5 }}>
+          <div style={{ color: C.green, fontSize: C.size.micro, fontWeight: 900, letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 5 }}>What this run supports</div>
+          <div style={{ color: C.text1, fontSize: C.size.small, lineHeight: 1.5 }}>
             {(contract.scope?.covers || []).map(humanize).join(', ') || 'No positive control claim.'}
           </div>
         </div>
         <div style={{ background: C.surface, border: `1px solid ${C.borderHi}`, borderLeft: `3px solid ${C.borderHi}`, borderRadius: 2, padding: '11px 13px' }}>
-          <div style={{ color: C.text2, fontSize: 10, fontWeight: 900, letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 5 }}>What it does not support</div>
-          <div style={{ color: C.text2, fontSize: 12.5, lineHeight: 1.5 }}>
+          <div style={{ color: C.text2, fontSize: C.size.micro, fontWeight: 900, letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 5 }}>What it does not support</div>
+          <div style={{ color: C.text2, fontSize: C.size.small, lineHeight: 1.5 }}>
             {(contract.scope?.does_not_cover || []).map(humanize).join(', ') || 'No additional exclusions recorded.'}
           </div>
         </div>
@@ -179,7 +179,7 @@ export default function EvidenceContractPanel({
           <Field C={C} label="Status" value={ev.status} tone={ev.status_downgraded ? 'ochre' : undefined} />
         </Group>
 
-        <div style={{ fontSize: 11, color: C.text3, lineHeight: 1.6, background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: '10px 12px' }}>
+        <div style={{ fontSize: C.size.micro, color: C.text3, lineHeight: 1.6, background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: '10px 12px' }}>
           <span style={{ color: C.text2, fontWeight: 700 }}>What this means: </span>
           Evidence class (E1&ndash;E5) is how strong a claim this run&rsquo;s evidence supports &mdash; E1 is an observation,
           E2 is characterizing real behavior, E3 is watching a control actually block something. This project
@@ -204,10 +204,10 @@ export default function EvidenceContractPanel({
 
         {contract.case_evaluation && (
           <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: '12px 14px' }}>
-            <div style={{ color: C.text3, fontSize: 10.5, fontWeight: 800, letterSpacing: 1.3, textTransform: 'uppercase', marginBottom: 9 }}>Case-condition evaluation</div>
+            <div style={{ color: C.text3, fontSize: C.size.micro, fontWeight: 800, letterSpacing: 1.3, textTransform: 'uppercase', marginBottom: 9 }}>Case-condition evaluation</div>
             <div style={{ display: 'grid', gap: 9 }}>
               {contract.case_evaluation.evaluations?.map(evaluation => (
-                <div key={evaluation.condition} style={{ color: C.text2, fontSize: 12, lineHeight: 1.5 }}>
+                <div key={evaluation.condition} style={{ color: C.text2, fontSize: C.size.small, lineHeight: 1.5 }}>
                   <strong style={{ color: C.text1 }}>{humanize(evaluation.condition)}: {humanize(evaluation.outcome)}</strong>
                   <div style={{ color: C.text3, marginTop: 2 }}>
                     {evaluation.signals.map(signal => `${signal.name}=${String(signal.observed)} (${signal.source})`).join(' · ') || 'No executable signals declared.'}
@@ -218,7 +218,7 @@ export default function EvidenceContractPanel({
                 </div>
               ))}
               {contract.case_evaluation.unsupported_signals?.length > 0 && (
-                <div style={{ color: C.ochre, fontSize: 11.5 }}>
+                <div style={{ color: C.ochre, fontSize: C.size.micro }}>
                   Unsupported signals: {contract.case_evaluation.unsupported_signals.join(', ')}. These remain unknown and cannot support a held verdict.
                 </div>
               )}
@@ -261,33 +261,33 @@ export default function EvidenceContractPanel({
       </div>
 
       {contract.integrity?.limitation && (
-        <div style={{ fontSize: 11.5, color: C.text3, lineHeight: 1.55 }}>
+        <div style={{ fontSize: C.size.micro, color: C.text3, lineHeight: 1.55 }}>
           {contract.integrity.limitation}
         </div>
       )}
 
       {integrityVerified === false && (
-        <div role="alert" style={{ fontSize: 12, color: C.red, background: C.redBg, border: `1px solid ${C.red}55`, padding: '9px 12px', borderRadius: 2 }}>
+        <div role="alert" style={{ fontSize: C.size.small, color: C.red, background: C.redBg, border: `1px solid ${C.red}55`, padding: '9px 12px', borderRadius: 2 }}>
           This record no longer matches its stored self-digest. Treat it as modified browser-local evidence.
         </div>
       )}
 
       {contract.limitations?.length > 0 && (
-        <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.5 }}>
-          <div style={{ fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 6, color: C.text3 }}>Limitations</div>
+        <div style={{ fontSize: C.size.small, color: C.text2, lineHeight: 1.5 }}>
+          <div style={{ fontSize: C.size.micro, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 6, color: C.text3 }}>Limitations</div>
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             {contract.limitations.map((note, i) => <li key={i} style={{ marginBottom: 3 }}>{note}</li>)}
           </ul>
         </div>
       )}
 
-      <div style={{ fontSize: 11.5, color: C.text3, fontStyle: 'italic' }}>{contract.claim_boundary}</div>
+      <div style={{ fontSize: C.size.micro, color: C.text3, fontStyle: 'italic' }}>{contract.claim_boundary}</div>
 
       <details style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: '11px 13px' }}>
-        <summary style={{ cursor: 'pointer', color: C.text2, fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
+        <summary style={{ cursor: 'pointer', color: C.text2, fontSize: C.size.micro, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
           Raw contract JSON
         </summary>
-        <pre style={{ margin: '12px 0 0', maxHeight: 320, overflow: 'auto', padding: 14, background: C.ink, border: `1px solid ${C.border}`, borderRadius: 2, color: C.brass, fontSize: 11, lineHeight: 1.55, fontFamily: C.mono, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{json}</pre>
+        <pre style={{ margin: '12px 0 0', maxHeight: 320, overflow: 'auto', padding: 14, background: C.ink, border: `1px solid ${C.border}`, borderRadius: 2, color: C.brass, fontSize: C.size.micro, lineHeight: 1.55, fontFamily: C.mono, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{json}</pre>
       </details>
     </div>
   );

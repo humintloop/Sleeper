@@ -13,15 +13,15 @@ export default function DossierHome({ C, onAgentLab, agentRunsCount = 0 }) {
   return (
     <main style={{ width: '100%', maxWidth: 760, margin: '0 auto', padding: '64px 24px 96px', display: 'flex', flexDirection: 'column', gap: 34 }}>
       <section>
-        <div style={{ fontSize: 11, color: C.text3, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>
+        <div style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>
           Local-first agent assurance
         </div>
         <h1 style={{ fontFamily: C.sans, fontSize: 52, color: C.text1, fontWeight: 600, letterSpacing: '0.02em', lineHeight: 1, margin: 0 }}>Sleeper</h1>
-        <p style={{ fontSize: 17, color: C.text1, lineHeight: 1.65, maxWidth: 680, marginTop: 16, marginBottom: 0 }}>
+        <p style={{ fontSize: C.size.body, color: C.text1, lineHeight: 1.65, maxWidth: 680, marginTop: 16, marginBottom: 0 }}>
           Sleeper tests whether a tool-using agent can be manipulated into taking an action it should not take,
           and turns the result into reviewable evidence mapped to control frameworks.
         </p>
-        <p style={{ fontSize: 14, color: C.text3, lineHeight: 1.7, maxWidth: 700, marginTop: 10, marginBottom: 0 }}>
+        <p style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.7, maxWidth: 700, marginTop: 10, marginBottom: 0 }}>
           Compare the same attack under <strong style={{ color: C.text2 }}>Baseline</strong>,{' '}
           <strong style={{ color: C.text2 }}>Partial</strong>, and <strong style={{ color: C.text2 }}>Reference</strong>{' '}
           controls. See what the agent tried, what the gate allowed or denied, and what evidence survived. Start with
@@ -40,22 +40,22 @@ export default function DossierHome({ C, onAgentLab, agentRunsCount = 0 }) {
             <FlaskConical size={19} />
           </div>
           <div>
-            <div style={{ fontSize: 10, color: C.brass, fontWeight: 800, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4 }}>
+            <div style={{ fontSize: C.size.micro, color: C.brass, fontWeight: 800, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4 }}>
               Agent case &middot; multi-step
             </div>
-            <div style={{ fontSize: 19, color: C.text1, fontWeight: 800 }}>Run agent case</div>
+            <div style={{ fontSize: C.size.head, color: C.text1, fontWeight: 800 }}>Run agent case</div>
           </div>
         </div>
-        <div style={{ fontSize: 13.5, color: C.text3, lineHeight: 1.65, maxWidth: 600 }}>
+        <div style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.65, maxWidth: 600 }}>
           Pick a threat case, compare control postures, and follow attempted actions through authorization, verdict,
           and evidence. Every tool effect is simulated.
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 4, flexWrap: 'wrap' }}>
-          <span style={{ color: C.brass, fontSize: 12.5, fontWeight: 900, letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ color: C.brass, fontSize: C.size.small, fontWeight: 900, letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
             Run agent case <ChevronRight size={13} />
           </span>
           {agentRunsCount > 0 && (
-            <span style={{ color: C.text3, fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ color: C.text3, fontSize: C.size.small, display: 'flex', alignItems: 'center', gap: 5 }}>
               <History size={12} /> {agentRunsCount} run{agentRunsCount === 1 ? '' : 's'} saved in this browser
             </span>
           )}
