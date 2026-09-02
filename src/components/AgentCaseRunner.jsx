@@ -512,8 +512,8 @@ export default function AgentCaseRunner({ C, onHome }) {
                 }} style={{
                   textAlign: 'left', padding: '10px 12px', borderRadius: 2, cursor: 'pointer',
                   background: active ? C.surface : C.panel,
-                  border: `1px solid ${active ? C.brass : C.border}`,
-                  borderLeft: `3px solid ${active ? C.brass : C.border}`,
+                  border: `1px solid ${active ? C.brass : C.borderHi}`,
+                  borderLeft: `3px solid ${active ? C.brass : C.borderHi}`,
                 }}>
                   <div style={{ fontFamily: C.mono, fontSize: C.size.micro, color: active ? C.brass : C.text3, marginBottom: 3 }}>{id}</div>
                   <div style={{ fontSize: C.size.small, color: C.text1, fontWeight: 600 }}>{c.title}</div>
@@ -536,7 +536,7 @@ export default function AgentCaseRunner({ C, onHome }) {
                     <button key={variant.id} aria-pressed={active} disabled={running} onClick={() => setVariantId(variant.id)} style={{
                       textAlign: 'left', padding: '9px 10px', cursor: 'pointer', borderRadius: 2,
                       background: active ? C.surface : 'transparent',
-                      border: `1px solid ${active ? C.brass : C.border}`,
+                      border: `1px solid ${active ? C.brass : C.borderHi}`,
                       color: C.text1,
                     }}>
                       <div style={{ fontSize: C.size.micro, color: active ? C.brass : C.text3, fontFamily: C.mono }}>{variant.id}</div>

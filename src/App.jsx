@@ -29,14 +29,18 @@ const C = {
   // canvas→raised and ~1.06:1 raised→inset-content, which is visible without
   // turning the app grey. Every text and boundary token was re-measured
   // against the new surfaces (see docs/accessibility-audit.md):
-  //   text3 #8B877A  → 5.21:1 on panel, 4.90:1 on surface (AA normal text)
-  //   borderHi #666663 → 3.26:1 on panel, 3.06:1 on surface (WCAG 1.4.11)
+  //   text3 #8B877A  → 5.22:1 on panel, 4.90:1 on surface (AA normal text)
+  //   borderHi #666663 → 3.25:1 on panel, 3.06:1 on surface (WCAG 1.4.11)
   bg:       '#050505', // canvas
   panel:    '#121211', // raised
   surface:  '#191917', // raised, slightly lighter (form fields, nested content)
   hover:    '#212119', // hover state over a raised surface
   ink:      '#050505', // inset (code/JSON blocks) — same value as canvas, named for role not reuse
-  border:   '#2A2A27', // quiet divider — decorative, not a component boundary
+  // Quiet divider: section rules and the edges of non-interactive cards. It is
+  // 1.30:1 on panel and exempt from WCAG 1.4.11 as decoration — which means it
+  // must never be the only signal that something is selectable. Interactive
+  // boundaries use `borderHi`.
+  border:   '#2A2A27',
   // Default interactive-component boundary. Was #3A3A37 (1.74:1 against
   // panel — fails WCAG 1.4.11's 3:1 non-text threshold, measured in
   // docs/accessibility-audit.md) — used on a large number of actually-

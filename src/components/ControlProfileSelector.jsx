@@ -40,8 +40,8 @@ export default function ControlProfileSelector({ C, profiles, selectedId, onSele
             <button key={profile.id} aria-pressed={active} disabled={disabled} onClick={() => onSelect(profile.id)} style={{
               textAlign: 'left', padding: '13px 14px', borderRadius: 2, cursor: disabled ? 'not-allowed' : 'pointer',
               background: active ? C.surface : C.panel,
-              border: `1px solid ${active ? color : C.border}`,
-              borderLeft: `3px solid ${active ? color : C.border}`,
+              border: `1px solid ${active ? color : C.borderHi}`,
+              borderLeft: `3px solid ${active ? color : C.borderHi}`,
             }}>
               <div style={{ fontSize: C.size.small, color: active ? color : C.text1, fontWeight: 800, letterSpacing: .3, marginBottom: 4 }}>
                 {profile.label}
