@@ -47,6 +47,7 @@ import ControlResultsPanel from './ControlResultsPanel';
 import EvidenceContractPanel from './EvidenceContractPanel';
 import FrameworkCrosswalkPanel from './FrameworkCrosswalkPanel';
 import ComparisonStoryPanel from './ComparisonStoryPanel';
+import RunContextSummary from './RunContextSummary';
 
 const PROVIDER_DEFAULTS = {
   [PROVIDERS.ANTHROPIC]: { endpoint: 'https://api.anthropic.com/v1/messages', modelId: 'claude-sonnet-5' },
@@ -738,35 +739,17 @@ export default function AgentCaseRunner({ C, onHome }) {
         </div>
       )}
 
-      <div
-        role="status"
-        aria-live={assessmentState.state === 'error' ? 'assertive' : 'polite'}
-        style={{
-          ...section(C), padding: '11px 14px',
-          borderLeft: `3px solid ${assessmentState.state === 'stale' ? C.ochre : assessmentState.state === 'error' ? C.red : assessmentState.state === 'current' ? C.green : C.borderHi}`,
-        }}
-      >
-        <div style={{ color: C.text1, fontSize: 12.5, fontWeight: 800 }}>
-          Result state: {assessmentState.state.toUpperCase()}
-        </div>
-        <div style={{ color: C.text3, fontSize: 11.5, lineHeight: 1.5, marginTop: 3 }}>{assessmentState.message}</div>
-        <div style={{ color: C.text3, fontSize: 10.5, fontFamily: C.mono, marginTop: 3, overflowWrap: 'anywhere' }}>
-          Current configuration: {currentConfigurationDigest ?? 'calculating…'}
-          {result?.configurationDigest ? ` · Displayed result: ${result.configurationDigest}` : ''}
-        </div>
-        {assessmentState.state === 'stale' && (
-          <>
-            <ul style={{ color: C.text2, fontSize: 11.5, lineHeight: 1.5, margin: '7px 0 9px', paddingLeft: 18 }}>
-              {assessmentState.changes.map(change => (
-                <li key={change.path}><strong>{change.label}</strong> ({change.path}): {change.before} → {change.after}</li>
-              ))}
-            </ul>
-            <button onClick={handleRun} disabled={running} style={{ ...toggleBtn(C, true), fontSize: 11 }}>
-              RERUN WITH CURRENT CONFIGURATION
-            </button>
-          </>
-        )}
-      </div>
+      <RunContextSummary
+        C={C}
+        caseTitle={agentCase?.title}
+        variantTitle={agentCase?.variants?.find(item => item.id === selectedVariantId)?.title}
+        profileLabel={CONTROL_PROFILES[profileId]?.label}
+        configuration={currentConfiguration}
+        configurationDigest={currentConfigurationDigest}
+        assessmentState={assessmentState}
+        onRerun={handleRun}
+        running={running}
+      />
 
       {(result || Object.keys(comparisonResults).length > 0) && (
         <div ref={resultsRef} style={{ display: 'flex', flexDirection: 'column', gap: 22, scrollMarginTop: 18 }}>
