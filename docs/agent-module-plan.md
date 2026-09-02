@@ -200,9 +200,7 @@ is retained and surfaced so a mock effect is never read as a real action.
 1. **AIUC-1 3a/3b requirement allocation** and **two inferred OWASP LLM mappings** (case 1's
    `LLM01`, case 3b's `LLM04`) are this project's own judgment calls, not sourced facts. Flagged
    as such in the code and in `source-ledger.md`.
-2. **Brand art.** A favicon exists; there is no `og:image` social-preview asset and the wordmark
-   is text-only.
-3. **AIUC-1 quotation permission.** The changelog repository publishes no license. Short
+2. **AIUC-1 quotation permission.** The changelog repository publishes no license. Short
    attributed quotes of requirement IDs and names are defensible; a note to AIUC asking about
    citation terms would be cheap insurance if this project leans on AIUC-1 further.
 

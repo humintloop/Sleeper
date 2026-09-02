@@ -187,4 +187,4 @@ For a concise portfolio presentation, follow the
 See [`docs/agent-module-plan.md`](./docs/agent-module-plan.md) for the architecture and
 framework crosswalk. Open: AIUC-1 3a/3b crosswalk allocation and two inferred OWASP LLM
 mappings are this project's own judgment calls rather than sourced facts (flagged as such in
-the plan doc); there's a favicon but no social-preview asset, and the wordmark is text-only.
+the plan doc).
