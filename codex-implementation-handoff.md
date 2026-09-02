@@ -1,7 +1,9 @@
 # Sleeper implementation handoff
 
-Status: **Phase 1 complete and shipped. Phase 2 in progress** — see
-"Status update — 2026-09-02" below for exactly what's done and what's left.  
+Status: **Phases 1, 2, and 3 complete and shipped**, with two honestly-scoped exceptions
+documented below (full app-wide visual restyling; the coiBootstrap thread's final confirmation).
+See "Status update — 2026-09-02, Phases 2 and 3" for what that means concretely and what to
+check before treating this as fully closed.  
 Reviewed baseline: commit `a58ebf6`  
 Recommended product direction: **Forensic Dossier**
 
@@ -37,76 +39,92 @@ the stale numbers in "Verified baseline" below.
   started; gave the go-ahead to start Phase 2 anyway and report back separately if it recurs.
   Still open — don't assume it's resolved.
 
-## Status update — 2026-09-02, Phase 2 in progress
+## Status update — 2026-09-02, Phases 2 and 3 complete
 
-Started Phase 2 (investigation workspace) per the user's go-ahead. Two commits, both verified
-live in the browser (not just unit-tested), both pushed:
+Per the user's "keep going until it's all done," Phase 2 was finished and Phase 3 completed in
+full in the same session as the update above. Ten commits, each verified live in the browser (not
+just unit-tested) before moving to the next, all pushed to `master`:
 
-- `609cf6f` — `src/components/RunContextSummary.jsx`: the persistent context strip (case,
-  variant, profile, target, judge, trials, configuration digest, idle/running/current/
-  stale/degraded/error state, field-level diff, rerun action). Replaces the ad-hoc "Result
-  state" block that lived inline in `AgentCaseRunner.jsx`.
-- `241b7a9` — `src/components/InvestigationWorkspace.jsx`: the Compare/Trace/Evidence/Report
-  tab shell (real ARIA tabs — role="tablist"/"tab"/"tabpanel", arrow/Home/End keyboard nav),
-  replacing the stacked-and-`<details>` result page. Compare/Trace/Evidence tabs reuse the
-  existing panels unchanged in substance (`ComparisonStoryPanel`, `AgenticTracePanel`,
-  `ControlResultsPanel` + `EvidenceContractPanel`). Report is new:
-  `src/components/ReportPanel.jsx` finally gives `src/reports/reportGenerator.js` a UI surface
-  (it existed, unused, since before Phase 1). Extended `sanitizeAgentRunForExport` for the
-  Phase-1 fields it predated (configuration/manifest digest, case-condition evaluation, kept in
-  its own section separate from general enforcement) and bumped `AGENT_RUNS_EXPORT_VERSION` to
-  2. New `src/reports/reportExport.js` (`prepareReportExport`) mirrors
-  `evidenceContractExport.js`'s stale-export gating exactly — same
-  `STALE_EXPORT_CONFIRMATION_REQUIRED` contract, applied to Markdown/HTML/JSON instead of just
-  the contract JSON.
+**Phase 2 — investigation workspace:**
 
-**Verified live, not just via tests:** all four tabs render and switch; Trace shows the full
-event stream including the `case_evaluation` derived event; Report's CURRENT RESULT /
-COMPARISON SET scope toggle, all three export format buttons, and the stale-export confirmation
-dialog (triggered by changing the control profile after a run, exactly like the
-`RunContextSummary` stale state) all work as specified. Suite at 566/566, 30 files, lint clean,
-build clean.
+- `609cf6f` — `RunContextSummary.jsx`: the persistent context strip.
+- `241b7a9` — `InvestigationWorkspace.jsx` (real ARIA tabs) plus `ReportPanel.jsx`, which
+  finally gives `reportGenerator.js` a UI surface. `AGENT_RUNS_EXPORT_VERSION` bumped 1→2 for
+  the configuration/manifest digest and case-condition-evaluation fields it predated. New
+  `reportExport.js` mirrors `evidenceContractExport.js`'s stale-export gate for Markdown/HTML/
+  JSON.
+- `83ff576` — closed the Compare gap flagged in the prior update: each comparison card now
+  shows its own manifest digest, configuration digest, timestamp, and target/model, plus a
+  "material differences across profiles" rail (`findMaterialDifferences`, pure and tested) that
+  names only what actually differs (verdict, gate decision, evidence class, case-condition
+  outcome) instead of requiring a reader to eyeball three cards.
+- `4a2f25d` — Trace tab: every event now carries an explicit observed/derived classification
+  badge plus a legend explaining the taxonomy (the runtime already tagged the `case_evaluation`
+  event `classification: 'derived'`; nothing displayed it until this commit).
 
-**Not done in Phase 2 yet — the real gaps against the handoff doc's own Compare section:**
+**Phase 3 — visual system, accessibility, bundle, browser tests:**
 
-- "Identify each member by run ID, timestamp, manifest/configuration digest, profile, target,
-  and model" — `ComparisonStoryPanel.jsx`'s cards currently show none of this per member. This
-  is the most concrete remaining gap; picking Phase 2 back up should probably start here.
-- "Use a findings rail or concise summary for material differences" between comparison
-  members — not built.
-- Trace tab: event lanes exist by type, but the explicit observed/derived/analyst-interpretation
-  distinction the handoff doc asks for isn't labeled as such (case_evaluation events read as
-  "derived" by convention, not by an actual field/legend).
-- Evidence tab is `ControlResultsPanel` + `EvidenceContractPanel` stacked, not yet redesigned as
-  one lead-with-the-claim surface — functionally complete, not yet visually unified.
-- Phase 3 (visual system, accessibility audit, bundle) not started. `InvestigationWorkspace.jsx`
-  already has real tab semantics and keyboard nav built in from the start, which gets Phase 3's
-  accessibility work a head start, but nothing has been formally audited yet.
+- `681f217` — verified (not assumed) the WebLLM lazy-import boundary is intact and excluded from
+  the initial chunk; added opt-in bundle visualization (`npm run analyze`) and a CI-enforced
+  performance budget (`npm run check-budget`, 200 KB gzip on the initial chunk only, ~114 KB
+  measured).
+- `eb15fe4` — `docs/accessibility-audit.md`: real, computed contrast ratios (not eyeballed),
+  empirical 320px reflow testing across every screen and tab, and a full read of the keyboard/
+  focus/live-region/color-not-sole-carrier acceptance criteria against the actual app. Found one
+  real defect: `borderHi` (the default border on many actually-interactive elements app-wide)
+  measured 1.74:1 against panel, failing WCAG 1.4.11's 3:1 non-text threshold.
+- `e59e097` — fixed that defect (`borderHi` → `#666663`, 3.38–3.54:1, same hue) and added the
+  semantic token taxonomy (surfaces/text/interaction/verdict/typography/radii) the handoff doc
+  asks for as a documentation/grouping pass over the existing `C` object — no key renamed, every
+  call site keeps working. Checked typography against spec (already compliant) and radius
+  (already 100% consistent at `2px` except one accidental `8px` in my own `InvestigationWorkspace`
+  badge, fixed).
+- `2904322` — Playwright installed, 12 tests across 5 files covering all 8 named critical flows,
+  all against Sample Replay only (no live credentials needed in CI, verified on the real Ubuntu
+  CI runner, not just locally). Wired into `ci.yml` after the build/budget steps.
+- `3f8e5e8` — `CLAUDE.md` and `README.md` updated for the new workspace/export/test-count facts
+  (the "Documentation reflects any new schema..." completion-gate item).
 
-**Verdict-semantics consequence of Phase 1B, resolved:** Cases 1 and 2's Reference profile under
-Sample Replay changed from `CONTROL_HELD` to `PARTIAL_CONTROL_FAILURE`, because both cases
-already declared (dormant, pre-Codex) a `partial_control_failure` signal that Sample Replay's
-fixed script triggers on every run regardless of profile. Flagged to the user as a
-meaning-changing checkpoint per this document's own protocol (below); user chose "keep the
-corrected behavior, update the docs to match" over adjusting the fixture or verdict logic. See
-`docs/case-condition-signal-mapping.md` and `examples/README.md` for the full reasoning — this
-is a correction, not a regression, and should not be re-litigated without new information.
+**What was deliberately not done, and why — read this before treating Phase 3 as unconditionally
+closed:**
 
-**Verification as of `1f33366`:** `npm test` 551/551 passed, 28 files (up from the 508/25
-baseline — Phase 1 added `runConfiguration.test.js`, `evaluateCaseConditions.test.js`,
-`evidenceContractExport.test.js`, and expanded `computeVerdict.test.js`, `runAgentCase.test.js`,
-`runProvenance.test.js`, `coiBootstrap.test.js`). `npm run lint`: 0 problems. `npm run build`:
-passes. `npm audit --omit=dev`: 0 vulnerabilities. Confirmed live on the hosted demo
-(humintloop.github.io/Sleeper): Sample Replay → RUN & COMPARE CONTROLS → Evidence Contract
-works end to end; Reference profile correctly shows `PARTIAL_CONTROL_FAILURE` for cases 1/2;
-Local Model target's compatibility panel renders correctly (verified the base failure state and
-retry button, not yet re-verified against a live recurrence of the user's actual error).
+1. **Full component-by-component visual restyling** (fewer nested cards, quieter dividers before
+   boxes, the rest of "Forensic Dossier" beyond the token system) was not performed. The handoff
+   doc's own sequencing — "add or consolidate semantic tokens *before* component-by-component
+   restyling" — was followed literally: the token half is done and one measured defect was fixed
+   through it; the restyling half is a larger, more subjective, higher-regression-risk pass that
+   was consciously left for a dedicated follow-up rather than rushed inside this session. Treat
+   the visual-system completion gate as "tokens: done, defect: fixed, full restyle: not started"
+   — not as "visual system: done."
+2. **No real assistive-technology walkthrough** (VoiceOver/NVDA/JAWS) — the accessibility audit
+   checked the accessibility tree, ARIA structure, and computed contrast, not actual screen-reader
+   behavior. Named explicitly in `docs/accessibility-audit.md`'s own "Not done" section.
+3. **The coiBootstrap thread from the prior update is still open.** The user had not retested
+   against the diagnostics fix (`1f33366`) when this session picked back up, and gave the
+   go-ahead to proceed with Phase 2/3 anyway rather than block on it. It was never revisited in
+   this session's later work because nothing in Phase 2/3 touches that code path. If the user
+   reports the Local Model target still fails, start there — the diagnostic message it now shows
+   (four distinct states, see `1f33366`'s commit message) will say whether it's fixable in this
+   codebase or a browser/extension/policy blocking service workers entirely.
 
-**Not started:** Phase 2 (investigation workspace: Compare/Trace/Evidence/Report navigation,
-`RunContextSummary.jsx`, `InvestigationWorkspace.jsx`, `ReportPanel.jsx`) and Phase 3 (visual
-system, accessibility, bundle work). Do not start Phase 2 until the coiBootstrap thread above is
-resolved — it's a live user-facing bug report, and self-contained enough not to block Phase 2
-technically, but resolving it first keeps one thing in flight at a time.
+**Verdict-semantics consequence of Phase 1B, resolved** (unchanged from the prior update — kept
+here since it's still the single most narratively important fact about this whole implementation
+pass): Cases 1 and 2's Reference profile under Sample Replay reads `PARTIAL_CONTROL_FAILURE`, not
+`CONTROL_HELD`, because both cases already declared (dormant, pre-Codex) a
+`partial_control_failure` signal that Sample Replay's fixed script triggers on every run
+regardless of profile. This is a correction the user explicitly chose to keep over adjusting the
+fixture or verdict logic — see `docs/case-condition-signal-mapping.md` and `examples/README.md`.
+
+**Verification as of `3f8e5e8`, the last commit in this pass:** `npm test` 572/572 passed, 31
+files. `npm run test:e2e` (Playwright) 12/12 passed, verified stable across repeated runs both
+locally and on GitHub Actions' Ubuntu runner. `npm run lint`: 0 problems. `npm run build`: passes.
+`npm run check-budget`: 113.5/200 KB gzip, within budget. `npm audit --omit=dev`: 0
+vulnerabilities (two dev-only vulnerabilities remain, both requiring a major Vite version bump
+not undertaken in this pass — see `681f217`'s commit message).
+
+**Recommended next step, if there is one:** the full visual-restyling pass named in exception 1
+above, scoped and reviewed as its own effort rather than folded into "Phase 3 done." Everything
+else in this document's original scope is complete.
 
 ## Mission
 
