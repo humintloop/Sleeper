@@ -48,6 +48,7 @@ live-API target needs neither WebGPU nor a local download.
 | `src/components/DossierHome.jsx` | Home screen. One entry point: "Run agent case." Headline copy leads with the Baseline-vs-Reference control-profile comparison. |
 | `src/components/AgentCaseRunner.jsx` | **Start here for the UI.** Case + profile + target (live API or local model) → run → `InvestigationWorkspace`'s Compare/Trace/Evidence/Report tabs, plus run history read from `storage.js`. |
 | `src/components/RunContextSummary.jsx` | Persistent context strip above the workspace: case/variant/profile/target/judge/trials/configuration digest, and the derived idle/running/current/stale/degraded/error state with a field-level diff and rerun action when stale. |
+| `src/components/RunHistory.jsx` | Locally retained runs, grouped by comparison batch — one row per comparison, members' verdicts on it, records and their Evidence Contracts one level down. A record's `batchId` is what groups it; records without one stand alone. |
 | `src/components/InvestigationWorkspace.jsx` | The Compare/Trace/Evidence/Report tab shell. Real ARIA tabs (roving tabindex, arrow/Home/End nav) — pure navigation, no verdict/security logic. |
 | `src/components/ReportPanel.jsx` | UI for `reportGenerator.js`'s Markdown/HTML/JSON export (current result or full comparison set), gated by `reportExport.js`'s stale-export confirmation — distinct from the Evidence Contract JSON download on the Evidence tab. |
 | `src/harness/runAgentAssessment.js` | **Start here for the logic.** Case + profile + target → run → verdict → contract. `runCaseAcrossProfiles` is the comparative arm; `createComparisonIdentity` records each member's manifest/configuration digest for the Compare tab. |
@@ -69,7 +70,24 @@ live-API target needs neither WebGPU nor a local download.
 
 ## Conventions that matter
 
-**Colors live in the `C` object** at the top of `App.jsx`. Never hardcode a hex outside it.
+**Colors, type sizes, and radii live in the `C` object** at the top of `App.jsx`. Never hardcode a
+hex outside it, and never a font size either — `C.size` is five steps (`micro`/`small`/`body`/
+`head`/`title`) and a sixth is almost always a hierarchy problem in disguise, not a missing token.
+The one literal left is the 52px home wordmark, which is display type and deliberately outside the
+UI scale.
+
+**Two boundary tokens, and they are not interchangeable.** `border` is decoration — section rules,
+the edge of a non-interactive card — and fails WCAG 1.4.11 at 1.30:1, so it must never be the only
+signal that something is selectable. Every interactive boundary uses `borderHi`, which passes on
+all three surfaces. Raising a surface token lowers the contrast of everything on it: `text3` on
+`surface` sits at 4.90:1, which is the ceiling on lightening the ramp further. Re-measure and
+update [`docs/accessibility-audit.md`](docs/accessibility-audit.md) in the same change, as with the
+framework ledger.
+
+**Uppercase is a level-one marker.** Section eyebrows, the screen kickers, and codes that are
+already uppercase strings. Not tabs, not card titles, not chips, not `<details>` summaries —
+applied at every level it stops being emphasis. Letterspacing exists to open up all-caps and comes
+off with it.
 Verdict colors are reserved on two axes now — the app carries both vocabularies in one lookup
 table (`src/components/VerdictBanner.jsx`'s `verdictDisplay`): probe verdicts (red/teal/amber/
 blue for SUCCESS/FAILURE/PARTIAL/REVIEW, retained for any old exported finding, though the UI
@@ -123,7 +141,7 @@ naming exactly which fields changed and offering a rerun action when it doesn't.
 (Markdown/HTML/JSON) and the Evidence Contract JSON download both refuse a stale export without
 explicit confirmation, then label it historical.
 
-572 vitest tests + 12 Playwright critical-flow tests (`npm run test:e2e`, Sample Replay only, no
+582 vitest tests + 12 Playwright critical-flow tests (`npm run test:e2e`, Sample Replay only, no
 live credentials needed), lint clean, build clean, a CI-enforced bundle budget
 (`npm run check-budget`). The single-turn probe flow (`payloads.js`, `clusters.js`,
 `FindingCard`, `FindingsReport`, the batch/judge machinery, and several other components) was
