@@ -455,20 +455,23 @@ Keep pure security semantics out of React components. Components may render and 
 
 ## Completion gates
 
-Before declaring the work complete:
+Before declaring the work complete. All twelve checked as of commit `485bc97` — see the
+"Status update — 2026-09-02, Phases 2 and 3 complete" section above for the commit that satisfies
+each one and the three things deliberately left outside this scope (full visual restyling, a real
+screen-reader walkthrough, and the still-unconfirmed coiBootstrap thread).
 
-- [ ] Every result and comparison member has an immutable configuration snapshot and digest.
-- [ ] All execution-relevant form changes create a visible stale state.
-- [ ] Declared executable case signals are evaluated or explicitly reported unsupported.
-- [ ] Case evaluation is traceable from observed source to Evidence Contract to UI/report.
-- [ ] Provider assistant turns round-trip without silent content loss.
-- [ ] Compare, Trace, Evidence, and Report operate on explicit run identities.
-- [ ] Stale exports are intentional and labeled historical.
-- [ ] Critical browser flows run in CI without live credentials.
-- [ ] Keyboard, live-region, contrast, and reflow checks are recorded.
-- [ ] Bundle composition is measured and a justified budget is enforced.
-- [ ] `npm test`, `npm run lint`, `npm run build`, browser tests, and `npm audit --omit=dev` pass.
-- [ ] Documentation reflects any new schema, limitations, or threat/evidence claims.
+- [x] Every result and comparison member has an immutable configuration snapshot and digest.
+- [x] All execution-relevant form changes create a visible stale state.
+- [x] Declared executable case signals are evaluated or explicitly reported unsupported.
+- [x] Case evaluation is traceable from observed source to Evidence Contract to UI/report.
+- [x] Provider assistant turns round-trip without silent content loss.
+- [x] Compare, Trace, Evidence, and Report operate on explicit run identities.
+- [x] Stale exports are intentional and labeled historical.
+- [x] Critical browser flows run in CI without live credentials.
+- [x] Keyboard, live-region, contrast, and reflow checks are recorded.
+- [x] Bundle composition is measured and a justified budget is enforced.
+- [x] `npm test`, `npm run lint`, `npm run build`, browser tests, and `npm audit --omit=dev` pass.
+- [x] Documentation reflects any new schema, limitations, or threat/evidence claims.
 
 ## Out of scope unless separately approved
 
