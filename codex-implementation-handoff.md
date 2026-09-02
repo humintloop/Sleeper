@@ -1,8 +1,64 @@
 # Sleeper implementation handoff
 
-Status: ready for implementation  
+Status: **Phase 1 complete and shipped.** Phase 2 not started.  
 Reviewed baseline: commit `a58ebf6`  
 Recommended product direction: **Forensic Dossier**
+
+## Status update — 2026-09-01, session paused here
+
+Codex implemented Phase 1 (1A/1B/1C) against this document and ran out of usage at the
+checkpoint-report step. Claude picked up from that point: independently reviewed every diff
+(not just Codex's self-report), ran the full verification suite, fixed what needed fixing,
+committed, and verified live in the browser and on the hosted GitHub Pages deploy. Then fixed
+one unrelated bug reported by the user during testing, in two passes — the second pass is
+**unconfirmed as of this pause**. Read this section before doing anything else; it supersedes
+the stale numbers in "Verified baseline" below.
+
+**Commits, in order, all on `master`, all pushed:**
+
+- `1d1bcc5` — Phase 1 implementation (1A + 1B + 1C together; the changes are too
+  interdependent across shared files — `runAgentAssessment.js`, `EvidenceContractPanel.jsx`,
+  `evidenceContract.js` — to split cleanly without an intermediate broken state). Full commit
+  message has the detailed breakdown per sub-phase.
+- `04d7039`, `ee36b87` — updated `examples/*.json`, `docs/results/*.md`, and
+  `docs/portfolio-walkthrough.md` for a verdict-semantics consequence of 1B (see below), plus a
+  README test-count correction.
+- `926656f` — fixed a real bug in `src/coiBootstrap.js` found while investigating a user report
+  ("Cross-origin isolation is inactive" on the Local Model target, persisting after reload).
+- `1f33366` — the user reported the *same* error again after `926656f` shipped ("almost worked
+  once"), so that fix alone was evidently not the whole story. Added proper diagnostics
+  (`window.__sleeperCoiStatus`, console logging, a specific reason shown in the UI, and a RETRY
+  ISOLATION CHECK button) instead of continuing to guess blindly. **This is the open thread**:
+  waiting on the user to report back what the new, specific diagnostic message says next time it
+  happens. That will say definitively whether it's something still fixable in this codebase
+  (a real remaining bug) or a browser/extension/policy blocking service workers entirely (not
+  fixable from this app). Start here tomorrow — check for a reply with that diagnostic text
+  before doing anything else Phase-2-related.
+
+**Verdict-semantics consequence of Phase 1B, resolved:** Cases 1 and 2's Reference profile under
+Sample Replay changed from `CONTROL_HELD` to `PARTIAL_CONTROL_FAILURE`, because both cases
+already declared (dormant, pre-Codex) a `partial_control_failure` signal that Sample Replay's
+fixed script triggers on every run regardless of profile. Flagged to the user as a
+meaning-changing checkpoint per this document's own protocol (below); user chose "keep the
+corrected behavior, update the docs to match" over adjusting the fixture or verdict logic. See
+`docs/case-condition-signal-mapping.md` and `examples/README.md` for the full reasoning — this
+is a correction, not a regression, and should not be re-litigated without new information.
+
+**Verification as of `1f33366`:** `npm test` 551/551 passed, 28 files (up from the 508/25
+baseline — Phase 1 added `runConfiguration.test.js`, `evaluateCaseConditions.test.js`,
+`evidenceContractExport.test.js`, and expanded `computeVerdict.test.js`, `runAgentCase.test.js`,
+`runProvenance.test.js`, `coiBootstrap.test.js`). `npm run lint`: 0 problems. `npm run build`:
+passes. `npm audit --omit=dev`: 0 vulnerabilities. Confirmed live on the hosted demo
+(humintloop.github.io/Sleeper): Sample Replay → RUN & COMPARE CONTROLS → Evidence Contract
+works end to end; Reference profile correctly shows `PARTIAL_CONTROL_FAILURE` for cases 1/2;
+Local Model target's compatibility panel renders correctly (verified the base failure state and
+retry button, not yet re-verified against a live recurrence of the user's actual error).
+
+**Not started:** Phase 2 (investigation workspace: Compare/Trace/Evidence/Report navigation,
+`RunContextSummary.jsx`, `InvestigationWorkspace.jsx`, `ReportPanel.jsx`) and Phase 3 (visual
+system, accessibility, bundle work). Do not start Phase 2 until the coiBootstrap thread above is
+resolved — it's a live user-facing bug report, and self-contained enough not to block Phase 2
+technically, but resolving it first keeps one thing in flight at a time.
 
 ## Mission
 
@@ -25,7 +81,8 @@ This document is the implementation source of truth. Preserve Sleeper's careful 
 
 ## Verified baseline
 
-At the reviewed commit:
+**Superseded — see "Status update" above for current numbers (551/28, commit `1f33366`).** Left
+here unedited as a record of what was true at the reviewed commit, not as the current state:
 
 - `npm test`: 508 tests passed across 25 files.
 - `npm run lint`: passed.
