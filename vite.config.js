@@ -36,6 +36,13 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['@mlc-ai/web-llm'],
   },
+  test: {
+    // e2e/*.spec.js are Playwright tests (npm run test:e2e), not vitest's —
+    // vitest's default include glob matches *.spec.js too, so without this
+    // it tries to run them itself and fails on Playwright's own test()/
+    // describe() API.
+    exclude: ['node_modules/**', 'e2e/**'],
+  },
   worker: {
     format: 'es',
   },

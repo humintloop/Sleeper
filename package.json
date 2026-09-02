@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "analyze": "ANALYZE=true vite build",
-    "check-budget": "node scripts/check-bundle-budget.mjs"
+    "check-budget": "node scripts/check-bundle-budget.mjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@mlc-ai/web-llm": "^0.2.73",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@playwright/test": "^1.62.1",
     "@vitejs/plugin-react": "^4.3.1",
     "eslint": "^9.39.4",
     "eslint-plugin-react": "^7.37.5",
