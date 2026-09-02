@@ -22,7 +22,7 @@ function RelationshipTag({ C, relationship }) {
   const color = direct ? C.green : C.text3;
   return (
     <span style={{
-      fontSize: C.size.micro, color, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase',
+      fontSize: C.size.micro, color, fontWeight: 800, letterSpacing: .2,
       border: `1px solid ${color}55`, borderRadius: 2, padding: '1px 6px',
     }}>
       {direct ? 'direct' : 'inferred'}
@@ -40,7 +40,7 @@ function MappingRow({ C, mapping }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 2 }}>
           <span style={{ fontSize: C.size.small, color: C.text1, fontWeight: 600 }}>{mapping.name || mapping.id}</span>
           {mapping.role === 'primary' && (
-            <span style={{ fontSize: C.size.micro, color: C.brass, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase' }}>lead</span>
+            <span style={{ fontSize: C.size.micro, color: C.brass, fontWeight: 800, letterSpacing: .2 }}>lead</span>
           )}
           <RelationshipTag C={C} relationship={mapping.relationship} />
         </div>
@@ -53,7 +53,7 @@ function MappingRow({ C, mapping }) {
 function FrameworkGroup({ C, framework, mappings, defaultOpen }) {
   return (
     <details open={defaultOpen} style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, overflow: 'hidden' }}>
-      <summary style={{ cursor: 'pointer', padding: '9px 12px', fontSize: C.size.micro, color: C.text2, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase', background: C.surface }}>
+      <summary style={{ cursor: 'pointer', padding: '9px 12px', fontSize: C.size.micro, color: C.text2, fontWeight: 800, letterSpacing: .2, background: C.surface }}>
         {FRAMEWORK_LABEL[framework] || framework} <span style={{ color: C.text3, fontWeight: 500, textTransform: 'none' }}>({mappings.length})</span>
       </summary>
       <div>
@@ -81,7 +81,7 @@ export default function FrameworkCrosswalkPanel({ C, agentCase }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {agentCase.primary_framework_note && (
         <div style={{ fontSize: C.size.small, color: C.text2, lineHeight: 1.55, background: C.surface, border: `1px solid ${C.brass}44`, borderLeft: `3px solid ${C.brass}`, borderRadius: 2, padding: '9px 12px' }}>
-          <span style={{ color: C.brass, fontWeight: 800, letterSpacing: .5, textTransform: 'uppercase', fontSize: C.size.micro, marginRight: 6 }}>
+          <span style={{ color: C.brass, fontWeight: 800, letterSpacing: .2, fontSize: C.size.micro, marginRight: 6 }}>
             {FRAMEWORK_LABEL[primaryFramework] || primaryFramework} leads
           </span>
           {agentCase.primary_framework_note}
@@ -101,7 +101,7 @@ export default function FrameworkCrosswalkPanel({ C, agentCase }) {
       {crosswalk?.rows?.length > 0 && (
         <div style={{ background: C.panel, border: `1px solid ${C.green}44`, borderRadius: 2, padding: '10px 12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: C.size.micro, color: C.green, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase' }}>OWASP-published crosswalk</span>
+            <span style={{ fontSize: C.size.micro, color: C.green, fontWeight: 800, letterSpacing: .2 }}>OWASP-published crosswalk</span>
             <RelationshipTag C={C} relationship="direct" />
           </div>
           <div style={{ fontSize: C.size.micro, color: C.text3, lineHeight: 1.5, marginBottom: 8 }}>{crosswalk.note}</div>
@@ -118,7 +118,7 @@ export default function FrameworkCrosswalkPanel({ C, agentCase }) {
 
       {asiRefs.length > 0 && (
         <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: '10px 12px' }}>
-          <div style={{ fontSize: C.size.micro, color: C.text3, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase', marginBottom: 4 }}>ASI cross-reference</div>
+          <div style={{ fontSize: C.size.micro, color: C.text3, fontWeight: 800, letterSpacing: .2, marginBottom: 4 }}>ASI cross-reference</div>
           <div style={{ fontSize: C.size.micro, color: C.text3, lineHeight: 1.5, marginBottom: 8 }}>
             OWASP&rsquo;s Agentic (ASI) top 10 was published before the 2026 LLM edition, so its own text cites the
             older LLM numbering. The ID as OWASP printed it stays exact; the current-edition equivalent is

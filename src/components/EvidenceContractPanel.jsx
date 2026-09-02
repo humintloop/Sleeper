@@ -38,7 +38,7 @@ function Field({ C, label, value, tone }) {
 function Group({ C, title, children }) {
   return (
     <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: '12px 14px' }}>
-      <div style={{ color: C.text3, fontSize: C.size.micro, fontWeight: 800, letterSpacing: 1.3, textTransform: 'uppercase', marginBottom: 9 }}>{title}</div>
+      <div style={{ color: C.text3, fontSize: C.size.micro, fontWeight: 800, letterSpacing: .2, marginBottom: 9 }}>{title}</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 7 }}>
         {children}
       </div>
@@ -82,7 +82,7 @@ export default function EvidenceContractPanel({
   if (!contract) {
     return (
       <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: 18 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.text3, fontSize: C.size.small, fontWeight: 800, letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.text3, fontSize: C.size.small, fontWeight: 800, letterSpacing: .2, marginBottom: 8 }}>
           <FileJson size={14} /> Evidence Contract
         </div>
         <div style={{ color: C.text2, fontSize: C.size.small, lineHeight: 1.55 }}>
@@ -125,7 +125,7 @@ export default function EvidenceContractPanel({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.brass, fontSize: C.size.small, fontWeight: 900, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.brass, fontSize: C.size.small, fontWeight: 900, letterSpacing: .2 }}>
             <FileJson size={14} /> Evidence Contract
           </div>
           <div style={{ color: C.text3, fontSize: C.size.small, marginTop: 3, fontFamily: C.mono }}>{contract.case_id} · {contract.profile_id}</div>
@@ -156,13 +156,13 @@ export default function EvidenceContractPanel({
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
         <div style={{ background: C.greenBg, border: `1px solid ${C.green}55`, borderLeft: `3px solid ${C.green}`, borderRadius: 2, padding: '11px 13px' }}>
-          <div style={{ color: C.green, fontSize: C.size.micro, fontWeight: 900, letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 5 }}>What this run supports</div>
+          <div style={{ color: C.green, fontSize: C.size.micro, fontWeight: 900, letterSpacing: .2, marginBottom: 5 }}>What this run supports</div>
           <div style={{ color: C.text1, fontSize: C.size.small, lineHeight: 1.5 }}>
             {(contract.scope?.covers || []).map(humanize).join(', ') || 'No positive control claim.'}
           </div>
         </div>
         <div style={{ background: C.surface, border: `1px solid ${C.borderHi}`, borderLeft: `3px solid ${C.borderHi}`, borderRadius: 2, padding: '11px 13px' }}>
-          <div style={{ color: C.text2, fontSize: C.size.micro, fontWeight: 900, letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 5 }}>What it does not support</div>
+          <div style={{ color: C.text2, fontSize: C.size.micro, fontWeight: 900, letterSpacing: .2, marginBottom: 5 }}>What it does not support</div>
           <div style={{ color: C.text2, fontSize: C.size.small, lineHeight: 1.5 }}>
             {(contract.scope?.does_not_cover || []).map(humanize).join(', ') || 'No additional exclusions recorded.'}
           </div>
@@ -204,7 +204,7 @@ export default function EvidenceContractPanel({
 
         {contract.case_evaluation && (
           <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: '12px 14px' }}>
-            <div style={{ color: C.text3, fontSize: C.size.micro, fontWeight: 800, letterSpacing: 1.3, textTransform: 'uppercase', marginBottom: 9 }}>Case-condition evaluation</div>
+            <div style={{ color: C.text3, fontSize: C.size.micro, fontWeight: 800, letterSpacing: .2, marginBottom: 9 }}>Case-condition evaluation</div>
             <div style={{ display: 'grid', gap: 9 }}>
               {contract.case_evaluation.evaluations?.map(evaluation => (
                 <div key={evaluation.condition} style={{ color: C.text2, fontSize: C.size.small, lineHeight: 1.5 }}>
@@ -274,7 +274,7 @@ export default function EvidenceContractPanel({
 
       {contract.limitations?.length > 0 && (
         <div style={{ fontSize: C.size.small, color: C.text2, lineHeight: 1.5 }}>
-          <div style={{ fontSize: C.size.micro, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 6, color: C.text3 }}>Limitations</div>
+          <div style={{ fontSize: C.size.micro, letterSpacing: .2, marginBottom: 6, color: C.text3 }}>Limitations</div>
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             {contract.limitations.map((note, i) => <li key={i} style={{ marginBottom: 3 }}>{note}</li>)}
           </ul>
@@ -284,7 +284,7 @@ export default function EvidenceContractPanel({
       <div style={{ fontSize: C.size.micro, color: C.text3, fontStyle: 'italic' }}>{contract.claim_boundary}</div>
 
       <details style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: '11px 13px' }}>
-        <summary style={{ cursor: 'pointer', color: C.text2, fontSize: C.size.micro, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
+        <summary style={{ cursor: 'pointer', color: C.text2, fontSize: C.size.micro, fontWeight: 800, letterSpacing: .2 }}>
           Raw contract JSON
         </summary>
         <pre style={{ margin: '12px 0 0', maxHeight: 320, overflow: 'auto', padding: 14, background: C.ink, border: `1px solid ${C.border}`, borderRadius: 2, color: C.brass, fontSize: C.size.micro, lineHeight: 1.55, fontFamily: C.mono, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{json}</pre>

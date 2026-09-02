@@ -40,7 +40,7 @@ export default function DossierHome({ C, onAgentLab, agentRunsCount = 0 }) {
             <FlaskConical size={19} />
           </div>
           <div>
-            <div style={{ fontSize: C.size.micro, color: C.brass, fontWeight: 800, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4 }}>
+            <div style={{ fontSize: C.size.micro, color: C.brass, fontWeight: 800, letterSpacing: .2, marginBottom: 4 }}>
               Agent case &middot; multi-step
             </div>
             <div style={{ fontSize: C.size.head, color: C.text1, fontWeight: 800 }}>Run agent case</div>

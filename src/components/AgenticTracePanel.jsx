@@ -184,7 +184,7 @@ export default function AgenticTracePanel({ C, run }) {
             <Icon size={14} color={color} style={{ flexShrink: 0, marginTop: 2 }} />
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' }}>
-                <span style={{ color, fontSize: C.size.micro, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>{meta.label}</span>
+                <span style={{ color, fontSize: C.size.micro, fontWeight: 800, letterSpacing: .2 }}>{meta.label}</span>
                 <span style={{ color: C.text3, fontSize: C.size.micro, fontFamily: C.mono }}>T{event.turn}</span>
                 {classification && (
                   <span style={{ color: C.text3, fontSize: C.size.micro, fontWeight: 700, letterSpacing: .8, border: `1px solid ${C.borderHi}`, borderRadius: 2, padding: '1px 5px' }}>

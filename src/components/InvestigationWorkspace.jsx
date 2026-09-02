@@ -49,7 +49,7 @@ export default function InvestigationWorkspace({ C, tabs, defaultTabId }) {
               onClick={() => setActiveId(tab.id)}
               onKeyDown={event => onKeyDown(event, index)}
               style={{
-                padding: '9px 16px', fontSize: C.size.small, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase',
+                padding: '9px 16px', fontSize: C.size.small, fontWeight: 800, letterSpacing: .2,
                 cursor: 'pointer', background: 'transparent', border: 'none', borderBottom: `2px solid ${selected ? C.brass : 'transparent'}`,
                 color: selected ? C.brass : C.text3, display: 'flex', alignItems: 'center', gap: 6,
                 marginBottom: -1,

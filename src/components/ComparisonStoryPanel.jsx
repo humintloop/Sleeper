@@ -112,7 +112,7 @@ function FlowStep({ C, icon: Icon, label, children, tone = 'text2', last = false
         {!last && <div style={{ width: 1, flex: 1, minHeight: 13, background: C.borderHi }} />}
       </div>
       <div style={{ paddingBottom: last ? 0 : 11, minWidth: 0 }}>
-        <div style={{ color: C.text3, fontSize: C.size.micro, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 3 }}>{label}</div>
+        <div style={{ color: C.text3, fontSize: C.size.micro, fontWeight: 800, letterSpacing: .2, marginBottom: 3 }}>{label}</div>
         <div style={{ color: C.text1, fontSize: C.size.small, lineHeight: 1.45, overflowWrap: 'anywhere' }}>{children}</div>
       </div>
     </div>
@@ -158,7 +158,7 @@ function ProfileStory({ C, profile, outcome, selected, onInspect }) {
     <article style={{ border: `1px solid ${C.border}`, borderTop: `3px solid ${profileColor}`, background: C.panel, borderRadius: 2, padding: 15, animation: 'fadeUp .24s ease-out' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start', marginBottom: 14 }}>
         <div>
-          <div style={{ color: profileColor, fontSize: C.size.micro, fontWeight: 900, letterSpacing: 1.2, textTransform: 'uppercase' }}>{profile.label}</div>
+          <div style={{ color: profileColor, fontSize: C.size.micro, fontWeight: 900, letterSpacing: .2 }}>{profile.label}</div>
           <div style={{ color: C.text3, fontSize: C.size.micro, marginTop: 3 }}>{profile.description}</div>
         </div>
         <div style={{ color: verdictColor, border: `1px solid ${verdictColor}55`, padding: '3px 6px', borderRadius: 2, fontSize: C.size.micro, fontWeight: 900, letterSpacing: .5, whiteSpace: 'nowrap' }}>
@@ -208,7 +208,7 @@ export default function ComparisonStoryPanel({ C, results, profiles, selectedId,
   return (
     <section aria-labelledby="comparison-story-title" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div>
-        <div id="comparison-story-title" style={{ color: C.brass, fontSize: C.size.small, fontWeight: 900, letterSpacing: 1.4, textTransform: 'uppercase' }}>
+        <div id="comparison-story-title" style={{ color: C.brass, fontSize: C.size.small, fontWeight: 900, letterSpacing: .2 }}>
           What happened under each control setup
         </div>
         <div style={{ color: C.text2, fontSize: C.size.small, lineHeight: 1.55, marginTop: 5, maxWidth: 820 }}>
@@ -220,7 +220,7 @@ export default function ComparisonStoryPanel({ C, results, profiles, selectedId,
       </div>
       {differences.length > 0 && (
         <div role="status" style={{ background: C.surface, border: `1px solid ${C.borderHi}`, borderLeft: `3px solid ${C.brass}`, borderRadius: 2, padding: '10px 13px' }}>
-          <div style={{ color: C.text3, fontSize: C.size.micro, fontWeight: 800, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 6 }}>
+          <div style={{ color: C.text3, fontSize: C.size.micro, fontWeight: 800, letterSpacing: .2, marginBottom: 6 }}>
             Material differences across profiles
           </div>
           <ul style={{ margin: 0, paddingLeft: 18, color: C.text2, fontSize: C.size.small, lineHeight: 1.5 }}>

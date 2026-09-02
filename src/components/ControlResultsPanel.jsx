@@ -50,7 +50,7 @@ export default function ControlResultsPanel({ C, verdict, profiles, comparisonHi
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ padding: '14px 16px', borderRadius: 2, background: C.surface, border: `1px solid ${color}55`, borderLeft: `3px solid ${color}` }}>
-        <div style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 6 }}>
+        <div style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: .2, marginBottom: 6 }}>
           Outcome for exercised controls
         </div>
         <div style={{ fontSize: C.size.head, color, fontWeight: 900, letterSpacing: .3, marginBottom: 4 }}>
@@ -86,7 +86,7 @@ export default function ControlResultsPanel({ C, verdict, profiles, comparisonHi
 
       {verdict.evidence_limitations?.length > 0 && (
         <div style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.5 }}>
-          <div style={{ fontSize: C.size.micro, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 6, color: C.text3 }}>Evidence limitations</div>
+          <div style={{ fontSize: C.size.micro, letterSpacing: .2, marginBottom: 6, color: C.text3 }}>Evidence limitations</div>
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             {verdict.evidence_limitations.map((note, i) => <li key={i} style={{ marginBottom: 3 }}>{note}</li>)}
           </ul>
@@ -95,7 +95,7 @@ export default function ControlResultsPanel({ C, verdict, profiles, comparisonHi
 
       {comparisonHistory && Object.keys(comparisonHistory).length > 0 && (
         <div>
-          <div style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 8 }}>
+          <div style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: .2, marginBottom: 8 }}>
             Comparative arm — same case, other profiles
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

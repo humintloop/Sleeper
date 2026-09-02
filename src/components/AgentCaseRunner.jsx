@@ -60,8 +60,25 @@ const RUN_PROFILE_IDS = ['baseline', 'partial', 'reference'];
 const DISPLAY_PROFILES = Object.fromEntries(RUN_PROFILE_IDS.map(id => [id, CONTROL_PROFILES[id]]));
 const TARGET_TYPES = { SAMPLE: 'sample', LIVE: 'live', LOCAL: 'local' };
 
+// A configuration section is not a card.
+//
+// This screen stacks six consecutive setup sections. Boxing each one in an
+// identical 1px border gave the reader six equal-weight objects and therefore
+// no hierarchy at all — and because the case, profile and target pickers are
+// themselves grids of bordered buttons, every one of those boxes was a card
+// inside a card. `section` is now a hairline rule and breathing room: the
+// label carries the boundary, not a frame.
+//
+// `card` is the old boxed treatment, kept for the things that genuinely are
+// raised objects on the page — status callouts, a returned result, a history
+// row — where a border means "this is a discrete thing" rather than merely
+// "this is a region".
 function section(C) {
-  return { background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: '16px 18px' };
+  return { borderTop: `1px solid ${C.border}`, paddingTop: 14 };
+}
+
+function card(C) {
+  return { background: C.panel, border: `1px solid ${C.border}`, borderRadius: C.radius, padding: '16px 18px' };
 }
 
 function fieldLabel(C) {
@@ -434,7 +451,7 @@ export default function AgentCaseRunner({ C, onHome }) {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: 1.4, textTransform: 'uppercase', marginRight: 4 }}>Jump to</span>
+        <span style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: .2, marginRight: 4 }}>Jump to</span>
         {[
           { label: 'Case', done: Boolean(caseId), ref: caseSectionRef },
           { label: 'Profile', done: Boolean(profileId), ref: profileSectionRef },
@@ -454,7 +471,7 @@ export default function AgentCaseRunner({ C, onHome }) {
               background: step.done ? C.brass : C.borderHi,
               boxShadow: step.done ? `0 0 6px ${C.brass}99` : 'none',
             }} />
-            <span style={{ fontSize: C.size.micro, letterSpacing: .8, fontWeight: step.done ? 800 : 500, color: step.done ? C.brass : C.text3, textTransform: 'uppercase' }}>
+            <span style={{ fontSize: C.size.micro, letterSpacing: .2, fontWeight: step.done ? 800 : 500, color: step.done ? C.brass : C.text3 }}>
               {step.label}
             </span>
           </button>
@@ -521,7 +538,7 @@ export default function AgentCaseRunner({ C, onHome }) {
       </div>
 
       <details style={section(C)}>
-        <summary style={{ cursor: 'pointer', color: C.text2, fontSize: C.size.small, fontWeight: 800, letterSpacing: 1.1, textTransform: 'uppercase' }}>
+        <summary style={{ cursor: 'pointer', color: C.text2, fontSize: C.size.small, fontWeight: 800, letterSpacing: .2 }}>
           Framework mapping <span style={{ color: C.text3, fontWeight: 500, letterSpacing: 0, textTransform: 'none' }}>— review references and relationship strength</span>
         </summary>
         <div style={{ marginTop: 14 }}>
@@ -688,7 +705,7 @@ export default function AgentCaseRunner({ C, onHome }) {
       </div>
 
       {comparisonProgress && (
-        <div role="status" aria-live="polite" style={{ ...section(C), padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div role="status" aria-live="polite" style={{ ...card(C), padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
           <RefreshCw size={13} color={C.brass} style={{ animation: 'spin 1s linear infinite' }} />
           <div style={{ color: C.text2, fontSize: C.size.small }}>
             Running <strong style={{ color: C.text1 }}>{DISPLAY_PROFILES[comparisonProgress.current]?.label}</strong> · {comparisonProgress.completed + 1} of {comparisonProgress.total}
@@ -696,8 +713,8 @@ export default function AgentCaseRunner({ C, onHome }) {
         </div>
       )}
 
-      <details style={{ ...section(C), padding: '12px 14px' }}>
-        <summary style={{ cursor: 'pointer', color: C.text2, fontSize: C.size.micro, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
+      <details style={section(C)}>
+        <summary style={{ cursor: 'pointer', color: C.text2, fontSize: C.size.micro, fontWeight: 800, letterSpacing: .2 }}>
           Repeat trials <span style={{ color: C.text3, fontWeight: 500, letterSpacing: 0, textTransform: 'none' }}>— check outcome variance</span>
         </summary>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
@@ -725,7 +742,7 @@ export default function AgentCaseRunner({ C, onHome }) {
       </details>
 
       {trialSummary && (
-        <div style={{ ...section(C), fontSize: C.size.small, color: C.text2, lineHeight: 1.55 }}>
+        <div style={{ ...card(C), fontSize: C.size.small, color: C.text2, lineHeight: 1.55 }}>
           <div style={{ ...fieldLabel(C), marginBottom: 7 }}>Repeat-trial summary</div>
           <div>{trialSummary.trial_count} independent sequential calls · controlled configuration: {trialSummary.controlled_configuration ? 'yes' : 'no'}</div>
           <div style={{ marginTop: 4, fontFamily: C.mono }}>
@@ -766,7 +783,7 @@ export default function AgentCaseRunner({ C, onHome }) {
                 content: (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     {staleComparisonMembers.length > 0 && (
-                      <div role="status" style={{ ...section(C), borderLeft: `3px solid ${C.ochre}`, color: C.text2, fontSize: C.size.small, lineHeight: 1.5 }}>
+                      <div role="status" style={{ ...card(C), borderLeft: `3px solid ${C.ochre}`, color: C.text2, fontSize: C.size.small, lineHeight: 1.5 }}>
                         Historical comparison: {staleComparisonMembers.map(member => `${member.profileId} (${member.changes.map(change => change.path).join(', ')})`).join(' · ')}. Members retain their original completed manifest identities.
                       </div>
                     )}
@@ -843,7 +860,7 @@ function RunHistory({ C, history, chainStatus }) {
   const [expandedId, setExpandedId] = useState(null);
 
   return (
-    <div style={section(C)}>
+    <div style={card(C)}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
         <History size={13} color={C.text3} />
         <div style={{ ...fieldLabel(C), marginBottom: 0 }}>Recent runs &middot; this browser</div>

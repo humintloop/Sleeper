@@ -66,7 +66,7 @@ export default function ControlProfileSelector({ C, profiles, selectedId, onSele
 
       {selectedId === 'custom' && (
         <div style={{ background: C.panel, border: `1px solid ${C.borderHi}`, borderLeft: `3px solid ${C.brass}`, borderRadius: 2, padding: '12px 14px' }}>
-          <div style={{ fontSize: C.size.micro, color: C.brass, letterSpacing: 1.2, fontWeight: 800, marginBottom: 10, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: C.size.micro, color: C.brass, letterSpacing: .2, fontWeight: 800, marginBottom: 10 }}>
             Custom control configuration
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 8 }}>

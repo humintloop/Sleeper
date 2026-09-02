@@ -26,7 +26,7 @@ function Field({ C, label, value, mono = false }) {
   if (!value) return null;
   return (
     <div style={{ minWidth: 0 }}>
-      <div style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: .2, marginBottom: 2 }}>{label}</div>
       <div style={{ fontSize: C.size.small, color: C.text1, fontFamily: mono ? C.mono : C.sans, overflowWrap: 'anywhere' }}>{value}</div>
     </div>
   );
