@@ -1,6 +1,7 @@
 # Sleeper implementation handoff
 
-Status: **Phase 1 complete and shipped.** Phase 2 not started.  
+Status: **Phase 1 complete and shipped. Phase 2 in progress** — see
+"Status update — 2026-09-02" below for exactly what's done and what's left.  
 Reviewed baseline: commit `a58ebf6`  
 Recommended product direction: **Forensic Dossier**
 
@@ -32,8 +33,55 @@ the stale numbers in "Verified baseline" below.
   waiting on the user to report back what the new, specific diagnostic message says next time it
   happens. That will say definitively whether it's something still fixable in this codebase
   (a real remaining bug) or a browser/extension/policy blocking service workers entirely (not
-  fixable from this app). Start here tomorrow — check for a reply with that diagnostic text
-  before doing anything else Phase-2-related.
+  fixable from this app). **Update, 2026-09-02:** user hadn't retested when this session
+  started; gave the go-ahead to start Phase 2 anyway and report back separately if it recurs.
+  Still open — don't assume it's resolved.
+
+## Status update — 2026-09-02, Phase 2 in progress
+
+Started Phase 2 (investigation workspace) per the user's go-ahead. Two commits, both verified
+live in the browser (not just unit-tested), both pushed:
+
+- `609cf6f` — `src/components/RunContextSummary.jsx`: the persistent context strip (case,
+  variant, profile, target, judge, trials, configuration digest, idle/running/current/
+  stale/degraded/error state, field-level diff, rerun action). Replaces the ad-hoc "Result
+  state" block that lived inline in `AgentCaseRunner.jsx`.
+- `241b7a9` — `src/components/InvestigationWorkspace.jsx`: the Compare/Trace/Evidence/Report
+  tab shell (real ARIA tabs — role="tablist"/"tab"/"tabpanel", arrow/Home/End keyboard nav),
+  replacing the stacked-and-`<details>` result page. Compare/Trace/Evidence tabs reuse the
+  existing panels unchanged in substance (`ComparisonStoryPanel`, `AgenticTracePanel`,
+  `ControlResultsPanel` + `EvidenceContractPanel`). Report is new:
+  `src/components/ReportPanel.jsx` finally gives `src/reports/reportGenerator.js` a UI surface
+  (it existed, unused, since before Phase 1). Extended `sanitizeAgentRunForExport` for the
+  Phase-1 fields it predated (configuration/manifest digest, case-condition evaluation, kept in
+  its own section separate from general enforcement) and bumped `AGENT_RUNS_EXPORT_VERSION` to
+  2. New `src/reports/reportExport.js` (`prepareReportExport`) mirrors
+  `evidenceContractExport.js`'s stale-export gating exactly — same
+  `STALE_EXPORT_CONFIRMATION_REQUIRED` contract, applied to Markdown/HTML/JSON instead of just
+  the contract JSON.
+
+**Verified live, not just via tests:** all four tabs render and switch; Trace shows the full
+event stream including the `case_evaluation` derived event; Report's CURRENT RESULT /
+COMPARISON SET scope toggle, all three export format buttons, and the stale-export confirmation
+dialog (triggered by changing the control profile after a run, exactly like the
+`RunContextSummary` stale state) all work as specified. Suite at 566/566, 30 files, lint clean,
+build clean.
+
+**Not done in Phase 2 yet — the real gaps against the handoff doc's own Compare section:**
+
+- "Identify each member by run ID, timestamp, manifest/configuration digest, profile, target,
+  and model" — `ComparisonStoryPanel.jsx`'s cards currently show none of this per member. This
+  is the most concrete remaining gap; picking Phase 2 back up should probably start here.
+- "Use a findings rail or concise summary for material differences" between comparison
+  members — not built.
+- Trace tab: event lanes exist by type, but the explicit observed/derived/analyst-interpretation
+  distinction the handoff doc asks for isn't labeled as such (case_evaluation events read as
+  "derived" by convention, not by an actual field/legend).
+- Evidence tab is `ControlResultsPanel` + `EvidenceContractPanel` stacked, not yet redesigned as
+  one lead-with-the-claim surface — functionally complete, not yet visually unified.
+- Phase 3 (visual system, accessibility audit, bundle) not started. `InvestigationWorkspace.jsx`
+  already has real tab semantics and keyboard nav built in from the start, which gets Phase 3's
+  accessibility work a head start, but nothing has been formally audited yet.
 
 **Verdict-semantics consequence of Phase 1B, resolved:** Cases 1 and 2's Reference profile under
 Sample Replay changed from `CONTROL_HELD` to `PARTIAL_CONTROL_FAILURE`, because both cases
