@@ -106,6 +106,11 @@ Current pins: MITRE ATLAS content v2026.07 · OWASP LLM Top 10 2026 · OWASP Age
 generated from the Sample Replay path under the Reference control profile — not hand-written
 samples. Look here before cloning if you want to see the actual shape of what a run produces.
 
+[`docs/results/`](./docs/results/) holds one results-writeup template per threat case — claim
+under test, configuration digests, an outcome table across all three control profiles, evidence
+class, and limitations. Everything filled in there comes from real Sample Replay runs; anywhere
+a live-model number belongs instead, the file says `TODO` rather than inventing one.
+
 ## Responsible Use
 
 For authorized security research, internal AI assurance, and evaluation of systems you own or
