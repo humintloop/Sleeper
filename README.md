@@ -51,6 +51,18 @@ is the control harness around those known threats: real tool-calling agent execu
 instrumentation (`instructionSource` on every tool call), deterministic control gates, and the
 evidence discipline that states plainly what a run does and does not prove.
 
+<!-- AUTHOR: personalize before merging -->
+## Why This Exists
+
+Sleeper started from a compliance and assurance angle on agent security, not an offensive-
+research one: the gap between what an agent says it will do and what it actually does with a
+tool is exactly the gap auditors and risk teams are about to be asked to assess, and most of the
+tooling in this space is built for red-teamers rather than for the people who will have to write
+an opinion about whether a control held. This project is an attempt to instrument that gap
+honestly — evidence classes instead of pass/fail banners, `INCONCLUSIVE` instead of a false
+"held," and a claim boundary stated on every output — rather than to find novel attacks.
+<!-- /AUTHOR: personalize before merging -->
+
 ## Status
 
 The agent harness is built and wired end to end in the browser, with a no-key deterministic
