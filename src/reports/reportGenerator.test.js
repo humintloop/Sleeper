@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createAgentRunsExport,
+  escapeHtml,
   fencedCodeBlock,
   generateAgentAssessmentReport,
   generateAgentAssuranceBriefHtml,
@@ -47,6 +48,18 @@ const adversarialRun = {
     ],
     limitations: ['<script>alert(3)</script> Oracle independence I0.'],
     claim_boundary: 'Evidence supporting control review. <b>Not</b> a conformity assessment.',
+    run_manifest: { configuration_digest: 'deadbeef'.repeat(8), manifest_digest: 'cafebabe'.repeat(8) },
+    case_evaluation: {
+      summary: { attack_success: false, partial_control_failure: true },
+      evaluations: [
+        {
+          condition: 'partial_control_failure',
+          outcome: 'matched',
+          signals: [{ name: 'tool_call_executed', observed: false, source: '<b>tag</b>' }],
+        },
+      ],
+      unsupported_signals: ['scope_excess_surfaced'],
+    },
   },
 };
 
@@ -59,11 +72,27 @@ describe('report export sanitization', () => {
 
   it('normalizes a persisted agent-run record into the flat export shape', () => {
     const sanitized = sanitizeAgentRunForExport(adversarialRun);
-    expect(sanitized.exportVersion).toBe(1);
+    expect(sanitized.exportVersion).toBe(2);
     expect(sanitized.verdict).toBe('CONTROL_FAILED');
     expect(sanitized.evidenceTargetClass).toBe('E2');
     expect(sanitized.maxClassClaimed).toBe('E2');
     expect(sanitized.frameworkReferences).toHaveLength(2);
+  });
+
+  it('carries the configuration/manifest digests and case-condition evaluation, separate from general enforcement', () => {
+    const sanitized = sanitizeAgentRunForExport(adversarialRun);
+    expect(sanitized.configurationDigest).toBe('deadbeef'.repeat(8));
+    expect(sanitized.manifestDigest).toBe('cafebabe'.repeat(8));
+    expect(sanitized.caseEvaluationSummary).toEqual({ attack_success: false, partial_control_failure: true });
+    expect(sanitized.caseEvaluationEntries).toHaveLength(1);
+    expect(sanitized.caseEvaluationUnsupportedSignals).toEqual(['scope_excess_surfaced']);
+  });
+
+  it('does not throw and reports empty case-condition fields for a run with no evaluation attached', () => {
+    const sanitized = sanitizeAgentRunForExport({});
+    expect(sanitized.configurationDigest).toBe('');
+    expect(sanitized.caseEvaluationSummary).toBeNull();
+    expect(sanitized.caseEvaluationEntries).toEqual([]);
   });
 
   it('does not throw on a thin record from an unserviced run', () => {
@@ -77,7 +106,7 @@ describe('report export sanitization', () => {
 
   it('exports an explicit JSON schema for a list of runs', () => {
     const exported = createAgentRunsExport([adversarialRun], { assessmentId: 'assessment-1' });
-    expect(exported.exportVersion).toBe(1);
+    expect(exported.exportVersion).toBe(2);
     expect(exported.application).toBe('Sleeper');
     expect(exported.runs).toHaveLength(1);
     expect(exported.runs[0].caseId).toBe('NR-AGT-001');
@@ -92,6 +121,23 @@ describe('report export sanitization', () => {
     // syntax in a rendered Markdown viewer.
     expect(report).toContain('\\|');
     expect(report).toContain('\\[link\\]');
+  });
+
+  it('includes the case-condition evaluation as its own Markdown section, distinct from general enforcement', () => {
+    const report = generateAgentAssessmentReport([adversarialRun]);
+    expect(report).toContain('### Case-Condition Evaluation');
+    expect(report).toContain('partial_control_failure: matched');
+    expect(report).toContain('Unsupported signals');
+    expect(report).toContain('scope_excess_surfaced');
+    // A signal source is presentation text too, however unlikely to carry
+    // markup in practice — escaped on the same terms as everything else.
+    expect(report).not.toContain('<b>tag</b>');
+  });
+
+  it('includes configuration and manifest digests in the Markdown run header', () => {
+    const report = generateAgentAssessmentReport([adversarialRun]);
+    expect(report).toContain(`**Configuration Digest:** ${'deadbeef'.repeat(8)}`);
+    expect(report).toContain(`**Manifest Digest:** ${'cafebabe'.repeat(8)}`);
   });
 
   it('never reports a run as CONTROL_HELD in the executive summary tallies when it failed', () => {
@@ -110,6 +156,14 @@ describe('report export sanitization', () => {
     expect(html).not.toContain('<img src=x onerror=alert(2)>');
     expect(html).not.toContain('<script>alert(3)</script>');
     expect(html).toContain('<br>');
+  });
+
+  it('escapes case-condition evaluation content in the HTML brief', () => {
+    const html = generateAgentAssuranceBriefHtml([adversarialRun]);
+    expect(html).toContain('Case-Condition Evaluation');
+    expect(html).toContain('&lt;b&gt;tag&lt;/b&gt;');
+    expect(html).not.toContain('<b>tag</b>');
+    expect(html).toContain(escapeHtml('deadbeef'.repeat(8)));
   });
 
   it('surfaces the claim boundary and never claims conformance', () => {

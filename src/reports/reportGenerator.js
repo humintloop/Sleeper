@@ -8,7 +8,11 @@
 // carry text that traces back to scenario fixtures or model output, so
 // anything interpolated into the HTML brief goes through escapeHtml first.
 
-export const AGENT_RUNS_EXPORT_VERSION = 1;
+// v2 adds configurationDigest/manifestDigest (src/harness/runConfiguration.js,
+// src/harness/runProvenance.js) and caseEvaluation (src/harness/evaluateCaseConditions.js)
+// — Phase 1 additions the v1 shape predates. Additive, not breaking: every v1
+// consumer that ignored unknown fields keeps working.
+export const AGENT_RUNS_EXPORT_VERSION = 2;
 
 const plain = (value = '') => String(value ?? '');
 const markdownText = (value = '') => plain(value).replaceAll('<', '&lt;').replaceAll('>', '&gt;');
@@ -50,6 +54,7 @@ const list = (items = []) => {
 export function sanitizeAgentRunForExport(run = {}) {
   const contract = run.contract || {};
   const evidence = contract.evidence || {};
+  const caseEvaluation = contract.case_evaluation || null;
   return {
     exportVersion: AGENT_RUNS_EXPORT_VERSION,
     id: run.id || '',
@@ -65,6 +70,8 @@ export function sanitizeAgentRunForExport(run = {}) {
     degraded: Boolean(run.degraded ?? contract.simulated_only),
     simulatedOnly: contract.simulated_only !== false,
     simulationNote: contract.simulation_note || '',
+    configurationDigest: run.configurationDigest || contract.run_manifest?.configuration_digest || '',
+    manifestDigest: run.manifestDigest || contract.run_manifest?.manifest_digest || '',
     evidenceTargetClass: evidence.target?.class || '',
     evidenceTargetSubject: evidence.target?.subject || '',
     evidenceControlPointClass: evidence.control_point?.class || null,
@@ -81,6 +88,13 @@ export function sanitizeAgentRunForExport(run = {}) {
     frameworkReferences: Array.isArray(contract.framework_references) ? contract.framework_references : [],
     limitations: Array.isArray(contract.limitations) ? contract.limitations : [],
     claimBoundary: contract.claim_boundary || '',
+    // Case-condition evaluation, kept separate from general control
+    // enforcement above per the handoff doc's Evidence-tab requirement — a
+    // reader should never have to guess whether a fact was independently
+    // observed by the general engine or derived from a declared case signal.
+    caseEvaluationSummary: caseEvaluation?.summary || null,
+    caseEvaluationEntries: Array.isArray(caseEvaluation?.evaluations) ? caseEvaluation.evaluations : [],
+    caseEvaluationUnsupportedSignals: Array.isArray(caseEvaluation?.unsupported_signals) ? caseEvaluation.unsupported_signals : [],
   };
 }
 
@@ -99,6 +113,20 @@ function frameworkReferenceList(refs = []) {
   return list(lines);
 }
 
+function caseEvaluationSection(run) {
+  if (run.caseEvaluationEntries.length === 0) return '';
+  const rows = run.caseEvaluationEntries.map(entry => {
+    const signals = (entry.signals || [])
+      .map(signal => `${signal.name}=${String(signal.observed)} (${signal.source})`)
+      .join(', ') || 'no executable signals declared';
+    return `- ${bulletText(entry.condition)}: ${bulletText(entry.outcome)} — ${bulletText(signals)}`;
+  }).join('\n');
+  const unsupported = run.caseEvaluationUnsupportedSignals.length > 0
+    ? `\n\nUnsupported signals (unknown, never counted as secure): ${run.caseEvaluationUnsupportedSignals.map(bulletText).join(', ')}`
+    : '';
+  return `\n\n### Case-Condition Evaluation\nDerived from recorded runtime fields, independent of general control enforcement above.\n${rows}${unsupported}`;
+}
+
 export function buildAgentRunMarkdown(rawRun) {
   const run = sanitizeAgentRunForExport(rawRun);
   return `## Run: ${inline(run.caseTitle, 'Untitled case')}
@@ -110,7 +138,9 @@ export function buildAgentRunMarkdown(rawRun) {
 **Reason Code:** ${inline(run.reasonCode)}<br>
 **Target:** ${inline(run.targetLabel)}<br>
 **Degraded:** ${run.degraded ? 'Yes - see limitations' : 'No'}<br>
-**Timestamp:** ${inline(run.timestamp)}
+**Timestamp:** ${inline(run.timestamp)}<br>
+**Configuration Digest:** ${inline(run.configurationDigest, 'not recorded')}<br>
+**Manifest Digest:** ${inline(run.manifestDigest, 'not recorded')}
 
 ### Reason
 ${escapeMarkdownStructure(run.reasonText || 'Not recorded').trim() || 'Not recorded'}
@@ -126,6 +156,7 @@ ${escapeMarkdownStructure(run.reasonText || 'Not recorded').trim() || 'Not recor
 - Vocabulary: ${bulletText(run.scopeVocabulary)}
 - Covers: ${run.scopeCovers.length ? run.scopeCovers.map(bulletText).join(', ') : 'none'}
 - Does not cover: ${run.scopeDoesNotCover.length ? run.scopeDoesNotCover.map(bulletText).join(', ') : 'none'}
+${caseEvaluationSection(run)}
 
 ### Framework Relevance
 ${frameworkReferenceList(run.frameworkReferences)}
@@ -201,6 +232,14 @@ export function generateAgentAssuranceBriefHtml(runs = [], metadata = {}) {
     const frameworks = run.frameworkReferences
       .map(ref => `${escapeHtml(ref.framework || 'unknown')}: ${escapeHtml(ref.id || '')} (${escapeHtml(ref.relationship || 'inferred')})`)
       .join('<br>') || 'None recorded';
+    const caseEvaluation = run.caseEvaluationEntries.length > 0
+      ? `<h3>Case-Condition Evaluation</h3>
+      <p>Derived from recorded runtime fields, independent of general control enforcement above.</p>
+      <pre>${escapeHtml(run.caseEvaluationEntries.map(entry => {
+        const signals = (entry.signals || []).map(signal => `${signal.name}=${String(signal.observed)} (${signal.source})`).join(', ') || 'no executable signals declared';
+        return `${entry.condition}: ${entry.outcome} — ${signals}`;
+      }).join('\n') + (run.caseEvaluationUnsupportedSignals.length > 0 ? `\nUnsupported signals: ${run.caseEvaluationUnsupportedSignals.join(', ')}` : ''))}</pre>`
+      : '';
     return `<section class="finding">
       <div class="finding-head">
         <div><span>RUN</span><strong>${escapeHtml(run.id)}</strong></div>
@@ -215,11 +254,14 @@ export function generateAgentAssuranceBriefHtml(runs = [], metadata = {}) {
         <p><b>Degraded</b>${run.degraded ? 'Yes' : 'No'}</p>
         <p><b>Independence</b>${escapeHtml(run.independenceLevel)}</p>
         <p><b>Status</b>${escapeHtml(run.status)}</p>
+        <p><b>Configuration Digest</b>${escapeHtml(run.configurationDigest || 'not recorded')}</p>
+        <p><b>Manifest Digest</b>${escapeHtml(run.manifestDigest || 'not recorded')}</p>
       </div>
       <h3>Reason</h3>
       <p class="${run.verdict === 'CONTROL_FAILED' ? 'warning' : ''}">${escapeHtml(run.reasonText || 'Not recorded')}</p>
       <h3>Scope</h3>
       <p>Covers: ${escapeHtml(run.scopeCovers.join(', ') || 'none')}<br>Does not cover: ${escapeHtml(run.scopeDoesNotCover.join(', ') || 'none')}</p>
+      ${caseEvaluation}
       <h3>Framework Relevance</h3>
       <p>${frameworks}</p>
       <h3>Limitations</h3>

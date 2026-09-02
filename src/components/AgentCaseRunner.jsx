@@ -48,6 +48,8 @@ import EvidenceContractPanel from './EvidenceContractPanel';
 import FrameworkCrosswalkPanel from './FrameworkCrosswalkPanel';
 import ComparisonStoryPanel from './ComparisonStoryPanel';
 import RunContextSummary from './RunContextSummary';
+import InvestigationWorkspace from './InvestigationWorkspace';
+import ReportPanel from './ReportPanel';
 
 const PROVIDER_DEFAULTS = {
   [PROVIDERS.ANTHROPIC]: { endpoint: 'https://api.anthropic.com/v1/messages', modelId: 'claude-sonnet-5' },
@@ -752,45 +754,76 @@ export default function AgentCaseRunner({ C, onHome }) {
       />
 
       {(result || Object.keys(comparisonResults).length > 0) && (
-        <div ref={resultsRef} style={{ display: 'flex', flexDirection: 'column', gap: 22, scrollMarginTop: 18 }}>
-          {staleComparisonMembers.length > 0 && (
-            <div role="status" style={{ ...section(C), borderLeft: `3px solid ${C.ochre}`, color: C.text2, fontSize: 12, lineHeight: 1.5 }}>
-              Historical comparison: {staleComparisonMembers.map(member => `${member.profileId} (${member.changes.map(change => change.path).join(', ')})`).join(' · ')}. Members retain their original completed manifest identities.
-            </div>
-          )}
-          <ComparisonStoryPanel
+        <div ref={resultsRef} style={{ scrollMarginTop: 18 }}>
+          <InvestigationWorkspace
             C={C}
-            results={comparisonResults}
-            profiles={DISPLAY_PROFILES}
-            selectedId={profileId}
-            onInspect={(id, outcome) => { setProfileId(id); setResult(outcome); }}
+            defaultTabId="compare"
+            tabs={[
+              {
+                id: 'compare',
+                label: 'Compare',
+                badge: Object.keys(comparisonResults).length || null,
+                content: (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    {staleComparisonMembers.length > 0 && (
+                      <div role="status" style={{ ...section(C), borderLeft: `3px solid ${C.ochre}`, color: C.text2, fontSize: 12, lineHeight: 1.5 }}>
+                        Historical comparison: {staleComparisonMembers.map(member => `${member.profileId} (${member.changes.map(change => change.path).join(', ')})`).join(' · ')}. Members retain their original completed manifest identities.
+                      </div>
+                    )}
+                    <ComparisonStoryPanel
+                      C={C}
+                      results={comparisonResults}
+                      profiles={DISPLAY_PROFILES}
+                      selectedId={profileId}
+                      onInspect={(id, outcome) => { setProfileId(id); setResult(outcome); }}
+                    />
+                  </div>
+                ),
+              },
+              {
+                id: 'trace',
+                label: 'Trace',
+                hidden: !result,
+                badge: result?.run?.events?.length ?? null,
+                content: <AgenticTracePanel C={C} run={result?.run} />,
+              },
+              {
+                id: 'evidence',
+                label: 'Evidence',
+                hidden: !result,
+                content: (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+                    <ControlResultsPanel C={C} verdict={result?.verdict} profiles={DISPLAY_PROFILES} comparisonHistory={Object.keys(comparisonResults).length >= 3 ? null : comparison} />
+                    <EvidenceContractPanel
+                      C={C}
+                      contract={result?.contract}
+                      historical={assessmentState.state === 'stale'}
+                      historicalChanges={assessmentState.changes}
+                      currentConfigurationDigest={currentConfigurationDigest}
+                    />
+                  </div>
+                ),
+              },
+              {
+                id: 'report',
+                label: 'Report',
+                hidden: !result,
+                content: (
+                  <ReportPanel
+                    C={C}
+                    agentCase={agentCase}
+                    profiles={DISPLAY_PROFILES}
+                    result={result}
+                    comparisonResults={comparisonResults}
+                    historical={assessmentState.state === 'stale'}
+                    historicalChanges={assessmentState.changes}
+                    comparisonHistorical={staleComparisonMembers.length > 0}
+                    currentConfigurationDigest={currentConfigurationDigest}
+                  />
+                ),
+              },
+            ]}
           />
-          {result && <>
-          <div>
-            <div style={fieldLabel(C)}>Control results &amp; verdict</div>
-            <ControlResultsPanel C={C} verdict={result.verdict} profiles={DISPLAY_PROFILES} comparisonHistory={Object.keys(comparisonResults).length >= 3 ? null : comparison} />
-          </div>
-
-          <details style={section(C)}>
-            <summary style={{ cursor: 'pointer', color: C.text2, fontSize: 12, fontWeight: 800, letterSpacing: 1.1, textTransform: 'uppercase' }}>
-              Technical event trace <span style={{ color: C.text3, fontWeight: 500, letterSpacing: 0, textTransform: 'none' }}>— {result.run?.events?.length ?? 0} recorded events</span>
-            </summary>
-            <div style={{ marginTop: 14 }}>
-              <AgenticTracePanel C={C} run={result.run} />
-            </div>
-          </details>
-
-          <div>
-            <div style={fieldLabel(C)}>Evidence contract</div>
-            <EvidenceContractPanel
-              C={C}
-              contract={result.contract}
-              historical={assessmentState.state === 'stale'}
-              historicalChanges={assessmentState.changes}
-              currentConfigurationDigest={currentConfigurationDigest}
-            />
-          </div>
-          </>}
         </div>
       )}
 
