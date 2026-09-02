@@ -25,6 +25,62 @@ function friendlySource(source) {
   return String(source).replaceAll('_', ' ');
 }
 
+function truncateDigest(digest) {
+  return digest ? `${digest.slice(0, 12)}…` : 'not recorded';
+}
+
+function targetIdentity(outcome) {
+  const manifest = outcome?.contract?.run_manifest;
+  const config = manifest?.configuration;
+  const model = config?.target_type === 'live' ? config.provider_model
+    : config?.target_type === 'local' ? config.local_model
+      : null;
+  return {
+    manifestDigest: outcome?.manifestDigest || manifest?.manifest_digest || null,
+    configurationDigest: outcome?.configurationDigest || manifest?.configuration_digest || null,
+    timestamp: manifest?.generated_at || null,
+    target: outcome?.contract?.target || config?.target_label || null,
+    model: model || null,
+  };
+}
+
+/**
+ * A concise summary of what actually differs between the compared members —
+ * not every field, just the ones a reader would otherwise have to diff by
+ * eye across cards: verdict, whether the gate blocked the path, and whether
+ * the declared case-condition evaluation matched.
+ */
+export function findMaterialDifferences(results, profileOrder) {
+  const entries = profileOrder
+    .filter(id => results?.[id])
+    .map(id => {
+      const outcome = results[id];
+      const summary = summarizeRun(outcome);
+      return {
+        profileId: id,
+        verdict: outcome?.verdict?.verdict ?? null,
+        blocked: summary.blocked,
+        caseEvaluationOutcome: outcome?.contract?.case_evaluation?.summary ?? null,
+        evidenceClass: outcome?.contract?.evidence?.max_class_claimed ?? null,
+      };
+    });
+  const differences = [];
+  const distinct = key => new Set(entries.map(entry => JSON.stringify(entry[key]))).size > 1;
+  if (distinct('verdict')) {
+    differences.push(`Verdict differs across profiles: ${entries.map(e => `${e.profileId} → ${e.verdict ?? 'no result'}`).join(', ')}.`);
+  }
+  if (distinct('blocked')) {
+    differences.push(`Gate decision differs: ${entries.map(e => `${e.profileId} ${e.blocked ? 'blocked' : 'did not block'}`).join(', ')}.`);
+  }
+  if (distinct('evidenceClass')) {
+    differences.push(`Evidence class claimed differs: ${entries.map(e => `${e.profileId} → ${e.evidenceClass ?? 'none'}`).join(', ')}.`);
+  }
+  if (distinct('caseEvaluationOutcome')) {
+    differences.push('Case-condition evaluation outcome differs between profiles — see each card and the Trace tab.');
+  }
+  return differences;
+}
+
 function summarizeRun(outcome) {
   const events = outcome?.run?.events || [];
   const toolCalls = events.filter(event => event.type === 'tool_call');
@@ -88,6 +144,7 @@ function ProfileStory({ C, profile, outcome, selected, onInspect }) {
   }
 
   const summary = summarizeRun(outcome);
+  const identity = targetIdentity(outcome);
   const verdict = outcome.verdict?.verdict;
   const verdictColor = getVerdictColor(verdict, C);
   const profileColor = C[profile.color] || C.brass;
@@ -124,6 +181,13 @@ function ProfileStory({ C, profile, outcome, selected, onInspect }) {
       <FlowStep C={C} icon={summary.blocked ? Ban : CheckCircle2} label="Simulated effect" tone={summary.deniedTools.length && !summary.executedTools.length ? 'green' : 'ochre'} last>
         {effectText}
       </FlowStep>
+
+      <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${C.border}`, display: 'grid', gap: 3, fontSize: 10, color: C.text3, fontFamily: C.mono }}>
+        <div>Manifest: {truncateDigest(identity.manifestDigest)}</div>
+        <div>Configuration: {truncateDigest(identity.configurationDigest)}</div>
+        {identity.timestamp && <div>{new Date(identity.timestamp).toLocaleString()}</div>}
+        <div>{identity.target || 'target not recorded'}{identity.model ? ` · ${identity.model}` : ''}</div>
+      </div>
       <button
         onClick={() => onInspect?.(profile.id, outcome)}
         aria-pressed={selected}
@@ -139,6 +203,7 @@ export default function ComparisonStoryPanel({ C, results, profiles, selectedId,
   const available = PROFILE_ORDER.filter(id => results?.[id]);
   if (available.length === 0) return null;
   const deterministic = available.every(id => results[id]?.contract?.run_mode === 'deterministic_replay');
+  const differences = findMaterialDifferences(results, PROFILE_ORDER);
 
   return (
     <section aria-labelledby="comparison-story-title" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -153,6 +218,16 @@ export default function ComparisonStoryPanel({ C, results, profiles, selectedId,
             : ' Live and local targets use separate model calls, so model behavior may vary between columns.'}
         </div>
       </div>
+      {differences.length > 0 && (
+        <div role="status" style={{ background: C.surface, border: `1px solid ${C.borderHi}`, borderLeft: `3px solid ${C.brass}`, borderRadius: 2, padding: '10px 13px' }}>
+          <div style={{ color: C.text3, fontSize: 10, fontWeight: 800, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 6 }}>
+            Material differences across profiles
+          </div>
+          <ul style={{ margin: 0, paddingLeft: 18, color: C.text2, fontSize: 12, lineHeight: 1.5 }}>
+            {differences.map((line, i) => <li key={i}>{line}</li>)}
+          </ul>
+        </div>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 10 }}>
         {PROFILE_ORDER.map(id => (
           <ProfileStory key={id} C={C} profile={profiles[id]} outcome={results[id]} selected={selectedId === id} onInspect={onInspect} />
