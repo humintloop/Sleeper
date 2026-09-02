@@ -24,6 +24,23 @@ describe('canonical run provenance', () => {
     expect(first.configuration_digest).toBe(second.configuration_digest);
     expect(first.manifest_digest).toBe(second.manifest_digest);
   });
+
+  it('distinguishes the execution configuration digest from completed manifest identity', async () => {
+    const input = {
+      agentCase: { id: 'CASE', scenario: {}, fixtures: [], pii_seeds: {} },
+      profile: { id: 'reference', controls: { gate: 'enforce' } },
+      advertisedTools: [{ name: 'send_email' }],
+      targetType: 'live', provider: 'anthropic', providerModel: 'model-a',
+      targetLabel: 'anthropic:model-a', maxTurns: 6, trialCount: 3,
+    };
+    const first = await createRunManifest({ ...input, generatedAt: '2026-01-01T00:00:00Z' });
+    const later = await createRunManifest({ ...input, generatedAt: '2026-01-01T00:01:00Z' });
+
+    expect(first.configuration_digest).toBe(later.configuration_digest);
+    expect(first.manifest_digest).not.toBe(later.manifest_digest);
+    expect(first.configuration.provider_model).toBe('model-a');
+    expect(first.configuration.target_type).toBe('live');
+  });
 });
 
 describe('honest contract self-digest', () => {

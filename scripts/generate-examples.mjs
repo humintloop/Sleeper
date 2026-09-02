@@ -33,6 +33,7 @@ for (const caseId of CASE_IDS) {
     variant: null,
     runMode: RUN_MODES.DETERMINISTIC_REPLAY,
     secondaryJudge: null,
+    targetType: 'sample',
   });
 
   const outPath = join(outDir, `${caseId}-${PROFILE_ID}.json`);

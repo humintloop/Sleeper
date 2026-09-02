@@ -20,7 +20,20 @@ import { ChevronLeft, History, Play, RefreshCw } from 'lucide-react';
 import { AGENT_CASES, AGENT_CASE_ORDER } from '../data/agentCases';
 import { CONTROL_PROFILES } from '../data/controlProfiles';
 import { VICTIM_MODELS } from '../data/victimModels';
-import { runAgentAssessment, runRepeatedAssessment } from '../harness/runAgentAssessment';
+import {
+  buildAdvertisedTools,
+  buildCaseRegistry,
+  createComparisonIdentity,
+  runAgentAssessment,
+  runRepeatedAssessment,
+} from '../harness/runAgentAssessment';
+import { DEFAULT_MAX_TURNS } from '../harness/runAgentCase';
+import {
+  configurationDigest,
+  createRunConfiguration,
+  deriveAssessmentState,
+  diffRunConfigurations,
+} from '../harness/runConfiguration';
 import { WebLLMLocalTarget } from '../harness/webllmLocalTarget';
 import { PortfolioReplayTarget } from '../harness/replayTarget';
 import { WebLLMSecondaryJudge } from '../harness/secondaryJudge';
@@ -194,6 +207,44 @@ export default function AgentCaseRunner({ C, onHome }) {
     typeof crossOriginIsolated !== 'undefined' && !crossOriginIsolated && 'Cross-origin isolation is inactive.',
   ].filter(Boolean);
 
+  const providerModel = targetType === TARGET_TYPES.LIVE
+    ? (modelId.trim() || PROVIDER_DEFAULTS[provider].modelId)
+    : null;
+  const configurationForProfile = targetProfileId => createRunConfiguration({
+    agentCase,
+    variant: agentCase?.variants?.find(item => item.id === selectedVariantId) ?? null,
+    profile: CONTROL_PROFILES[targetProfileId],
+    targetType,
+    provider: targetProvider,
+    providerModel,
+    localModel: targetType === TARGET_TYPES.LOCAL ? localModelId : null,
+    targetLabel,
+    maxTurns: DEFAULT_MAX_TURNS,
+    judgeEnabled,
+    judgeModel: judgeEnabled ? judgeModelId : null,
+    secondaryOracle: judgeEnabled
+      ? { kind: 'local_model_secondary_oracle', model_id: judgeModelId }
+      : null,
+    runMode: targetRunMode,
+    trialCount,
+    advertisedTools: buildAdvertisedTools(agentCase, buildCaseRegistry(agentCase)),
+  });
+  const currentConfiguration = configurationForProfile(profileId);
+  const currentConfigurationKey = JSON.stringify(currentConfiguration);
+  const [currentConfigurationDigest, setCurrentConfigurationDigest] = useState(null);
+  useEffect(() => {
+    let active = true;
+    configurationDigest(JSON.parse(currentConfigurationKey)).then(digest => {
+      if (active) setCurrentConfigurationDigest(digest);
+    });
+    return () => { active = false; };
+  }, [currentConfigurationKey]);
+  const assessmentState = deriveAssessmentState({ currentConfiguration, result, running, error });
+  const staleComparisonMembers = Object.entries(comparisonResults).flatMap(([id, outcome]) => {
+    const changes = diffRunConfigurations(outcome.configuration, configurationForProfile(id));
+    return changes.length > 0 ? [{ profileId: id, changes }] : [];
+  });
+
   const runOnce = async (targetProfileId) => {
     if (!targetReady) {
       setError(targetType === TARGET_TYPES.LOCAL
@@ -221,6 +272,10 @@ export default function AgentCaseRunner({ C, onHome }) {
         variant: selectedVariantId,
         runMode: targetRunMode,
         secondaryJudge: buildSecondaryJudge(),
+        targetType,
+        providerModel,
+        localModel: targetType === TARGET_TYPES.LOCAL ? localModelId : null,
+        trialCount,
       });
     } catch (err) {
       setError(err?.message || String(err));
@@ -245,6 +300,9 @@ export default function AgentCaseRunner({ C, onHome }) {
       reasonText: outcome.verdict.reason?.text ?? null,
       targetLabel: outcome.contract?.target ?? null,
       degraded: Boolean(outcome.run?.degraded),
+      configuration: outcome.configuration,
+      configurationDigest: outcome.configurationDigest,
+      manifestDigest: outcome.manifestDigest,
       contract: outcome.contract,
     };
     setHistory(await saveAgentRun(record));
@@ -278,6 +336,11 @@ export default function AgentCaseRunner({ C, onHome }) {
       if (id === profileId) last = outcome;
     }
     setComparison(next);
+    const identity = createComparisonIdentity(Object.entries(nextResults).map(([id, outcome]) => ({
+      ...outcome,
+      profileId: id,
+    })));
+    Object.values(nextResults).forEach(outcome => { outcome.comparisonIdentity = identity; });
     setComparisonResults(nextResults);
     setComparisonProgress(null);
     if (last) setResult(last);
@@ -312,6 +375,9 @@ export default function AgentCaseRunner({ C, onHome }) {
         targetLabel,
         runMode: targetRunMode,
         secondaryJudge: buildSecondaryJudge(),
+        targetType,
+        providerModel,
+        localModel: targetType === TARGET_TYPES.LOCAL ? localModelId : null,
       });
       for (const outcome of repeated.trials) await persistRun(outcome, profileId);
       setTrialSummary(repeated);
@@ -378,7 +444,7 @@ export default function AgentCaseRunner({ C, onHome }) {
             const c = AGENT_CASES[id];
             const active = id === caseId;
             return (
-              <button key={id} aria-pressed={active} onClick={() => {
+              <button key={id} aria-pressed={active} disabled={running} onClick={() => {
                 setCaseId(id);
                 setVariantId(AGENT_CASES[id]?.variants?.[0]?.id ?? null);
               }} style={{
@@ -405,7 +471,7 @@ export default function AgentCaseRunner({ C, onHome }) {
               {agentCase.variants.map(variant => {
                 const active = selectedVariantId === variant.id;
                 return (
-                  <button key={variant.id} aria-pressed={active} onClick={() => setVariantId(variant.id)} style={{
+                  <button key={variant.id} aria-pressed={active} disabled={running} onClick={() => setVariantId(variant.id)} style={{
                     textAlign: 'left', padding: '9px 10px', cursor: 'pointer', borderRadius: 2,
                     background: active ? C.surface : 'transparent',
                     border: `1px solid ${active ? C.brass : C.border}`,
@@ -424,7 +490,7 @@ export default function AgentCaseRunner({ C, onHome }) {
 
       <div ref={profileSectionRef} style={section(C)}>
         <div style={fieldLabel(C)}>Control profile</div>
-        <ControlProfileSelector C={C} profiles={DISPLAY_PROFILES} selectedId={profileId} onSelect={setProfileId} />
+        <ControlProfileSelector C={C} profiles={DISPLAY_PROFILES} selectedId={profileId} onSelect={setProfileId} disabled={running} />
         <div style={{ color: C.text3, fontSize: 11.5, lineHeight: 1.5, marginTop: 10 }}>
           Your selection controls which profile gets the full verdict, trace, and Evidence Contract after comparison. The primary comparison still runs all three profiles.
         </div>
@@ -443,9 +509,9 @@ export default function AgentCaseRunner({ C, onHome }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
           <div style={{ ...fieldLabel(C), marginBottom: 0 }}>Target</div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <button aria-pressed={targetType === TARGET_TYPES.SAMPLE} style={toggleBtn(C, targetType === TARGET_TYPES.SAMPLE)} onClick={() => setTargetType(TARGET_TYPES.SAMPLE)}>SAMPLE REPLAY</button>
-            <button aria-pressed={targetType === TARGET_TYPES.LIVE} style={toggleBtn(C, targetType === TARGET_TYPES.LIVE)} onClick={() => setTargetType(TARGET_TYPES.LIVE)}>LIVE API</button>
-            <button aria-pressed={targetType === TARGET_TYPES.LOCAL} style={toggleBtn(C, targetType === TARGET_TYPES.LOCAL)} onClick={() => setTargetType(TARGET_TYPES.LOCAL)}>LOCAL MODEL</button>
+            <button aria-pressed={targetType === TARGET_TYPES.SAMPLE} disabled={running} style={toggleBtn(C, targetType === TARGET_TYPES.SAMPLE)} onClick={() => setTargetType(TARGET_TYPES.SAMPLE)}>SAMPLE REPLAY</button>
+            <button aria-pressed={targetType === TARGET_TYPES.LIVE} disabled={running} style={toggleBtn(C, targetType === TARGET_TYPES.LIVE)} onClick={() => setTargetType(TARGET_TYPES.LIVE)}>LIVE API</button>
+            <button aria-pressed={targetType === TARGET_TYPES.LOCAL} disabled={running} style={toggleBtn(C, targetType === TARGET_TYPES.LOCAL)} onClick={() => setTargetType(TARGET_TYPES.LOCAL)}>LOCAL MODEL</button>
           </div>
         </div>
 
@@ -462,6 +528,7 @@ export default function AgentCaseRunner({ C, onHome }) {
               <select
                 id="agent-provider"
                 value={provider}
+                disabled={running}
                 onChange={e => { const p = e.target.value; setProvider(p); setModelId(PROVIDER_DEFAULTS[p].modelId); }}
                 style={input(C)}
               >
@@ -471,7 +538,7 @@ export default function AgentCaseRunner({ C, onHome }) {
             </div>
             <div>
               <label htmlFor="agent-model-id" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>Model ID</label>
-              <input id="agent-model-id" value={modelId} onChange={e => setModelId(e.target.value)} style={input(C)} />
+              <input id="agent-model-id" value={modelId} disabled={running} onChange={e => setModelId(e.target.value)} style={input(C)} />
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label htmlFor="agent-api-key" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>API key</label>
@@ -479,6 +546,7 @@ export default function AgentCaseRunner({ C, onHome }) {
                 id="agent-api-key"
                 type="password"
                 value={apiKey}
+                disabled={running}
                 onChange={e => setApiKey(e.target.value)}
                 placeholder="Held in memory for this session only. Never written to storage."
                 style={input(C)}
@@ -504,13 +572,13 @@ export default function AgentCaseRunner({ C, onHome }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, alignItems: 'end' }}>
               <div>
                 <label htmlFor="agent-local-model" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>Model</label>
-                <select id="agent-local-model" value={localModelId} onChange={e => { setLocalModelId(e.target.value); setLocalStatus('idle'); }} style={input(C)} disabled={localStatus === 'loading'}>
+                <select id="agent-local-model" value={localModelId} onChange={e => { setLocalModelId(e.target.value); setLocalStatus('idle'); }} style={input(C)} disabled={running || localStatus === 'loading'}>
                   {VICTIM_MODELS.map(m => (
                     <option key={m.id} value={m.id}>{m.quickStart ? 'Quick start — ' : ''}{m.name} ({m.size})</option>
                   ))}
                 </select>
               </div>
-              <button onClick={loadLocalModel} disabled={localStatus === 'loading' || localStatus === 'ready' || localCompatibilityIssues.length > 0} style={{
+              <button onClick={loadLocalModel} disabled={running || localStatus === 'loading' || localStatus === 'ready' || localCompatibilityIssues.length > 0} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 14px',
                 background: localStatus === 'ready' ? C.greenBg : C.surface,
                 border: `1px solid ${localStatus === 'ready' ? C.green : C.borderHi}`,
@@ -538,7 +606,7 @@ export default function AgentCaseRunner({ C, onHome }) {
               trace facts and does not raise independence above I0. A distinct model is required for a local target.
             </div>
           </div>
-          <button aria-pressed={judgeEnabled} style={toggleBtn(C, judgeEnabled)} onClick={() => setJudgeEnabled(enabled => !enabled)}>
+          <button aria-pressed={judgeEnabled} disabled={running} style={toggleBtn(C, judgeEnabled)} onClick={() => setJudgeEnabled(enabled => !enabled)}>
             {judgeEnabled ? 'ENABLED' : 'DISABLED'}
           </button>
         </div>
@@ -546,11 +614,11 @@ export default function AgentCaseRunner({ C, onHome }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1fr) auto', gap: 12, alignItems: 'end', marginTop: 12 }}>
             <div>
               <label htmlFor="secondary-judge-model" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>Judge model</label>
-              <select id="secondary-judge-model" value={judgeModelId} onChange={event => { setJudgeModelId(event.target.value); setJudgeStatus('idle'); }} style={input(C)} disabled={judgeStatus === 'loading'}>
+              <select id="secondary-judge-model" value={judgeModelId} onChange={event => { setJudgeModelId(event.target.value); setJudgeStatus('idle'); }} style={input(C)} disabled={running || judgeStatus === 'loading'}>
                 {VICTIM_MODELS.map(model => <option key={model.id} value={model.id}>{model.name} ({model.size})</option>)}
               </select>
             </div>
-            <button onClick={loadJudgeModel} disabled={judgeStatus === 'loading' || judgeStatus === 'ready'} style={{
+            <button onClick={loadJudgeModel} disabled={running || judgeStatus === 'loading' || judgeStatus === 'ready'} style={{
               ...toggleBtn(C, judgeStatus === 'ready'), minWidth: 150, height: 36,
               cursor: judgeStatus === 'loading' || judgeStatus === 'ready' ? 'not-allowed' : 'pointer',
             }}>
@@ -606,6 +674,7 @@ export default function AgentCaseRunner({ C, onHome }) {
               min="2"
               max="10"
               value={trialCount}
+              disabled={running}
               onChange={event => setTrialCount(Math.max(2, Math.min(10, Number(event.target.value) || 2)))}
               style={{ ...input(C), width: 62, padding: '7px 8px' }}
             />
@@ -637,8 +706,43 @@ export default function AgentCaseRunner({ C, onHome }) {
         </div>
       )}
 
+      <div
+        role="status"
+        aria-live={assessmentState.state === 'error' ? 'assertive' : 'polite'}
+        style={{
+          ...section(C), padding: '11px 14px',
+          borderLeft: `3px solid ${assessmentState.state === 'stale' ? C.ochre : assessmentState.state === 'error' ? C.red : assessmentState.state === 'current' ? C.green : C.borderHi}`,
+        }}
+      >
+        <div style={{ color: C.text1, fontSize: 12.5, fontWeight: 800 }}>
+          Result state: {assessmentState.state.toUpperCase()}
+        </div>
+        <div style={{ color: C.text3, fontSize: 11.5, lineHeight: 1.5, marginTop: 3 }}>{assessmentState.message}</div>
+        <div style={{ color: C.text3, fontSize: 10.5, fontFamily: C.mono, marginTop: 3, overflowWrap: 'anywhere' }}>
+          Current configuration: {currentConfigurationDigest ?? 'calculating…'}
+          {result?.configurationDigest ? ` · Displayed result: ${result.configurationDigest}` : ''}
+        </div>
+        {assessmentState.state === 'stale' && (
+          <>
+            <ul style={{ color: C.text2, fontSize: 11.5, lineHeight: 1.5, margin: '7px 0 9px', paddingLeft: 18 }}>
+              {assessmentState.changes.map(change => (
+                <li key={change.path}><strong>{change.label}</strong> ({change.path}): {change.before} → {change.after}</li>
+              ))}
+            </ul>
+            <button onClick={handleRun} disabled={running} style={{ ...toggleBtn(C, true), fontSize: 11 }}>
+              RERUN WITH CURRENT CONFIGURATION
+            </button>
+          </>
+        )}
+      </div>
+
       {(result || Object.keys(comparisonResults).length > 0) && (
         <div ref={resultsRef} style={{ display: 'flex', flexDirection: 'column', gap: 22, scrollMarginTop: 18 }}>
+          {staleComparisonMembers.length > 0 && (
+            <div role="status" style={{ ...section(C), borderLeft: `3px solid ${C.ochre}`, color: C.text2, fontSize: 12, lineHeight: 1.5 }}>
+              Historical comparison: {staleComparisonMembers.map(member => `${member.profileId} (${member.changes.map(change => change.path).join(', ')})`).join(' · ')}. Members retain their original completed manifest identities.
+            </div>
+          )}
           <ComparisonStoryPanel
             C={C}
             results={comparisonResults}
@@ -663,7 +767,13 @@ export default function AgentCaseRunner({ C, onHome }) {
 
           <div>
             <div style={fieldLabel(C)}>Evidence contract</div>
-            <EvidenceContractPanel C={C} contract={result.contract} />
+            <EvidenceContractPanel
+              C={C}
+              contract={result.contract}
+              historical={assessmentState.state === 'stale'}
+              historicalChanges={assessmentState.changes}
+              currentConfigurationDigest={currentConfigurationDigest}
+            />
           </div>
           </>}
         </div>

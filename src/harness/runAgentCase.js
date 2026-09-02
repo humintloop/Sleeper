@@ -53,6 +53,14 @@ export const DEFAULT_MAX_TURNS = 6;
  */
 const INITIAL_INSTRUCTION_SOURCE = 'user';
 
+function seededClassesInValue(value, seeds) {
+  let serialized = '';
+  try { serialized = JSON.stringify(value ?? {}); } catch { serialized = String(value ?? ''); }
+  return Object.entries(seeds ?? {})
+    .filter(([, seed]) => typeof seed === 'string' && seed.length > 0 && serialized.includes(seed))
+    .map(([name]) => name);
+}
+
 /**
  * Run one agent case under one control profile.
  *
@@ -103,6 +111,7 @@ export async function runAgentCase({
   const authorizationDecisions = [];
   const detections = [];
   const piiDetections = [];
+  const providerResponses = [];
 
   let finalText = '';
   let turns = 0;
@@ -160,6 +169,22 @@ export async function runAgentCase({
     events.push({ type: 'model_turn', turn: turns, text: guardedText, tool_call_count: calls.length });
 
     if (calls.length === 0) {
+      const assistantMessage = formatAssistantToolCallMessage({
+        provider,
+        text: guardedText,
+        toolCalls: [],
+        providerAssistantMessage: response?.providerAssistantMessage,
+        redactValue: value => redactSeededValues(value, piiSeeds),
+      });
+      messages.push(assistantMessage);
+      if (response?.providerAssistantMessage || response?.providerMetadata) {
+        providerResponses.push({
+          turn: turns,
+          metadata: response?.providerMetadata ?? { provider },
+          assistant_message: assistantMessage,
+          normalized: { text: guardedText, tool_calls: [] },
+        });
+      }
       finalText = guardedText;
       stopReason = LOOP_STOP_REASON.NO_TOOL_CALL;
       break;
@@ -180,13 +205,34 @@ export async function runAgentCase({
       const call = piiScan.sensitive_data_exposed
         ? { ...attributed, args: redactSeededValues(attributed.args ?? {}, piiSeeds) }
         : attributed;
-      return { call, piiScan };
+      return {
+        call: {
+          ...call,
+          sensitiveArgumentClasses: seededClassesInValue(attributed.args ?? {}, piiSeeds),
+        },
+        piiScan,
+      };
     });
     const preparedCalls = preparedCallRecords.map(record => record.call);
 
     // The provider transcript stores the guarded calls, not the raw model
     // arguments, so later logging/persistence cannot reintroduce a canary.
-    messages.push(formatAssistantToolCallMessage({ provider, text: guardedText, toolCalls: preparedCalls }));
+    const assistantMessage = formatAssistantToolCallMessage({
+      provider,
+      text: guardedText,
+      toolCalls: preparedCalls,
+      providerAssistantMessage: response?.providerAssistantMessage,
+      redactValue: value => redactSeededValues(value, piiSeeds),
+    });
+    messages.push(assistantMessage);
+    if (response?.providerAssistantMessage || response?.providerMetadata) {
+      providerResponses.push({
+        turn: turns,
+        metadata: response?.providerMetadata ?? { provider },
+        assistant_message: assistantMessage,
+        normalized: { text: guardedText, tool_calls: preparedCalls },
+      });
+    }
 
     let repeated = false;
 
@@ -309,6 +355,7 @@ export async function runAgentCase({
     targetError,
     degraded,
     degradations,
+    providerResponses,
     simulated_only: true,
     toolCalls,
     toolResults,

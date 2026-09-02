@@ -10,6 +10,7 @@ const EVENT_META = {
   authorization_decision: { icon: ShieldAlert, label: 'Authorization decision', tone: 'brass' },
   tool_result: { icon: ArrowRight, label: 'Tool result', tone: 'text2' },
   detection: { icon: Radar, label: 'Adversarial detection', tone: 'brass' },
+  case_evaluation: { icon: Radar, label: 'Case-condition evaluation', tone: 'ochre' },
   loop_guard: { icon: Ban, label: 'Loop guard', tone: 'red' },
   turn_cap: { icon: AlertTriangle, label: 'Turn cap reached', tone: 'red' },
   target_error: { icon: AlertTriangle, label: 'Target error', tone: 'red' },
@@ -87,6 +88,15 @@ function EventDetail({ C, event }) {
         <span>
           <code style={codeStyle(C)}>{event.tool}</code> — {DETECTION_ACTION_LABEL[event.action] || event.action}
           {event.signals?.length > 0 && <div style={{ marginTop: 4, color: C.text3 }}>Matched: {event.signals.join(', ')}</div>}
+        </span>
+      );
+    case 'case_evaluation':
+      return (
+        <span>
+          Derived from recorded runtime fields — attack success: <strong>{event.attack_success}</strong>; partial control failure: <strong>{event.partial_control_failure}</strong>.
+          {event.unsupported_signals?.length > 0 && (
+            <div style={{ marginTop: 4, color: C.ochre }}>Unsupported signals: {event.unsupported_signals.join(', ')}</div>
+          )}
         </span>
       );
     case 'loop_guard':

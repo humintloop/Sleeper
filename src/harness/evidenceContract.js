@@ -528,6 +528,8 @@ function normalizeFrameworkReferences(references) {
  * @param {object} [input.caseVariant] selected executable scenario variant.
  * @param {object} [input.runManifest] exact case, profile, target and tool-schema provenance.
  * @param {object} [input.secondaryOracle] optional semantic judge opinion; never changes the primary verdict.
+ * @param {object} [input.caseEvaluation] typed runtime evaluation of declared case signals.
+ * @param {Array} [input.providerTranscript] presentation-safe provider response records.
  * @returns {object} a flat, serializable contract.
  */
 export function buildEvidenceContract({
@@ -551,6 +553,8 @@ export function buildEvidenceContract({
   caseVariant = null,
   runManifest = null,
   secondaryOracle = null,
+  caseEvaluation = null,
+  providerTranscript = [],
 } = {}) {
   if (!Object.values(RUN_MODES).includes(runMode)) {
     throw new Error(
@@ -626,6 +630,8 @@ export function buildEvidenceContract({
     case_variant: caseVariant,
     run_manifest: runManifest,
     secondary_oracle: secondaryOracle,
+    case_evaluation: caseEvaluation,
+    provider_transcript: asArray(providerTranscript),
     profile_id: profile?.id ?? verdict?.scope?.profile_id ?? null,
     target: targetLabel,
     run_mode: runMode,

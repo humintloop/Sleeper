@@ -18,6 +18,9 @@ import {
   isUntrustedInstructionSource,
   requiresExplicitApproval,
 } from '../harness/authorityRegistry';
+import { runAgentAssessment } from '../harness/runAgentAssessment';
+import { saveAgentRun } from '../storage';
+import { prepareEvidenceContractExport } from '../reports/evidenceContractExport';
 
 const FAKE_KEY = 'test-key-not-a-real-credential-0000';
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
@@ -135,6 +138,51 @@ describe('API key confinement', () => {
     await expect(a.chat.completions.create({ messages: [] })).rejects.toThrow(/\[REDACTED\]/);
   });
 
+  it('scrubs the key from every provider-native response field before it can enter a transcript', async () => {
+    mockFetch(jsonResponse({
+      id: 'msg-secret-test',
+      content: [
+        { type: 'text', text: `echo ${FAKE_KEY}` },
+        { type: 'tool_use', id: 't1', name: 'send_email', input: { body: FAKE_KEY } },
+        { type: 'future_block', metadata: { echoed_header: FAKE_KEY } },
+      ],
+    }));
+    const returned = await adapter().chat.completions.create({ messages: [], stream: false });
+    expect(JSON.stringify(returned)).not.toContain(FAKE_KEY);
+    expect(JSON.stringify(returned)).toContain('[REDACTED]');
+  });
+
+  it('keeps the key out of the run, contract, persisted record, and export', async () => {
+    mockFetch(jsonResponse({
+      id: 'msg-secret-pipeline', model: 'claude-test',
+      content: [{ type: 'text', text: `provider echoed ${FAKE_KEY}` }],
+    }));
+    const outcome = await runAgentAssessment({
+      agentCase: 'NR-AGT-001',
+      profile: 'reference',
+      target: adapter(),
+      provider: PROVIDERS.ANTHROPIC,
+      targetType: 'live',
+      providerModel: 'claude-haiku-4-5',
+      targetLabel: 'anthropic:claude-haiku-4-5',
+    });
+    const stored = new Map();
+    const storage = {
+      getItem: key => stored.get(key) ?? null,
+      setItem: (key, value) => stored.set(key, value),
+    };
+    const history = await saveAgentRun({
+      id: 'run-1', configuration: outcome.configuration,
+      configurationDigest: outcome.configurationDigest, contract: outcome.contract,
+    }, storage);
+    const exported = prepareEvidenceContractExport({ contract: outcome.contract, state: 'current' });
+
+    expect(JSON.stringify(outcome.run)).not.toContain(FAKE_KEY);
+    expect(JSON.stringify(outcome.contract)).not.toContain(FAKE_KEY);
+    expect(JSON.stringify(history)).not.toContain(FAKE_KEY);
+    expect(JSON.stringify(exported)).not.toContain(FAKE_KEY);
+  });
+
   it('never writes the key to browser storage', async () => {
     const setItem = vi.fn();
     vi.stubGlobal('localStorage', { setItem, getItem: () => null, removeItem: vi.fn() });
@@ -226,6 +274,27 @@ describe('normalizeResponse — Anthropic', () => {
     expect(result.degraded).toBe(true);
     expect(result.degradation[0].reason).toBe(DEGRADATION.TOOL_CALL_INCOMPLETE);
   });
+
+  it('retains mixed text, multiple tool calls, and an unknown block losslessly for continuation', () => {
+    const content = [
+      { type: 'text', text: 'First.', citations: [{ source: 'provider-doc' }] },
+      { type: 'tool_use', id: 'toolu_1', name: 'read_file', input: { path: '/a' }, caller: { type: 'direct' } },
+      { type: 'future_block', opaque: { value: 7 }, signature: 'provider-metadata' },
+      { type: 'text', text: 'Second.' },
+      { type: 'tool_use', id: 'toolu_2', name: 'send_email', input: { to: 'a@example.test' } },
+    ];
+    const result = normalizeResponse(
+      { id: 'msg_123', model: 'claude-test', stop_reason: 'tool_use', usage: { input_tokens: 10 }, content },
+      { provider: PROVIDERS.ANTHROPIC, instructionSource: 'tool_output' }
+    );
+    expect(result.text).toBe('First.Second.');
+    expect(result.toolCalls).toHaveLength(2);
+    expect(result.providerAssistantMessage).toEqual({ role: 'assistant', content });
+    expect(result.providerMetadata).toMatchObject({
+      provider: 'anthropic', response_id: 'msg_123', model_id: 'claude-test', usage: { input_tokens: 10 },
+    });
+    expect(result.degraded).toBe(false);
+  });
 });
 
 describe('normalizeResponse — OpenAI', () => {
@@ -276,6 +345,19 @@ describe('normalizeResponse — OpenAI', () => {
 
   it('treats the generic provider as OpenAI-shaped', () => {
     expect(normalizeResponse(payload, { provider: PROVIDERS.GENERIC }).toolCalls).toHaveLength(1);
+  });
+
+  it('keeps the OpenAI assistant message and metadata isolated from Anthropic formatting', () => {
+    const message = {
+      role: 'assistant', content: 'On it.', refusal: null,
+      tool_calls: [{ id: 'call_1', type: 'function', function: { name: 'write_file', arguments: '{}' } }],
+    };
+    const result = normalizeResponse({
+      id: 'chatcmpl_1', model: 'gpt-test', system_fingerprint: 'fp_1', usage: { total_tokens: 9 },
+      choices: [{ finish_reason: 'tool_calls', message }],
+    }, { provider: PROVIDERS.OPENAI });
+    expect(result.providerAssistantMessage).toEqual(message);
+    expect(result.providerMetadata).toMatchObject({ provider: 'openai', response_id: 'chatcmpl_1', system_fingerprint: 'fp_1' });
   });
 });
 
@@ -492,6 +574,29 @@ describe('tool-result feedback', () => {
     const assistant = formatAssistantToolCallMessage({ provider: PROVIDERS.ANTHROPIC, text: normalized.text, toolCalls: normalized.toolCalls });
     const result = formatToolResultMessage({ provider: PROVIDERS.ANTHROPIC, toolCall: normalized.toolCalls[0], result: 'contents' });
     expect(assistant.content[0].id).toBe(result.content[0].tool_use_id);
+  });
+
+  it('round-trips Anthropic block order and unknown metadata while substituting guarded calls', () => {
+    const payload = {
+      content: [
+        { type: 'text', text: 'Checking.' },
+        { type: 'tool_use', id: 'a', name: 'read_file', input: { path: 'raw' }, caller: { type: 'direct' } },
+        { type: 'future_block', opaque: true },
+        { type: 'tool_use', id: 'b', name: 'send_email', input: { body: 'raw' } },
+      ],
+    };
+    const normalized = normalizeResponse(payload, { provider: PROVIDERS.ANTHROPIC });
+    const guardedCalls = normalized.toolCalls.map(call => ({ ...call, args: { guarded: call.id } }));
+    const assistant = formatAssistantToolCallMessage({
+      provider: PROVIDERS.ANTHROPIC,
+      text: normalized.text,
+      toolCalls: guardedCalls,
+      providerAssistantMessage: normalized.providerAssistantMessage,
+    });
+    expect(assistant.content.map(block => block.type)).toEqual(['text', 'tool_use', 'future_block', 'tool_use']);
+    expect(assistant.content[1]).toMatchObject({ id: 'a', input: { guarded: 'a' }, caller: { type: 'direct' } });
+    expect(assistant.content[2]).toEqual({ type: 'future_block', opaque: true });
+    expect(assistant.content[3].input).toEqual({ guarded: 'b' });
   });
 });
 

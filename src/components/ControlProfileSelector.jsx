@@ -26,7 +26,7 @@ function cycle(options, current) {
   return options[(idx + 1) % options.length];
 }
 
-export default function ControlProfileSelector({ C, profiles, selectedId, onSelect, customControls, onCustomChange }) {
+export default function ControlProfileSelector({ C, profiles, selectedId, onSelect, customControls, onCustomChange, disabled = false }) {
   const profileList = Object.values(profiles);
 
   return (
@@ -37,8 +37,8 @@ export default function ControlProfileSelector({ C, profiles, selectedId, onSele
           const color = C[profile.color] || C.brass;
           const controls = profile.id === 'custom' ? customControls : profile.controls;
           return (
-            <button key={profile.id} aria-pressed={active} onClick={() => onSelect(profile.id)} style={{
-              textAlign: 'left', padding: '13px 14px', borderRadius: 2, cursor: 'pointer',
+            <button key={profile.id} aria-pressed={active} disabled={disabled} onClick={() => onSelect(profile.id)} style={{
+              textAlign: 'left', padding: '13px 14px', borderRadius: 2, cursor: disabled ? 'not-allowed' : 'pointer',
               background: active ? C.surface : C.panel,
               border: `1px solid ${active ? color : C.border}`,
               borderLeft: `3px solid ${active ? color : C.border}`,
@@ -71,8 +71,8 @@ export default function ControlProfileSelector({ C, profiles, selectedId, onSele
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 8 }}>
             {Object.entries(CONTROL_OPTIONS).map(([key, options]) => (
-              <button key={key} onClick={() => onCustomChange({ ...customControls, [key]: cycle(options, customControls[key]) })} style={{
-                textAlign: 'left', padding: '9px 11px', borderRadius: 2, cursor: 'pointer',
+              <button key={key} disabled={disabled} onClick={() => onCustomChange({ ...customControls, [key]: cycle(options, customControls[key]) })} style={{
+                textAlign: 'left', padding: '9px 11px', borderRadius: 2, cursor: disabled ? 'not-allowed' : 'pointer',
                 background: C.surface, border: `1px solid ${C.borderHi}`,
               }}>
                 <div style={{ fontSize: 10, color: C.text3, letterSpacing: 1, marginBottom: 3 }}>{CONTROL_LABELS[key]}</div>

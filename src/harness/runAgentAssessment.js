@@ -23,6 +23,8 @@ import { CONTROL_PROFILES } from '../data/controlProfiles.js';
 import { LOOP_STOP_REASON, runAgentCase } from './runAgentCase.js';
 import { createApprovalPolicy } from './approvalPolicy.js';
 import { attachContractIntegrity, createRunManifest } from './runProvenance.js';
+import { createRunConfiguration } from './runConfiguration.js';
+import { evaluateCaseConditions } from './evaluateCaseConditions.js';
 import { runSecondaryJudge } from './secondaryJudge.js';
 import { attachExternalWitness } from './evidenceWitness.js';
 
@@ -162,6 +164,10 @@ export async function runAgentAssessment({
   variant = null,
   secondaryJudge = null,
   evidenceWitness = null,
+  targetType = null,
+  providerModel = null,
+  localModel = null,
+  trialCount = 1,
 } = {}) {
   const resolvedCase = typeof agentCase === 'string' ? getAgentCase(agentCase) : agentCase;
   if (!resolvedCase) throw new Error(`Unknown agent case: ${String(agentCase)}`);
@@ -194,6 +200,28 @@ export async function runAgentAssessment({
     approvalPolicy: createApprovalPolicy(resolvedVariant, registry),
   });
 
+  const caseEvaluation = evaluateCaseConditions({
+    agentCase: resolvedCase,
+    variant: resolvedVariant,
+    run,
+    registry,
+  });
+  const evaluatedRun = {
+    ...run,
+    events: [
+      ...run.events,
+      {
+        type: 'case_evaluation',
+        turn: run.turns,
+        classification: 'derived',
+        attack_success: caseEvaluation.evaluations[0]?.outcome ?? 'unknown',
+        partial_control_failure: caseEvaluation.evaluations[1]?.outcome ?? 'unknown',
+        unsupported_signals: caseEvaluation.unsupported_signals,
+      },
+    ],
+    caseEvaluation,
+  };
+
   const { toolAuthorization, adversarialDetection, piiLeakage, activityLogging } = run.controlResults;
 
   const verdict = computeVerdict({
@@ -204,13 +232,36 @@ export async function runAgentAssessment({
     profile: resolvedProfile,
     scenario: { adversarialInputPresent: caseCarriesAdversarialInput(resolvedCase) },
     runStatus: deriveRunStatus(run),
+    caseEvaluation,
   });
 
   const secondaryOracle = await runSecondaryJudge(secondaryJudge, {
     agentCase: resolvedCase,
     profile: resolvedProfile,
-    run,
+    run: evaluatedRun,
     verdict,
+  });
+
+  const judgeDescriptor = secondaryJudge?.describe?.() ?? null;
+  const runConfiguration = createRunConfiguration({
+    agentCase: resolvedCase,
+    variant: resolvedVariant,
+    profile: resolvedProfile,
+    targetType,
+    provider,
+    providerModel,
+    localModel,
+    targetLabel,
+    maxTurns,
+    judgeEnabled: Boolean(secondaryJudge),
+    judgeModel: judgeDescriptor?.model_id ?? secondaryOracle?.model_id ?? null,
+    secondaryOracle: judgeDescriptor ? {
+      kind: judgeDescriptor.kind ?? 'secondary_oracle',
+      model_id: judgeDescriptor.model_id ?? null,
+    } : null,
+    runMode,
+    trialCount,
+    advertisedTools,
   });
 
   const runManifest = await createRunManifest({
@@ -229,6 +280,7 @@ export async function runAgentAssessment({
       prompt_version: secondaryOracle.prompt_version ?? null,
       prompt_digest: secondaryOracle.prompt_digest ?? null,
     } : null,
+    runConfiguration,
     generatedAt: typeof now === 'string' ? now : undefined,
   });
 
@@ -263,11 +315,24 @@ export async function runAgentAssessment({
     } : null,
     runManifest,
     secondaryOracle,
+    caseEvaluation,
+    providerTranscript: evaluatedRun.providerResponses,
   });
   contract = await attachContractIntegrity(contract);
   contract = await attachExternalWitness(contract, evidenceWitness);
 
-  return { run, verdict, contract };
+  return {
+    run: {
+      ...evaluatedRun,
+      configuration: runConfiguration,
+      configurationDigest: runManifest.configuration_digest,
+    },
+    verdict,
+    contract,
+    configuration: runConfiguration,
+    configurationDigest: runManifest.configuration_digest,
+    manifestDigest: runManifest.manifest_digest,
+  };
 }
 
 export async function runRepeatedAssessment({
@@ -284,7 +349,7 @@ export async function runRepeatedAssessment({
   const trials = [];
   for (let index = 0; index < trialCount; index += 1) {
     const trialTarget = targetFactory ? targetFactory(index) : target;
-    trials.push(await runAgentAssessment({ ...assessment, target: trialTarget }));
+    trials.push(await runAgentAssessment({ ...assessment, target: trialTarget, trialCount }));
   }
 
   const verdictCounts = {};
@@ -309,6 +374,9 @@ export async function runRepeatedAssessment({
     },
     controlled_configuration: configurationDigests.length === 1,
     configuration_digests: configurationDigests,
+    configuration: configurationDigests.length === 1 ? trials[0]?.configuration ?? null : null,
+    configuration_digest: configurationDigests.length === 1 ? configurationDigests[0] : null,
+    trial_manifests: trials.map(trial => trial.manifestDigest),
     trials,
     limitation:
       deterministicReplay
@@ -337,7 +405,20 @@ export async function runCaseAcrossProfiles({
       ...(await runAgentAssessment({ agentCase, profile: profileId, target: runTarget, ...rest })),
     });
   }
+  const comparisonIdentity = createComparisonIdentity(results);
+  results.forEach(result => { result.comparisonIdentity = comparisonIdentity; });
   return results;
+}
+
+export function createComparisonIdentity(results = []) {
+  return {
+    schema_version: '1.0.0',
+    members: results.map(result => ({
+      profile_id: result.profileId ?? result.contract?.profile_id ?? null,
+      manifest_digest: result.manifestDigest ?? result.contract?.run_manifest?.manifest_digest ?? null,
+      configuration_digest: result.configurationDigest ?? result.contract?.run_manifest?.configuration_digest ?? null,
+    })),
+  };
 }
 
 export { AGENT_CASES };

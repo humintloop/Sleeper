@@ -5,12 +5,13 @@ import { Check, Copy, Download, FileJson } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { EVIDENCE_CLASSES as EVIDENCE_CLASS_NAMES } from '../harness/evidenceContract';
 import { verifyContractIntegrity } from '../harness/runProvenance';
+import { prepareEvidenceContractExport } from '../reports/evidenceContractExport';
 
-function downloadJson(contract) {
-  const blob = new Blob([JSON.stringify(contract, null, 2)], { type: 'application/json' });
+function downloadJson(payload, contract, historical = false) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = `${contract.case_id || 'sleeper-evidence-contract'}-${contract.profile_id || 'run'}.json`;
+  link.download = `${historical ? 'historical-' : ''}${contract.case_id || 'sleeper-evidence-contract'}-${contract.profile_id || 'run'}.json`;
   link.click();
   URL.revokeObjectURL(link.href);
 }
@@ -53,8 +54,15 @@ function humanize(value) {
     .replaceAll('Api', 'API');
 }
 
-export default function EvidenceContractPanel({ C, contract }) {
+export default function EvidenceContractPanel({
+  C,
+  contract,
+  historical = false,
+  historicalChanges = [],
+  currentConfigurationDigest = null,
+}) {
   const [copied, setCopied] = useState(false);
+  const [pendingExport, setPendingExport] = useState(null);
   const [integrityVerified, setIntegrityVerified] = useState(null);
   const json = useMemo(() => contract ? JSON.stringify(contract, null, 2) : '', [contract]);
 
@@ -69,6 +77,8 @@ export default function EvidenceContractPanel({ C, contract }) {
     return () => { active = false; };
   }, [contract]);
 
+  useEffect(() => setPendingExport(null), [contract, historical]);
+
   if (!contract) {
     return (
       <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: 18 }}>
@@ -82,10 +92,31 @@ export default function EvidenceContractPanel({ C, contract }) {
     );
   }
 
-  const copyJson = async () => {
-    await navigator.clipboard?.writeText(json);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1400);
+  const performExport = async (action, confirmed = false) => {
+    let payload;
+    try {
+      payload = prepareEvidenceContractExport({
+        contract,
+        state: historical ? 'stale' : 'current',
+        confirmed,
+        changes: historicalChanges,
+        currentConfigurationDigest,
+      });
+    } catch (exportError) {
+      if (exportError?.code === 'STALE_EXPORT_CONFIRMATION_REQUIRED') {
+        setPendingExport(action);
+        return;
+      }
+      throw exportError;
+    }
+    setPendingExport(null);
+    if (action === 'copy') {
+      await navigator.clipboard?.writeText(JSON.stringify(payload, null, 2));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1400);
+      return;
+    }
+    downloadJson(payload, contract, historical);
   };
 
   const ev = contract.evidence || {};
@@ -99,13 +130,29 @@ export default function EvidenceContractPanel({ C, contract }) {
           </div>
           <div style={{ color: C.text3, fontSize: 12, marginTop: 3, fontFamily: C.mono }}>{contract.case_id} · {contract.profile_id}</div>
         </div>
-        <button onClick={copyJson} style={ghostBtn(C)}>
+        <button onClick={() => performExport('copy')} style={ghostBtn(C)}>
           {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'COPIED' : 'COPY JSON'}
         </button>
-        <button onClick={() => downloadJson(contract)} style={ghostBtn(C)}>
+        <button onClick={() => performExport('download')} style={ghostBtn(C)}>
           <Download size={13} /> DOWNLOAD
         </button>
       </div>
+
+      {historical && (
+        <div role="status" style={{ fontSize: 12, color: C.ochre, background: C.amberBg, border: `1px solid ${C.ochre}55`, padding: '9px 12px', borderRadius: 2 }}>
+          Historical result: the current execution settings differ from this completed run. Copy and download require explicit confirmation and are labeled historical.
+        </div>
+      )}
+
+      {pendingExport && (
+        <div role="alert" style={{ fontSize: 12, color: C.text1, background: C.amberBg, border: `1px solid ${C.ochre}55`, padding: '10px 12px', borderRadius: 2 }}>
+          Export the completed run as historical evidence? It will retain its original manifest and configuration digest and will not describe the settings currently selected.
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <button onClick={() => performExport(pendingExport, true)} style={ghostBtn(C)}>CONFIRM HISTORICAL {pendingExport.toUpperCase()}</button>
+            <button onClick={() => setPendingExport(null)} style={ghostBtn(C)}>CANCEL</button>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
         <div style={{ background: C.greenBg, border: `1px solid ${C.green}55`, borderLeft: `3px solid ${C.green}`, borderRadius: 2, padding: '11px 13px' }}>
@@ -154,6 +201,30 @@ export default function EvidenceContractPanel({ C, contract }) {
           <Field C={C} label="Mode" value={contract.mode} />
           <Field C={C} label="Target" value={contract.target} />
         </Group>
+
+        {contract.case_evaluation && (
+          <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: '12px 14px' }}>
+            <div style={{ color: C.text3, fontSize: 10.5, fontWeight: 800, letterSpacing: 1.3, textTransform: 'uppercase', marginBottom: 9 }}>Case-condition evaluation</div>
+            <div style={{ display: 'grid', gap: 9 }}>
+              {contract.case_evaluation.evaluations?.map(evaluation => (
+                <div key={evaluation.condition} style={{ color: C.text2, fontSize: 12, lineHeight: 1.5 }}>
+                  <strong style={{ color: C.text1 }}>{humanize(evaluation.condition)}: {humanize(evaluation.outcome)}</strong>
+                  <div style={{ color: C.text3, marginTop: 2 }}>
+                    {evaluation.signals.map(signal => `${signal.name}=${String(signal.observed)} (${signal.source})`).join(' · ') || 'No executable signals declared.'}
+                  </div>
+                  {evaluation.limitations?.map((limitation, index) => (
+                    <div key={index} style={{ color: C.ochre, marginTop: 2 }}>{limitation}</div>
+                  ))}
+                </div>
+              ))}
+              {contract.case_evaluation.unsupported_signals?.length > 0 && (
+                <div style={{ color: C.ochre, fontSize: 11.5 }}>
+                  Unsupported signals: {contract.case_evaluation.unsupported_signals.join(', ')}. These remain unknown and cannot support a held verdict.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {contract.secondary_oracle && (
           <Group C={C} title="Secondary model oracle">

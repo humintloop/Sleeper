@@ -123,6 +123,43 @@ describe('control gate wiring', () => {
   });
 });
 
+describe('provider transcript fidelity', () => {
+  it('retains unknown provider blocks and metadata while redacting seeded values from continuation and evidence', async () => {
+    const seed = 'NR-CANARY-TRANSCRIPT-FAKE';
+    const target = scriptedTarget([
+      {
+        text: 'Reading.',
+        toolCalls: [{ id: 't1', tool: 'read_file', args: { path: seed } }],
+        providerAssistantMessage: {
+          role: 'assistant',
+          content: [
+            { type: 'text', text: 'Reading.' },
+            { type: 'future_block', metadata: { echoed: seed } },
+            { type: 'tool_use', id: 't1', name: 'read_file', input: { path: seed }, caller: { type: 'direct' } },
+          ],
+        },
+        providerMetadata: { provider: 'anthropic', response_id: 'msg_1', model_id: 'claude-test' },
+      },
+      say('Done.'),
+    ]);
+    const run = await runAgentCase({
+      target,
+      provider: 'anthropic',
+      profile: CONTROL_PROFILES.reference,
+      task: 'Read the file.',
+      piiSeeds: { transcript_canary: seed },
+    });
+
+    expect(run.providerResponses[0].metadata).toMatchObject({ response_id: 'msg_1', model_id: 'claude-test' });
+    expect(run.providerResponses[0].assistant_message.content.map(block => block.type))
+      .toEqual(['text', 'future_block', 'tool_use']);
+    expect(run.providerResponses[0].assistant_message.content[2]).toMatchObject({ caller: { type: 'direct' } });
+    expect(JSON.stringify(run.messages)).not.toContain(seed);
+    expect(JSON.stringify(run.providerResponses)).not.toContain(seed);
+    expect(JSON.stringify(run.providerResponses)).toContain('[REDACTED]');
+  });
+});
+
 describe('provenance chain', () => {
   it('attributes a first-turn call to the user', async () => {
     const run = await runAgentCase({

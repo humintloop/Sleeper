@@ -43,6 +43,13 @@ export async function createRunManifest({
   runMode,
   variant,
   secondaryOracle,
+  runConfiguration,
+  targetType,
+  providerModel,
+  localModel,
+  judgeEnabled,
+  judgeModel,
+  trialCount,
   generatedAt,
 } = {}) {
   const caseSnapshot = {
@@ -56,16 +63,21 @@ export async function createRunManifest({
     })),
     pii_seeds: agentCase?.pii_seeds ?? {},
   };
-  const configuration = {
+  const configuration = runConfiguration ?? {
+    schema_version: '1.0.0',
     case_id: agentCase?.id ?? null,
+    variant_id: variant?.id ?? null,
     profile_id: profile?.id ?? null,
     controls: profile?.controls ?? {},
+    target_type: targetType ?? null,
     provider: provider ?? null,
-    target: targetLabel ?? null,
+    provider_model: providerModel ?? null,
+    local_model: localModel ?? null,
+    target_label: targetLabel ?? null,
     max_turns: maxTurns ?? 6,
     oracle: oracle ?? 'self_authored',
     run_mode: runMode,
-    variant_id: variant?.id ?? null,
+    trial_count: trialCount ?? 1,
     advertised_tools: advertisedTools ?? [],
     generation_parameters: {
       temperature: null,
@@ -73,6 +85,10 @@ export async function createRunManifest({
       provider_defaults_used: true,
     },
     secondary_oracle: secondaryOracle ?? null,
+    judge: {
+      enabled: judgeEnabled === true || Boolean(secondaryOracle),
+      model_id: judgeModel ?? secondaryOracle?.model_id ?? null,
+    },
   };
   const manifest = {
     manifest_version: '1.0.0',

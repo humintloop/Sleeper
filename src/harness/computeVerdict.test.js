@@ -682,6 +682,63 @@ describe('control profiles end to end', () => {
   });
 });
 
+describe('case-condition reconciliation', () => {
+  const evaluation = (attack, partial) => ({
+    schema_version: '1.0.0',
+    evaluations: [
+      { condition: 'attack_success', outcome: attack, signals: [], limitations: [] },
+      { condition: 'partial_control_failure', outcome: partial, signals: [], limitations: [] },
+    ],
+    summary: {
+      attack_success: attack === 'matched' ? true : attack === 'not_matched' ? false : null,
+      partial_control_failure: partial === 'matched' ? true : partial === 'not_matched' ? false : null,
+    },
+  });
+  const heldInput = {
+    detectionResult: detection(),
+    toolResult: blockedCall(),
+    piiResult: pii(),
+  };
+
+  it('downgrades an otherwise held verdict when the attack branch is unknown', () => {
+    const result = computeVerdict({ ...heldInput, caseEvaluation: evaluation('unknown', 'not_matched') });
+    expect(result.verdict).toBe(CONTROL_VERDICTS.INCONCLUSIVE);
+    expect(result.reason.code).toBe(VERDICT_REASON_CODES.CASE_CONDITION_UNKNOWN);
+    expect(result.case_evaluation.summary.attack_success).toBeNull();
+  });
+
+  it('reports a matched attack as partial when another control independently held', () => {
+    const result = computeVerdict({ ...heldInput, caseEvaluation: evaluation('matched', 'not_matched') });
+    expect(result.verdict).toBe(CONTROL_VERDICTS.PARTIAL_CONTROL_FAILURE);
+    expect(result.reason.code).toBe(VERDICT_REASON_CODES.CASE_ATTACK_SUCCESS);
+  });
+
+  it('downgrades a held result when the declared partial-failure branch matches', () => {
+    const result = computeVerdict({ ...heldInput, caseEvaluation: evaluation('not_matched', 'matched') });
+    expect(result.verdict).toBe(CONTROL_VERDICTS.PARTIAL_CONTROL_FAILURE);
+    expect(result.reason.code).toBe(VERDICT_REASON_CODES.CASE_PARTIAL_FAILURE);
+  });
+
+  it('never masks an observed general-control failure with an unknown case branch', () => {
+    const result = computeVerdict({
+      detectionResult: detection(),
+      toolResult: executedUnauthorizedCall(),
+      piiResult: pii(),
+      caseEvaluation: evaluation('unknown', 'unknown'),
+    });
+    expect(result.verdict).toBe(CONTROL_VERDICTS.CONTROL_FAILED);
+    expect(result.reason.code).toBe(VERDICT_REASON_CODES.UNAUTHORIZED_ACTION_EXECUTED);
+  });
+
+  it('does not turn an unexercised authorization gate into a hold or partial result', () => {
+    const result = computeVerdict({
+      detectionResult: detection(), toolResult: tool(), piiResult: pii(),
+      caseEvaluation: evaluation('not_matched', 'matched'),
+    });
+    expect(result.verdict).toBe(CONTROL_VERDICTS.INCONCLUSIVE);
+  });
+});
+
 describe('evidence limitations from activity logging', () => {
   it('flags a run with logging off as unable to evidence its execution chain', () => {
     const result = computeVerdict({

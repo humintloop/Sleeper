@@ -136,6 +136,18 @@ function scrubKey(text, apiKey) {
   return source.split(apiKey).join(REDACTED);
 }
 
+function scrubSensitiveValue(value, apiKey) {
+  if (typeof value === 'string') return scrubKey(value, apiKey);
+  if (Array.isArray(value)) return value.map(item => scrubSensitiveValue(item, apiKey));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [
+      scrubKey(key, apiKey),
+      scrubSensitiveValue(item, apiKey),
+    ]));
+  }
+  return value;
+}
+
 /* ------------------------------------------------------------------ */
 /* tool schemas                                                        */
 /* ------------------------------------------------------------------ */
@@ -298,7 +310,17 @@ export function normalizeResponse(payload, options = {}) {
       .join('');
     toolCalls = normalizeAnthropicToolUse(payload.content, instructionSource, degradation);
     stopReason = payload.stop_reason ?? null;
-    return finish(text, toolCalls, stopReason, degradation);
+    return finish(text, toolCalls, stopReason, degradation, {
+      providerAssistantMessage: { role: 'assistant', content: payload.content },
+      providerMetadata: {
+        provider: PROVIDERS.ANTHROPIC,
+        response_id: payload.id ?? null,
+        model_id: payload.model ?? null,
+        stop_reason: payload.stop_reason ?? null,
+        stop_sequence: payload.stop_sequence ?? null,
+        usage: payload.usage ?? null,
+      },
+    });
   }
 
   if (!Array.isArray(payload.choices) || payload.choices.length === 0) {
@@ -311,16 +333,29 @@ export function normalizeResponse(payload, options = {}) {
   text = typeof message.content === 'string' ? message.content : '';
   toolCalls = normalizeOpenAiToolCalls(message.tool_calls, instructionSource, degradation);
   stopReason = choice.finish_reason ?? null;
-  return finish(text, toolCalls, stopReason, degradation);
+  return finish(text, toolCalls, stopReason, degradation, {
+    providerAssistantMessage: message && typeof message === 'object'
+      ? message
+      : { role: 'assistant', content: text || null },
+    providerMetadata: {
+      provider,
+      response_id: payload.id ?? null,
+      model_id: payload.model ?? null,
+      system_fingerprint: payload.system_fingerprint ?? null,
+      finish_reason: choice.finish_reason ?? null,
+      usage: payload.usage ?? null,
+    },
+  });
 }
 
-function finish(text, toolCalls, stopReason, degradation) {
+function finish(text, toolCalls, stopReason, degradation, providerFields = {}) {
   return {
     text,
     toolCalls,
     stopReason,
     degraded: degradation.length > 0,
     degradation,
+    ...providerFields,
   };
 }
 
@@ -481,16 +516,61 @@ function stringifyResult(result) {
  * @param {{provider?: string, text?: string, toolCalls?: Array}} params
  * @returns {object} provider-shaped message.
  */
-export function formatAssistantToolCallMessage({ provider = PROVIDERS.GENERIC, text = '', toolCalls = [] } = {}) {
+export function formatAssistantToolCallMessage({
+  provider = PROVIDERS.GENERIC,
+  text = '',
+  toolCalls = [],
+  providerAssistantMessage = null,
+  redactValue = value => value,
+} = {}) {
   const calls = Array.isArray(toolCalls) ? toolCalls : [];
 
   if (provider === PROVIDERS.ANTHROPIC) {
+    if (Array.isArray(providerAssistantMessage?.content)) {
+      const callsById = new Map(calls.map(call => [call.id, call]));
+      return {
+        ...providerAssistantMessage,
+        role: 'assistant',
+        content: providerAssistantMessage.content.map(block => {
+          const safeBlock = redactValue(block);
+          if (block?.type !== 'tool_use') return safeBlock;
+          const call = callsById.get(block.id) ?? calls.find(item => item.tool === block.name);
+          return call ? { ...safeBlock, input: call.args ?? {} } : safeBlock;
+        }),
+      };
+    }
     const content = [];
     if (text) content.push({ type: 'text', text });
     for (const call of calls) {
       content.push({ type: 'tool_use', id: call.id, name: call.tool, input: call.args || {} });
     }
     return { role: 'assistant', content };
+  }
+
+  if (providerAssistantMessage && typeof providerAssistantMessage === 'object') {
+    const safeMessage = redactValue(providerAssistantMessage);
+    const callsById = new Map(calls.map(call => [call.id, call]));
+    const nativeCalls = Array.isArray(safeMessage.tool_calls) ? safeMessage.tool_calls : [];
+    const formatted = {
+      ...safeMessage,
+      role: 'assistant',
+      content: typeof safeMessage.content === 'string' ? safeMessage.content : (text || (safeMessage.content ?? null)),
+    };
+    if (nativeCalls.length > 0 || calls.length > 0) {
+      formatted.tool_calls = nativeCalls.map((entry, index) => {
+        const call = callsById.get(entry?.id) ?? calls[index];
+        if (!call) return entry;
+        return {
+          ...entry,
+          function: {
+            ...(entry.function ?? {}),
+            name: call.tool,
+            arguments: JSON.stringify(call.args ?? {}),
+          },
+        };
+      });
+    }
+    return formatted;
   }
 
   return {
@@ -884,19 +964,22 @@ export class APITargetAdapter {
         data = null;
       }
       const normalized = normalizeResponse(data, { provider: this.provider, instructionSource });
+      const safeNormalized = scrubSensitiveValue(normalized, this.#apiKey);
       // Superset of the WebLLM non-streaming shape the app already reads, so
       // existing call sites keep working while the ReAct loop reads the
       // normalized fields.
       return {
         choices: [{
-          message: { role: 'assistant', content: normalized.text, tool_calls: normalized.toolCalls },
-          finish_reason: normalized.stopReason,
+          message: { role: 'assistant', content: safeNormalized.text, tool_calls: safeNormalized.toolCalls },
+          finish_reason: safeNormalized.stopReason,
         }],
-        text: normalized.text,
-        toolCalls: normalized.toolCalls,
-        stopReason: normalized.stopReason,
-        degraded: normalized.degraded,
-        degradation: normalized.degradation,
+        text: safeNormalized.text,
+        toolCalls: safeNormalized.toolCalls,
+        stopReason: safeNormalized.stopReason,
+        degraded: safeNormalized.degraded,
+        degradation: safeNormalized.degradation,
+        providerAssistantMessage: safeNormalized.providerAssistantMessage,
+        providerMetadata: safeNormalized.providerMetadata,
       };
     }
 
