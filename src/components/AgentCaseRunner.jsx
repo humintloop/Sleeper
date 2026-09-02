@@ -34,6 +34,7 @@ import {
   deriveAssessmentState,
   diffRunConfigurations,
 } from '../harness/runConfiguration';
+import { ensureCrossOriginIsolation } from '../coiBootstrap';
 import { WebLLMLocalTarget } from '../harness/webllmLocalTarget';
 import { PortfolioReplayTarget } from '../harness/replayTarget';
 import { WebLLMSecondaryJudge } from '../harness/secondaryJudge';
@@ -98,6 +99,19 @@ export default function AgentCaseRunner({ C, onHome }) {
   const [localModelId, setLocalModelId] = useState(VICTIM_MODELS.find(m => m.quickStart)?.id || VICTIM_MODELS[0].id);
   const [localStatus, setLocalStatus] = useState('idle'); // idle | loading | ready | error
   const [localProgress, setLocalProgress] = useState('');
+  // coiBootstrap runs fire-and-forget at module load, before this component
+  // exists; read whatever it already published, and let RETRY re-invoke it
+  // directly rather than asking the user to guess whether reloading helps.
+  const [coiStatus, setCoiStatus] = useState(() => (typeof window !== 'undefined' ? window.__sleeperCoiStatus : null));
+  const [coiRetrying, setCoiRetrying] = useState(false);
+  const retryCrossOriginIsolation = async () => {
+    setCoiRetrying(true);
+    try {
+      setCoiStatus(await ensureCrossOriginIsolation());
+    } finally {
+      setCoiRetrying(false);
+    }
+  };
 
   // Optional semantic triangulation. This is intentionally a separate engine
   // and model selection from the target, and never raises oracle independence.
@@ -202,9 +216,16 @@ export default function AgentCaseRunner({ C, onHome }) {
   const targetRunMode = targetType === TARGET_TYPES.SAMPLE
     ? RUN_MODES.DETERMINISTIC_REPLAY
     : RUN_MODES.MOCK_TOOL_HARNESS;
+  const coiReason = {
+    unsupported: 'service workers are unavailable in this browser (private/incognito mode is a common cause).',
+    insecure_context: 'this page was not loaded as a secure (HTTPS) context.',
+    registration_failed: `the isolation worker failed to register${coiStatus?.error ? `: ${coiStatus.error}` : '.'}`,
+    reload_completed_still_not_isolated: 'an automatic reload already tried to fix this and did not — a browser extension or policy is likely blocking service workers.',
+  }[coiStatus?.status] ?? null;
   const localCompatibilityIssues = [
     typeof navigator !== 'undefined' && !('gpu' in navigator) && 'WebGPU is unavailable in this browser.',
-    typeof crossOriginIsolated !== 'undefined' && !crossOriginIsolated && 'Cross-origin isolation is inactive.',
+    typeof crossOriginIsolated !== 'undefined' && !crossOriginIsolated
+      && `Cross-origin isolation is inactive${coiReason ? ` — ${coiReason}` : '.'}`,
   ].filter(Boolean);
 
   const providerModel = targetType === TARGET_TYPES.LIVE
@@ -558,7 +579,18 @@ export default function AgentCaseRunner({ C, onHome }) {
           <div>
             {localCompatibilityIssues.length > 0 && (
               <div role="status" style={{ fontSize: 12, color: C.ochre, lineHeight: 1.55, marginBottom: 10, padding: '9px 11px', background: C.amberBg, border: `1px solid ${C.ochre}55`, borderRadius: 2 }}>
-                Local inference is unavailable here: {localCompatibilityIssues.join(' ')} Sample Replay and Live API remain fully available.
+                <div>
+                  Local inference is unavailable here: {localCompatibilityIssues.join(' ')} Sample Replay and Live API remain fully available.
+                </div>
+                {typeof crossOriginIsolated !== 'undefined' && !crossOriginIsolated && (
+                  <button onClick={retryCrossOriginIsolation} disabled={coiRetrying} style={{
+                    marginTop: 8, padding: '5px 10px', fontSize: 11, fontWeight: 800, letterSpacing: .5,
+                    background: 'transparent', border: `1px solid ${C.ochre}`, color: C.ochre, borderRadius: 2,
+                    cursor: coiRetrying ? 'not-allowed' : 'pointer',
+                  }}>
+                    {coiRetrying ? 'CHECKING…' : 'RETRY ISOLATION CHECK'}
+                  </button>
+                )}
               </div>
             )}
             <div style={{ fontSize: 12, color: C.text3, lineHeight: 1.5, marginBottom: 10 }}>

@@ -3,13 +3,34 @@
 // normally while GitHub Pages serves the worker at a stable public URL.
 const RELOAD_KEY = 'sleeper-coi-reload';
 
+// Every outcome is silent otherwise: this was previously a fire-and-forget
+// void call with no visibility into which of the several failure modes
+// (unsupported, insecure context, registration error, reload that still
+// didn't isolate) actually happened for a given user. Publishing the last
+// result lets AgentCaseRunner.jsx show the real reason instead of a single
+// generic message, and console logging gives a paper trail without needing
+// to reproduce the exact browser/network conditions.
+const NOTEWORTHY_STATUSES = new Set([
+  'unsupported', 'insecure_context', 'registration_failed', 'reload_completed_still_not_isolated',
+]);
+
+function publish(windowObject, result) {
+  if (windowObject) windowObject.__sleeperCoiStatus = result;
+  if (NOTEWORTHY_STATUSES.has(result.status)) {
+    console.warn('[Sleeper] cross-origin isolation:', result.status, result);
+  } else {
+    console.info('[Sleeper] cross-origin isolation:', result.status, result);
+  }
+  return result;
+}
+
 export async function ensureCrossOriginIsolation({
   windowObject = globalThis.window,
   navigatorObject = globalThis.navigator,
 } = {}) {
-  if (!windowObject || !navigatorObject?.serviceWorker) return { status: 'unsupported' };
-  if (windowObject.crossOriginIsolated === true) return { status: 'already_isolated' };
-  if (!windowObject.isSecureContext) return { status: 'insecure_context' };
+  if (!windowObject || !navigatorObject?.serviceWorker) return publish(windowObject, { status: 'unsupported' });
+  if (windowObject.crossOriginIsolated === true) return publish(windowObject, { status: 'already_isolated' });
+  if (!windowObject.isSecureContext) return publish(windowObject, { status: 'insecure_context' });
 
   const reloadedBySelf = windowObject.sessionStorage?.getItem(RELOAD_KEY);
   windowObject.sessionStorage?.removeItem(RELOAD_KEY);
@@ -26,7 +47,11 @@ export async function ensureCrossOriginIsolation({
   // did not fix it — most likely service workers are blocked by browser
   // policy or an extension, not a timing issue a second reload would solve.
   if (reloadedBySelf) {
-    return { status: 'reload_completed_still_not_isolated' };
+    return publish(windowObject, {
+      status: 'reload_completed_still_not_isolated',
+      reload_reason: reloadedBySelf,
+      had_controller: Boolean(navigatorObject.serviceWorker.controller),
+    });
   }
 
   try {
@@ -44,12 +69,16 @@ export async function ensureCrossOriginIsolation({
     if (readyRegistration?.active && !windowObject.crossOriginIsolated) {
       windowObject.sessionStorage?.setItem(RELOAD_KEY, 'not_isolated');
       windowObject.location.reload();
-      return { status: 'reloading', worker_url: workerUrl };
+      return publish(windowObject, { status: 'reloading', worker_url: workerUrl });
     }
-    return { status: 'registered', worker_url: workerUrl };
+    return publish(windowObject, {
+      status: 'registered',
+      worker_url: workerUrl,
+      active: Boolean(readyRegistration?.active),
+    });
   } catch (error) {
-    console.error('COI registration failed:', error);
-    return { status: 'registration_failed', error: error?.message ?? String(error) };
+    console.error('[Sleeper] COI registration failed:', error);
+    return publish(windowObject, { status: 'registration_failed', error: error?.message ?? String(error) });
   }
 }
 

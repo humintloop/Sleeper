@@ -68,8 +68,26 @@ describe('cross-origin isolation bootstrap', () => {
     // looping would just thrash the page.
     const env = environment();
     env.windowObject.sessionStorage.setItem('sleeper-coi-reload', 'not_isolated');
-    expect(await ensureCrossOriginIsolation(env)).toEqual({ status: 'reload_completed_still_not_isolated' });
+    expect(await ensureCrossOriginIsolation(env)).toEqual({
+      status: 'reload_completed_still_not_isolated',
+      reload_reason: 'not_isolated',
+      had_controller: false,
+    });
     expect(env.windowObject.location.reload).not.toHaveBeenCalled();
     expect(env.navigatorObject.serviceWorker.register).not.toHaveBeenCalled();
+  });
+
+  it('publishes every outcome to window.__sleeperCoiStatus for the UI to read without devtools', async () => {
+    const env = environment({ windowObject: { crossOriginIsolated: true } });
+    await ensureCrossOriginIsolation(env);
+    expect(env.windowObject.__sleeperCoiStatus).toEqual({ status: 'already_isolated' });
+  });
+
+  it('publishes the registration error so a real failure is diagnosable, not just silently stuck', async () => {
+    const env = environment();
+    env.navigatorObject.serviceWorker.register = vi.fn(async () => { throw new Error('blocked by extension'); });
+    const result = await ensureCrossOriginIsolation(env);
+    expect(result).toEqual({ status: 'registration_failed', error: 'blocked by extension' });
+    expect(env.windowObject.__sleeperCoiStatus).toEqual(result);
   });
 });
