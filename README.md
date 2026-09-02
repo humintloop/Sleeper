@@ -66,10 +66,11 @@ honestly — evidence classes instead of pass/fail banners, `INCONCLUSIVE` inste
 ## Status
 
 The agent harness is built and wired end to end in the browser, with a no-key deterministic
-replay plus live API and local WebLLM targets. The automated suite is 508 tests across 25
-files; 170 of those tests, across 9 files (`computeVerdict`, `VerdictBanner`,
+replay plus live API and local WebLLM targets. The automated suite is 547 tests across 28
+files; 203 of those tests, across 12 files (`computeVerdict`, `VerdictBanner`,
 `authorityRegistry`, `toolAuthorizationGate`, `approvalPolicy`, `runProvenance`,
-`replayTarget`, `evidenceContract`, `evidenceWitness`), cover the verdict, authorization,
+`replayTarget`, `evidenceContract`, `evidenceWitness`, `runConfiguration`,
+`evaluateCaseConditions`, `evidenceContractExport`), cover the verdict, authorization,
 provenance, replay, and evidence-contract invariants specifically. See
 [`docs/agent-module-plan.md`](./docs/agent-module-plan.md) for the architecture and the
 source-verified framework crosswalk.
