@@ -43,6 +43,14 @@ same claim more directly, by comparing control postures against the same case ra
 comparing single-turn refusal against agentic follow-through. ELICIT remains the place for
 single-turn evaluation.
 
+The threat cases here are deliberately canonical, not novel attack research: indirect prompt
+injection, excessive agency, and MCP supply-chain compromise are drawn directly from MITRE ATLAS
+and the OWASP Top 10 for Agentic Applications, not invented for this project. That is a
+deliberate scope choice, not a limitation to apologize for — the contribution this project makes
+is the control harness around those known threats: real tool-calling agent execution, provenance
+instrumentation (`instructionSource` on every tool call), deterministic control gates, and the
+evidence discipline that states plainly what a run does and does not prove.
+
 ## Status
 
 The agent harness is built and wired end to end in the browser, with a no-key deterministic
