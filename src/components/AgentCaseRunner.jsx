@@ -60,6 +60,7 @@ const PROVIDER_DEFAULTS = {
 const RUN_PROFILE_IDS = ['baseline', 'partial', 'reference'];
 const DISPLAY_PROFILES = Object.fromEntries(RUN_PROFILE_IDS.map(id => [id, CONTROL_PROFILES[id]]));
 const TARGET_TYPES = { SAMPLE: 'sample', LIVE: 'live', LOCAL: 'local' };
+const TARGET_LABELS = { sample: 'Sample Replay', live: 'Live API', local: 'Local model' };
 
 // A configuration section is not a card.
 //
@@ -108,6 +109,12 @@ export default function AgentCaseRunner({ C, onHome }) {
   const [variantId, setVariantId] = useState(null);
 
   const [targetType, setTargetType] = useState(TARGET_TYPES.SAMPLE);
+
+  // Setup collapses once a run has produced something to look at. The screen
+  // is a form until you press Run and a result after — leaving six sections of
+  // configuration sitting above the answer means the answer opens below the
+  // fold, which on a projector means it is not on screen at all.
+  const [setupOpen, setSetupOpen] = useState(true);
 
   // Live target state.
   const [provider, setProvider] = useState(PROVIDERS.ANTHROPIC);
@@ -359,6 +366,7 @@ export default function AgentCaseRunner({ C, onHome }) {
     const outcome = await runOnce(profileId);
     if (!outcome) return;
     setResult(outcome);
+    setSetupOpen(false);
     setComparison(prev => ({ ...prev, [profileId]: outcome.verdict.verdict }));
     setComparisonResults(prev => ({ ...prev, [profileId]: outcome }));
     await persistRun(outcome, profileId);
@@ -391,6 +399,7 @@ export default function AgentCaseRunner({ C, onHome }) {
     Object.values(nextResults).forEach(outcome => { outcome.comparisonIdentity = identity; });
     setComparisonResults(nextResults);
     setComparisonProgress(null);
+    setSetupOpen(false);
     if (last) setResult(last);
     window.requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }));
   };
@@ -460,17 +469,20 @@ export default function AgentCaseRunner({ C, onHome }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
         <span style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: .2, marginRight: 4 }}>Jump to</span>
         {[
-          { label: 'Case', done: Boolean(caseId), ref: caseSectionRef },
-          { label: 'Profile', done: Boolean(profileId), ref: profileSectionRef },
-          { label: 'Target', done: targetReady, ref: targetSectionRef },
+          { label: 'Case', done: Boolean(caseId), ref: caseSectionRef, opensSetup: true },
+          { label: 'Profile', done: Boolean(profileId), ref: profileSectionRef, opensSetup: true },
+          { label: 'Target', done: targetReady, ref: targetSectionRef, opensSetup: true },
           { label: 'Run', done: Boolean(result), ref: resultsRef },
         ].map(step => (
           <button
             key={step.label}
-            onClick={() => step.ref.current?.scrollIntoView({
+            onClick={() => {
+              if (step.opensSetup) setSetupOpen(true);
+              window.requestAnimationFrame(() => step.ref.current?.scrollIntoView({
               behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-              block: 'start',
-            })}
+                block: 'start',
+              }));
+            }}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 9px', background: 'transparent', border: 'none', cursor: 'pointer' }}
           >
             <span style={{
@@ -485,210 +497,228 @@ export default function AgentCaseRunner({ C, onHome }) {
         ))}
       </div>
 
-      <div ref={caseSectionRef} style={section(C)}>
-        <div style={fieldLabel(C)}>Case</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
-          {AGENT_CASE_ORDER.map(id => {
-            const c = AGENT_CASES[id];
-            const active = id === caseId;
-            return (
-              <button key={id} aria-pressed={active} disabled={running} onClick={() => {
-                setCaseId(id);
-                setVariantId(AGENT_CASES[id]?.variants?.[0]?.id ?? null);
-              }} style={{
-                textAlign: 'left', padding: '10px 12px', borderRadius: 2, cursor: 'pointer',
-                background: active ? C.surface : C.panel,
-                border: `1px solid ${active ? C.brass : C.border}`,
-                borderLeft: `3px solid ${active ? C.brass : C.border}`,
-              }}>
-                <div style={{ fontFamily: C.mono, fontSize: C.size.micro, color: active ? C.brass : C.text3, marginBottom: 3 }}>{id}</div>
-                <div style={{ fontSize: C.size.small, color: C.text1, fontWeight: 600 }}>{c.title}</div>
-              </button>
-            );
-          })}
-        </div>
-        {agentCase && (
-          <p style={{ fontSize: C.size.small, color: C.text2, lineHeight: 1.6, marginTop: 12, marginBottom: 0 }}>
-            {agentCase.scenario?.narrative}
-          </p>
-        )}
-        {agentCase?.variants?.length > 0 && (
-          <div style={{ marginTop: 14 }}>
-            <div style={{ ...fieldLabel(C), marginBottom: 7 }}>Executable approval variant</div>
-            <div style={{ display: 'grid', gap: 7, gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
-              {agentCase.variants.map(variant => {
-                const active = selectedVariantId === variant.id;
-                return (
-                  <button key={variant.id} aria-pressed={active} disabled={running} onClick={() => setVariantId(variant.id)} style={{
-                    textAlign: 'left', padding: '9px 10px', cursor: 'pointer', borderRadius: 2,
-                    background: active ? C.surface : 'transparent',
-                    border: `1px solid ${active ? C.brass : C.border}`,
-                    color: C.text1,
-                  }}>
-                    <div style={{ fontSize: C.size.micro, color: active ? C.brass : C.text3, fontFamily: C.mono }}>{variant.id}</div>
-                    <div style={{ fontSize: C.size.small, fontWeight: 700, marginTop: 2 }}>{variant.title}</div>
-                    <div style={{ fontSize: C.size.micro, lineHeight: 1.45, color: C.text3, marginTop: 4 }}>{variant.description}</div>
-                  </button>
-                );
-              })}
-            </div>
+      {setupOpen ? (
+        <>
+        <div ref={caseSectionRef} style={section(C)}>
+          <div style={fieldLabel(C)}>Case</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
+            {AGENT_CASE_ORDER.map(id => {
+              const c = AGENT_CASES[id];
+              const active = id === caseId;
+              return (
+                <button key={id} aria-pressed={active} disabled={running} onClick={() => {
+                  setCaseId(id);
+                  setVariantId(AGENT_CASES[id]?.variants?.[0]?.id ?? null);
+                }} style={{
+                  textAlign: 'left', padding: '10px 12px', borderRadius: 2, cursor: 'pointer',
+                  background: active ? C.surface : C.panel,
+                  border: `1px solid ${active ? C.brass : C.border}`,
+                  borderLeft: `3px solid ${active ? C.brass : C.border}`,
+                }}>
+                  <div style={{ fontFamily: C.mono, fontSize: C.size.micro, color: active ? C.brass : C.text3, marginBottom: 3 }}>{id}</div>
+                  <div style={{ fontSize: C.size.small, color: C.text1, fontWeight: 600 }}>{c.title}</div>
+                </button>
+              );
+            })}
           </div>
-        )}
-      </div>
-
-      <div ref={profileSectionRef} style={section(C)}>
-        <div style={fieldLabel(C)}>Control profile</div>
-        <ControlProfileSelector C={C} profiles={DISPLAY_PROFILES} selectedId={profileId} onSelect={setProfileId} disabled={running} />
-        <div style={{ color: C.text3, fontSize: C.size.micro, lineHeight: 1.5, marginTop: 10 }}>
-          Your selection controls which profile gets the full verdict, trace, and Evidence Contract after comparison. The primary comparison still runs all three profiles.
-        </div>
-      </div>
-
-      <details style={section(C)}>
-        <summary style={{ cursor: 'pointer', color: C.text2, fontSize: C.size.small, fontWeight: 800, letterSpacing: .2 }}>
-          Framework mapping <span style={{ color: C.text3, fontWeight: 500, letterSpacing: 0, textTransform: 'none' }}>— review references and relationship strength</span>
-        </summary>
-        <div style={{ marginTop: 14 }}>
-          <FrameworkCrosswalkPanel C={C} agentCase={agentCase} />
-        </div>
-      </details>
-
-      <div ref={targetSectionRef} style={section(C)}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
-          <div style={{ ...fieldLabel(C), marginBottom: 0 }}>Target</div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <button aria-pressed={targetType === TARGET_TYPES.SAMPLE} disabled={running} style={toggleBtn(C, targetType === TARGET_TYPES.SAMPLE)} onClick={() => setTargetType(TARGET_TYPES.SAMPLE)}>SAMPLE REPLAY</button>
-            <button aria-pressed={targetType === TARGET_TYPES.LIVE} disabled={running} style={toggleBtn(C, targetType === TARGET_TYPES.LIVE)} onClick={() => setTargetType(TARGET_TYPES.LIVE)}>LIVE API</button>
-            <button aria-pressed={targetType === TARGET_TYPES.LOCAL} disabled={running} style={toggleBtn(C, targetType === TARGET_TYPES.LOCAL)} onClick={() => setTargetType(TARGET_TYPES.LOCAL)}>LOCAL MODEL</button>
-          </div>
-        </div>
-
-        {targetType === TARGET_TYPES.SAMPLE ? (
-          <div style={{ fontSize: C.size.small, color: C.text2, lineHeight: 1.6 }}>
-            Zero-key deterministic walkthrough. Scripted tool intent exercises the real provenance, authorization,
-            mock-effect, trace, verdict, and Evidence Contract pipeline. It is labeled E1 for the target because no
-            model decision is observed; any E3 claim applies only to Sleeper&rsquo;s own gate.
-          </div>
-        ) : targetType === TARGET_TYPES.LIVE ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-            <div>
-              <label htmlFor="agent-provider" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>Provider</label>
-              <select
-                id="agent-provider"
-                value={provider}
-                disabled={running}
-                onChange={e => { const p = e.target.value; setProvider(p); setModelId(PROVIDER_DEFAULTS[p].modelId); }}
-                style={input(C)}
-              >
-                <option value={PROVIDERS.ANTHROPIC}>Anthropic</option>
-                <option value={PROVIDERS.OPENAI}>OpenAI</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="agent-model-id" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>Model ID</label>
-              <input id="agent-model-id" value={modelId} disabled={running} onChange={e => setModelId(e.target.value)} style={input(C)} />
-            </div>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label htmlFor="agent-api-key" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>API key</label>
-              <input
-                id="agent-api-key"
-                type="password"
-                value={apiKey}
-                disabled={running}
-                onChange={e => setApiKey(e.target.value)}
-                placeholder="Held in memory for this session only. Never written to storage."
-                style={input(C)}
-                autoComplete="off"
-              />
-            </div>
-          </div>
-        ) : (
-          <div>
-            {localCompatibilityIssues.length > 0 && (
-              <div role="status" style={{ fontSize: C.size.small, color: C.ochre, lineHeight: 1.55, marginBottom: 10, padding: '9px 11px', background: C.amberBg, border: `1px solid ${C.ochre}55`, borderRadius: 2 }}>
-                <div>
-                  Local inference is unavailable here: {localCompatibilityIssues.join(' ')} Sample Replay and Live API remain fully available.
-                </div>
-                {typeof crossOriginIsolated !== 'undefined' && !crossOriginIsolated && (
-                  <button onClick={retryCrossOriginIsolation} disabled={coiRetrying} style={{
-                    marginTop: 8, padding: '5px 10px', fontSize: C.size.micro, fontWeight: 800, letterSpacing: .5,
-                    background: 'transparent', border: `1px solid ${C.ochre}`, color: C.ochre, borderRadius: 2,
-                    cursor: coiRetrying ? 'not-allowed' : 'pointer',
-                  }}>
-                    {coiRetrying ? 'CHECKING…' : 'RETRY ISOLATION CHECK'}
-                  </button>
-                )}
+          {agentCase && (
+            <p style={{ fontSize: C.size.small, color: C.text2, lineHeight: 1.6, marginTop: 12, marginBottom: 0 }}>
+              {agentCase.scenario?.narrative}
+            </p>
+          )}
+          {agentCase?.variants?.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ ...fieldLabel(C), marginBottom: 7 }}>Executable approval variant</div>
+              <div style={{ display: 'grid', gap: 7, gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
+                {agentCase.variants.map(variant => {
+                  const active = selectedVariantId === variant.id;
+                  return (
+                    <button key={variant.id} aria-pressed={active} disabled={running} onClick={() => setVariantId(variant.id)} style={{
+                      textAlign: 'left', padding: '9px 10px', cursor: 'pointer', borderRadius: 2,
+                      background: active ? C.surface : 'transparent',
+                      border: `1px solid ${active ? C.brass : C.border}`,
+                      color: C.text1,
+                    }}>
+                      <div style={{ fontSize: C.size.micro, color: active ? C.brass : C.text3, fontFamily: C.mono }}>{variant.id}</div>
+                      <div style={{ fontSize: C.size.small, fontWeight: 700, marginTop: 2 }}>{variant.title}</div>
+                      <div style={{ fontSize: C.size.micro, lineHeight: 1.45, color: C.text3, marginTop: 4 }}>{variant.description}</div>
+                    </button>
+                  );
+                })}
               </div>
-            )}
-            <div style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.5, marginBottom: 10 }}>
-              Small local models do not call tools reliably, so this path never uses real tool-calling — a
-              prompted JSON schema stands in, and the loop reads the model&rsquo;s tool-call intent out of that JSON
-              instead. Every run against a local model is flagged{' '}
-              <span style={{ color: C.red, fontWeight: 700 }}>DEGRADED</span> below, with the reason spelled out
-              on the trace, so a degraded run can never be read as a clean one. This is a separate download from
-              any model already loaded elsewhere in this app.
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, alignItems: 'end' }}>
+          )}
+        </div>
+
+        <div ref={profileSectionRef} style={section(C)}>
+          <div style={fieldLabel(C)}>Control profile</div>
+          <ControlProfileSelector C={C} profiles={DISPLAY_PROFILES} selectedId={profileId} onSelect={setProfileId} disabled={running} />
+          <div style={{ color: C.text3, fontSize: C.size.micro, lineHeight: 1.5, marginTop: 10 }}>
+            Your selection controls which profile gets the full verdict, trace, and Evidence Contract after comparison. The primary comparison still runs all three profiles.
+          </div>
+        </div>
+
+        <details style={section(C)}>
+          <summary style={{ cursor: 'pointer', color: C.text2, fontSize: C.size.small, fontWeight: 800, letterSpacing: .2 }}>
+            Framework mapping <span style={{ color: C.text3, fontWeight: 500, letterSpacing: 0, textTransform: 'none' }}>— review references and relationship strength</span>
+          </summary>
+          <div style={{ marginTop: 14 }}>
+            <FrameworkCrosswalkPanel C={C} agentCase={agentCase} />
+          </div>
+        </details>
+
+        <div ref={targetSectionRef} style={section(C)}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
+            <div style={{ ...fieldLabel(C), marginBottom: 0 }}>Target</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <button aria-pressed={targetType === TARGET_TYPES.SAMPLE} disabled={running} style={toggleBtn(C, targetType === TARGET_TYPES.SAMPLE)} onClick={() => setTargetType(TARGET_TYPES.SAMPLE)}>SAMPLE REPLAY</button>
+              <button aria-pressed={targetType === TARGET_TYPES.LIVE} disabled={running} style={toggleBtn(C, targetType === TARGET_TYPES.LIVE)} onClick={() => setTargetType(TARGET_TYPES.LIVE)}>LIVE API</button>
+              <button aria-pressed={targetType === TARGET_TYPES.LOCAL} disabled={running} style={toggleBtn(C, targetType === TARGET_TYPES.LOCAL)} onClick={() => setTargetType(TARGET_TYPES.LOCAL)}>LOCAL MODEL</button>
+            </div>
+          </div>
+
+          {targetType === TARGET_TYPES.SAMPLE ? (
+            <div style={{ fontSize: C.size.small, color: C.text2, lineHeight: 1.6 }}>
+              Zero-key deterministic walkthrough. Scripted tool intent exercises the real provenance, authorization,
+              mock-effect, trace, verdict, and Evidence Contract pipeline. It is labeled E1 for the target because no
+              model decision is observed; any E3 claim applies only to Sleeper&rsquo;s own gate.
+            </div>
+          ) : targetType === TARGET_TYPES.LIVE ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
               <div>
-                <label htmlFor="agent-local-model" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>Model</label>
-                <select id="agent-local-model" value={localModelId} onChange={e => { setLocalModelId(e.target.value); setLocalStatus('idle'); }} style={input(C)} disabled={running || localStatus === 'loading'}>
-                  {VICTIM_MODELS.map(m => (
-                    <option key={m.id} value={m.id}>{m.quickStart ? 'Quick start — ' : ''}{m.name} ({m.size})</option>
-                  ))}
+                <label htmlFor="agent-provider" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>Provider</label>
+                <select
+                  id="agent-provider"
+                  value={provider}
+                  disabled={running}
+                  onChange={e => { const p = e.target.value; setProvider(p); setModelId(PROVIDER_DEFAULTS[p].modelId); }}
+                  style={input(C)}
+                >
+                  <option value={PROVIDERS.ANTHROPIC}>Anthropic</option>
+                  <option value={PROVIDERS.OPENAI}>OpenAI</option>
                 </select>
               </div>
-              <button onClick={loadLocalModel} disabled={running || localStatus === 'loading' || localStatus === 'ready' || localCompatibilityIssues.length > 0} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 14px',
-                background: localStatus === 'ready' ? C.greenBg : C.surface,
-                border: `1px solid ${localStatus === 'ready' ? C.green : C.borderHi}`,
-                color: localStatus === 'ready' ? C.green : C.text1,
-                fontSize: C.size.small, fontWeight: 800, letterSpacing: .5, borderRadius: 2,
-                cursor: localStatus === 'loading' || localStatus === 'ready' || localCompatibilityIssues.length > 0 ? 'not-allowed' : 'pointer',
-              }}>
-                {localStatus === 'loading' && <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} />}
-                {localStatus === 'ready' ? '● LOADED' : localStatus === 'loading' ? 'LOADING…' : 'LOAD MODEL'}
-              </button>
+              <div>
+                <label htmlFor="agent-model-id" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>Model ID</label>
+                <input id="agent-model-id" value={modelId} disabled={running} onChange={e => setModelId(e.target.value)} style={input(C)} />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label htmlFor="agent-api-key" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>API key</label>
+                <input
+                  id="agent-api-key"
+                  type="password"
+                  value={apiKey}
+                  disabled={running}
+                  onChange={e => setApiKey(e.target.value)}
+                  placeholder="Held in memory for this session only. Never written to storage."
+                  style={input(C)}
+                  autoComplete="off"
+                />
+              </div>
             </div>
-            {localStatus === 'loading' && localProgress && (
-              <div style={{ fontSize: C.size.micro, color: C.text3, marginTop: 8, fontFamily: C.mono }}>{localProgress}</div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div style={section(C)}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div>
-            <div style={{ ...fieldLabel(C), marginBottom: 4 }}>Secondary local-model judge</div>
-            <div style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.5, maxWidth: 660 }}>
-              Optional semantic triangulation of goal adoption and unauthorized intent. It cannot override deterministic
-              trace facts and does not raise independence above I0. A distinct model is required for a local target.
-            </div>
-          </div>
-          <button aria-pressed={judgeEnabled} disabled={running} style={toggleBtn(C, judgeEnabled)} onClick={() => setJudgeEnabled(enabled => !enabled)}>
-            {judgeEnabled ? 'ENABLED' : 'DISABLED'}
-          </button>
-        </div>
-        {judgeEnabled && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1fr) auto', gap: 12, alignItems: 'end', marginTop: 12 }}>
+          ) : (
             <div>
-              <label htmlFor="secondary-judge-model" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>Judge model</label>
-              <select id="secondary-judge-model" value={judgeModelId} onChange={event => { setJudgeModelId(event.target.value); setJudgeStatus('idle'); }} style={input(C)} disabled={running || judgeStatus === 'loading'}>
-                {VICTIM_MODELS.map(model => <option key={model.id} value={model.id}>{model.name} ({model.size})</option>)}
-              </select>
+              {localCompatibilityIssues.length > 0 && (
+                <div role="status" style={{ fontSize: C.size.small, color: C.ochre, lineHeight: 1.55, marginBottom: 10, padding: '9px 11px', background: C.amberBg, border: `1px solid ${C.ochre}55`, borderRadius: 2 }}>
+                  <div>
+                    Local inference is unavailable here: {localCompatibilityIssues.join(' ')} Sample Replay and Live API remain fully available.
+                  </div>
+                  {typeof crossOriginIsolated !== 'undefined' && !crossOriginIsolated && (
+                    <button onClick={retryCrossOriginIsolation} disabled={coiRetrying} style={{
+                      marginTop: 8, padding: '5px 10px', fontSize: C.size.micro, fontWeight: 800, letterSpacing: .5,
+                      background: 'transparent', border: `1px solid ${C.ochre}`, color: C.ochre, borderRadius: 2,
+                      cursor: coiRetrying ? 'not-allowed' : 'pointer',
+                    }}>
+                      {coiRetrying ? 'CHECKING…' : 'RETRY ISOLATION CHECK'}
+                    </button>
+                  )}
+                </div>
+              )}
+              <div style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.5, marginBottom: 10 }}>
+                Small local models do not call tools reliably, so this path never uses real tool-calling — a
+                prompted JSON schema stands in, and the loop reads the model&rsquo;s tool-call intent out of that JSON
+                instead. Every run against a local model is flagged{' '}
+                <span style={{ color: C.red, fontWeight: 700 }}>DEGRADED</span> below, with the reason spelled out
+                on the trace, so a degraded run can never be read as a clean one. This is a separate download from
+                any model already loaded elsewhere in this app.
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, alignItems: 'end' }}>
+                <div>
+                  <label htmlFor="agent-local-model" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>Model</label>
+                  <select id="agent-local-model" value={localModelId} onChange={e => { setLocalModelId(e.target.value); setLocalStatus('idle'); }} style={input(C)} disabled={running || localStatus === 'loading'}>
+                    {VICTIM_MODELS.map(m => (
+                      <option key={m.id} value={m.id}>{m.quickStart ? 'Quick start — ' : ''}{m.name} ({m.size})</option>
+                    ))}
+                  </select>
+                </div>
+                <button onClick={loadLocalModel} disabled={running || localStatus === 'loading' || localStatus === 'ready' || localCompatibilityIssues.length > 0} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 14px',
+                  background: localStatus === 'ready' ? C.greenBg : C.surface,
+                  border: `1px solid ${localStatus === 'ready' ? C.green : C.borderHi}`,
+                  color: localStatus === 'ready' ? C.green : C.text1,
+                  fontSize: C.size.small, fontWeight: 800, letterSpacing: .5, borderRadius: 2,
+                  cursor: localStatus === 'loading' || localStatus === 'ready' || localCompatibilityIssues.length > 0 ? 'not-allowed' : 'pointer',
+                }}>
+                  {localStatus === 'loading' && <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} />}
+                  {localStatus === 'ready' ? '● LOADED' : localStatus === 'loading' ? 'LOADING…' : 'LOAD MODEL'}
+                </button>
+              </div>
+              {localStatus === 'loading' && localProgress && (
+                <div style={{ fontSize: C.size.micro, color: C.text3, marginTop: 8, fontFamily: C.mono }}>{localProgress}</div>
+              )}
             </div>
-            <button onClick={loadJudgeModel} disabled={running || judgeStatus === 'loading' || judgeStatus === 'ready'} style={{
-              ...toggleBtn(C, judgeStatus === 'ready'), minWidth: 150, height: 36,
-              cursor: judgeStatus === 'loading' || judgeStatus === 'ready' ? 'not-allowed' : 'pointer',
-            }}>
-              {judgeStatus === 'ready' ? '● JUDGE LOADED' : judgeStatus === 'loading' ? 'LOADING…' : 'LOAD JUDGE'}
+          )}
+        </div>
+
+        <div style={section(C)}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ ...fieldLabel(C), marginBottom: 4 }}>Secondary local-model judge</div>
+              <div style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.5, maxWidth: 660 }}>
+                Optional semantic triangulation of goal adoption and unauthorized intent. It cannot override deterministic
+                trace facts and does not raise independence above I0. A distinct model is required for a local target.
+              </div>
+            </div>
+            <button aria-pressed={judgeEnabled} disabled={running} style={toggleBtn(C, judgeEnabled)} onClick={() => setJudgeEnabled(enabled => !enabled)}>
+              {judgeEnabled ? 'ENABLED' : 'DISABLED'}
             </button>
-            {judgeStatus === 'loading' && judgeProgress && (
-              <div style={{ gridColumn: '1 / -1', fontSize: C.size.micro, color: C.text3, fontFamily: C.mono }}>{judgeProgress}</div>
-            )}
           </div>
-        )}
-      </div>
+          {judgeEnabled && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1fr) auto', gap: 12, alignItems: 'end', marginTop: 12 }}>
+              <div>
+                <label htmlFor="secondary-judge-model" style={{ ...fieldLabel(C), marginBottom: 4, display: 'block' }}>Judge model</label>
+                <select id="secondary-judge-model" value={judgeModelId} onChange={event => { setJudgeModelId(event.target.value); setJudgeStatus('idle'); }} style={input(C)} disabled={running || judgeStatus === 'loading'}>
+                  {VICTIM_MODELS.map(model => <option key={model.id} value={model.id}>{model.name} ({model.size})</option>)}
+                </select>
+              </div>
+              <button onClick={loadJudgeModel} disabled={running || judgeStatus === 'loading' || judgeStatus === 'ready'} style={{
+                ...toggleBtn(C, judgeStatus === 'ready'), minWidth: 150, height: 36,
+                cursor: judgeStatus === 'loading' || judgeStatus === 'ready' ? 'not-allowed' : 'pointer',
+              }}>
+                {judgeStatus === 'ready' ? '● JUDGE LOADED' : judgeStatus === 'loading' ? 'LOADING…' : 'LOAD JUDGE'}
+              </button>
+              {judgeStatus === 'loading' && judgeProgress && (
+                <div style={{ gridColumn: '1 / -1', fontSize: C.size.micro, color: C.text3, fontFamily: C.mono }}>{judgeProgress}</div>
+              )}
+            </div>
+          )}
+        </div>
+        </>
+      ) : (
+        <button
+          onClick={() => setSetupOpen(true)}
+          style={{
+            ...section(C), width: '100%', textAlign: 'left', background: 'transparent', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', paddingBottom: 14,
+          }}
+        >
+          <span style={fieldLabel(C)}>Setup</span>
+          <span style={{ color: C.text2, fontSize: C.size.small }}>
+            {caseId} &middot; {CONTROL_PROFILES[profileId]?.label} &middot; {TARGET_LABELS[targetType]}
+          </span>
+          <span style={{ marginLeft: 'auto', color: C.brass, fontSize: C.size.small, fontWeight: 700 }}>Change setup</span>
+        </button>
+      )}
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <button onClick={handleComparative} disabled={running} style={{

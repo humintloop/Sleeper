@@ -52,9 +52,12 @@ test.describe('error and degraded paths stay visibly labeled', () => {
     const historyRow = page.getByText('External Email Injection to Internal Data Exfiltration').last();
     await expect(historyRow).toBeVisible();
     // The DEGRADED badge sits in the same collapsed row as the verdict —
-    // a reader cannot see "CONTROL_HELD" without also seeing "DEGRADED".
+    // a reader cannot see the verdict without also seeing "DEGRADED". The
+    // history row renders the verdict through getVerdictLabel like every other
+    // verdict surface, so the displayed text is "CONTROL HELD"; what this test
+    // pins is co-visibility in the collapsed row, not the exact spelling.
     const row = page.locator('button', { hasText: 'External Email Injection to Internal Data Exfiltration' }).last();
     await expect(row).toContainText('DEGRADED');
-    await expect(row).toContainText('CONTROL_HELD');
+    await expect(row).toContainText('CONTROL HELD');
   });
 });

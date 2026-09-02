@@ -2,6 +2,7 @@
 // status announcements — exercised with real keyboard events, not just
 // reading the DOM for aria-* attributes.
 import { test, expect } from '@playwright/test';
+import { reopenSetup } from './helpers.js';
 
 test.describe('keyboard operability and live announcements', () => {
   test('the workspace tablist follows the WAI-ARIA tabs keyboard pattern (arrow keys move focus and selection, Home/End jump)', async ({ page }) => {
@@ -56,6 +57,7 @@ test.describe('keyboard operability and live announcements', () => {
     const status = page.getByRole('status').filter({ hasText: 'Displayed result matches the current configuration.' });
     await expect(status).toHaveAttribute('aria-live', 'polite');
 
+    await reopenSetup(page);
     await page.getByRole('button', { name: /Baseline Profile/ }).first().click();
     // Same live region, new text — a screen reader gets told the state
     // changed without needing to re-scan the page.

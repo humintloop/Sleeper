@@ -5,6 +5,7 @@
 //   3. Rerun -> new identity and current result.
 // Sample Replay only: deterministic, no API key, no WebGPU dependency.
 import { test, expect } from '@playwright/test';
+import { reopenSetup } from './helpers.js';
 
 async function openRunAgentCase(page) {
   await page.goto('/');
@@ -34,6 +35,7 @@ test.describe('run lifecycle: configure, run, stale, rerun', () => {
     await expect(page.getByText('current', { exact: true })).toBeVisible({ timeout: 15_000 });
 
     // Reference is selected by default; switch to Baseline without rerunning.
+    await reopenSetup(page);
     await page.getByRole('button', { name: /Baseline Profile/ }).first().click();
 
     await expect(page.getByText('stale', { exact: true })).toBeVisible();
@@ -57,6 +59,7 @@ test.describe('run lifecycle: configure, run, stale, rerun', () => {
     const digestText = await digestLocator.textContent();
     expect(digestText).toMatch(/^[0-9a-f]{16}…$/);
 
+    await reopenSetup(page);
     await page.getByRole('button', { name: /Baseline Profile/ }).first().click();
     await page.getByRole('button', { name: 'RERUN WITH CURRENT CONFIGURATION' }).click();
     await expect(page.getByText('current', { exact: true })).toBeVisible({ timeout: 15_000 });

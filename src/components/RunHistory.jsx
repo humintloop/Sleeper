@@ -43,6 +43,10 @@ function shortProfile(label) {
   return String(label || '').replace(/\s*Profile$/i, '');
 }
 
+// The verdict and the degraded flag are one object, and they live inside the
+// group's own header. A reader must not be able to see CONTROL_HELD without
+// also seeing that the run producing it was degraded — so neither may sit
+// behind a disclosure the other does not.
 function VerdictChip({ C, entry }) {
   const color = getVerdictColor(entry.verdict, C);
   return (
@@ -54,6 +58,14 @@ function VerdictChip({ C, entry }) {
       }}>
         {getVerdictLabel(entry.verdict)}
       </span>
+      {entry.degraded && (
+        <span style={{
+          color: C.red, border: `1px solid ${C.red}55`, background: C.redBg, borderRadius: C.radius,
+          padding: '1px 5px', fontSize: C.size.micro, fontWeight: 800,
+        }}>
+          DEGRADED
+        </span>
+      )}
     </span>
   );
 }
@@ -117,10 +129,10 @@ function RunGroup({ C, group }) {
         <span style={{ marginLeft: 'auto', color: C.text3, fontSize: C.size.micro, fontFamily: C.mono }}>
           {first?.timestamp ? new Date(first.timestamp).toLocaleString() : ''}
         </span>
+        <span style={{ flexBasis: '100%', display: 'flex', gap: 12, flexWrap: 'wrap', paddingLeft: 21, marginTop: 2 }}>
+          {group.entries.map(entry => <VerdictChip key={entry.id} C={C} entry={entry} />)}
+        </span>
       </button>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', padding: '0 13px 11px 34px' }}>
-        {group.entries.map(entry => <VerdictChip key={entry.id} C={C} entry={entry} />)}
-      </div>
       {open && (
         <div style={{ padding: '0 13px 4px 34px' }}>
           {group.entries.map(entry => <RunRecord key={entry.id} C={C} entry={entry} />)}

@@ -6,6 +6,7 @@
 // the same stale-export contract independently
 // (evidenceContractExport.js / reportExport.js).
 import { test, expect } from '@playwright/test';
+import { reopenSetup } from './helpers.js';
 
 async function runToCurrent(page) {
   await page.goto('/');
@@ -27,6 +28,7 @@ test.describe('export gating', () => {
 
   test('exporting the Evidence Contract after the result goes stale requires explicit confirmation and is labeled historical', async ({ page }) => {
     await runToCurrent(page);
+    await reopenSetup(page);
     await page.getByRole('button', { name: /Baseline Profile/ }).first().click();
     await expect(page.getByText('stale', { exact: true })).toBeVisible();
 
@@ -48,6 +50,7 @@ test.describe('export gating', () => {
 
   test('the Report tab applies the identical stale gate to Markdown/HTML/JSON export', async ({ page }) => {
     await runToCurrent(page);
+    await reopenSetup(page);
     await page.getByRole('button', { name: /Baseline Profile/ }).first().click();
     await expect(page.getByText('stale', { exact: true })).toBeVisible();
 
