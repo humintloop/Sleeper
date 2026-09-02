@@ -58,7 +58,7 @@ export default function InvestigationWorkspace({ C, tabs, defaultTabId }) {
               {tab.label}
               {tab.badge != null && (
                 <span style={{
-                  fontSize: 10, fontWeight: 900, padding: '1px 6px', borderRadius: 8,
+                  fontSize: 10, fontWeight: 900, padding: '1px 6px', borderRadius: 2,
                   background: selected ? C.brassBg : C.surface, color: selected ? C.brass : C.text3,
                   border: `1px solid ${selected ? C.brass : C.borderHi}`,
                 }}>

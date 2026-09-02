@@ -4,50 +4,91 @@ import AgentCaseRunner from './components/AgentCaseRunner';
 import { loadAgentRuns } from './storage';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-// Obsidian Briefing direction, applied 2026-08-17. Neutrals move to a near-black/bone
+// Obsidian Briefing / "Forensic Dossier" direction. Neutrals sit on a near-black/bone
 // palette calibrated against Offensive AI Con's own branding — restrained monochrome,
 // architectural rather than glowing — and `brass` takes over the brand/interactive role
 // amber used to carry solo, so amber can stay a pure verdict color. Don't drop text3 or
 // slate into running body copy; both are calibrated for contrast against the dark panel.
+//
+// Grouped by semantic role per docs/phase-3 handoff guidance ("add or consolidate
+// semantic tokens before component-by-component restyling"). Key names are unchanged
+// from before this grouping — every existing `C.xxx` call site keeps working — this
+// pass adds the taxonomy and fixes one measured defect (borderHi contrast, below); it
+// does not migrate the whole app to new token names or rewrite component layout. That
+// broader restyling (fewer nested cards, quieter dividers before boxes) is real,
+// larger, more subjective follow-on work — see docs/accessibility-audit.md for what
+// was and wasn't done in this pass.
 const C = {
-  bg:       '#050505',
-  panel:    '#0A0A09',
-  surface:  '#0D0D0C',
-  hover:    '#15150F',
-  border:   '#212120',
-  borderHi: '#3A3A37',
-  red:      '#DC4838',
+  // Surfaces — canvas → raised → inset, darkest to least-dark.
+  bg:       '#050505', // canvas
+  panel:    '#0A0A09', // raised
+  surface:  '#0D0D0C', // raised, slightly lighter (form fields, nested content)
+  hover:    '#15150F', // hover state over a raised surface
+  ink:      '#050505', // inset (code/JSON blocks) — same value as canvas, named for role not reuse
+  border:   '#212120', // quiet divider — decorative, not a component boundary
+  // Default interactive-component boundary. Was #3A3A37 (1.74:1 against
+  // panel — fails WCAG 1.4.11's 3:1 non-text threshold, measured in
+  // docs/accessibility-audit.md) — used on a large number of actually-
+  // interactive elements (case/profile/target cards), not merely decorative
+  // dividers. Same warm-neutral hue, lightened to 3.38–3.54:1 against every
+  // surface token above.
+  borderHi: '#666663',
+
+  // Text — primary → secondary → muted. (No separate "inverse" tone exists;
+  // nothing in this app renders dark text on a light surface.)
+  text1:    '#F4F2EA', // primary
+  text2:    '#B6B2A4', // secondary
+  text3:    '#8B877A', // muted — calibrated for contrast against panel/surface; never drop below this
+
+  // Interaction — brand/accent, never a verdict. Wordmark, active nav/tab
+  // state, primary CTA, focus rings. Keeps amber free to stay a pure
+  // reserved verdict color instead of double-booked as brand chrome.
+  brass:    '#CFC7B0', // accent
+  brassBg:  'rgba(207,199,176,.10)', // accent, selected/highlighted background
+
+  // Verdict — reserved exclusively for held/failed/partial/inconclusive/
+  // degraded/error semantics (see src/components/VerdictBanner.js's
+  // verdictDisplay, the single source of truth for verdict → color).
+  // Never reused as brand chrome or a technique-category accent.
+  red:      '#DC4838', // failed / error
   redDim:   '#743025',
   redBg:    'rgba(220,72,56,.12)',
-  teal:     '#00CFC4',
+  teal:     '#00CFC4', // legacy probe-vocabulary FAILURE only — see VerdictBanner
   tealBg:   'rgba(0,207,196,.10)',
-  green:    '#4EBA6F',
+  green:    '#4EBA6F', // held
   greenBg:  'rgba(78,186,111,.12)',
-  blue:     '#6D8FD6',
-  amber:    '#C87844',
+  blue:     '#6D8FD6', // legacy probe-vocabulary REVIEW only — see VerdictBanner
+  amber:    '#C87844', // legacy probe-vocabulary PARTIAL only — see VerdictBanner
   amberDim: '#82492A',
   orange:   '#D37A36',
-  ochre:    '#B99242',
+  ochre:    '#B99242', // partial control failure / stale / degraded
   amberBg:  'rgba(200,120,68,.13)',
+  slate:    '#6B7A99', // inconclusive
   warmDim:  '#C4A07A',
   coolDim:  '#7A9AB5',
-  // Brand / interactive accent — wordmark, active nav/tab state, primary CTA,
-  // focus rings. Interactive only, never a verdict; keeps amber free to stay a
-  // pure reserved verdict color instead of double-booked as brand chrome.
-  brass:    '#CFC7B0',
-  brassBg:  'rgba(207,199,176,.10)',
-  // Technique-category accents — deliberately distinct from the verdict
-  // colors above (red/teal/amber/blue) so a cluster's color never reads
-  // as a SUCCESS/FAILURE/PARTIAL/REVIEW outcome.
+
+  // Technique-category accents — deliberately distinct from every verdict
+  // color above so a cluster's color never reads as a
+  // SUCCESS/FAILURE/PARTIAL/REVIEW outcome.
   violet:   '#9684D6',
-  slate:    '#6B7A99',
   sand:     '#B99C6B',
-  ink:      '#050505',
-  text1:    '#F4F2EA',
-  text2:    '#B6B2A4',
-  text3:    '#8B877A',
+
+  // Typography — Space Grotesk for narrative/interface copy (html base
+  // font-size 15px, within the spec'd 15–16px range); Geist Mono reserved
+  // for IDs, hashes, event metadata, and code-like values. Checked across
+  // every explicit `fontFamily: C.mono` call site in src/components/ — all
+  // are digests, reason/verdict codes, framework IDs, or literal JSON/log
+  // text, none are narrative prose set in mono.
   mono:     '"Geist Mono", ui-monospace, monospace',
   sans:     '"Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
+
+  // Radii — 2px (near-square, architectural) is the only radius used across
+  // every panel/card/button/input in the app today (60+ call sites), with a
+  // single deliberate exception (999px, a true pill shape). New code should
+  // reference these rather than repeating the literal; existing call sites
+  // are not migrated in this pass — see the note at the top of this block.
+  radius:     2,
+  radiusPill: 999,
 };
 
 // ── Stages ────────────────────────────────────────────────────────────────────
