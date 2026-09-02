@@ -46,19 +46,26 @@ live-API target needs neither WebGPU nor a local download.
 |---|---|
 | `src/App.jsx` | The whole shell. ~125 lines: token object `C`, `STAGE` (`HOME` / `AGENT_LAB` only), `GlobalStyle`, and a two-branch render. No compatibility gating or business logic lives here — device/capability checks are scoped to `AgentCaseRunner`'s Local Model target, and everything else is in `src/harness/`. |
 | `src/components/DossierHome.jsx` | Home screen. One entry point: "Run agent case." Headline copy leads with the Baseline-vs-Reference control-profile comparison. |
-| `src/components/AgentCaseRunner.jsx` | **Start here for the UI.** Case + profile + target (live API or local model) → run → trace/verdict/contract, plus run history read from `storage.js`. |
-| `src/harness/runAgentAssessment.js` | **Start here for the logic.** Case + profile + target → run → verdict → contract. `runCaseAcrossProfiles` is the comparative arm. |
-| `src/harness/runAgentCase.js` | The ReAct loop. Owns provenance attribution, the turn cap, and the loop guard. |
+| `src/components/AgentCaseRunner.jsx` | **Start here for the UI.** Case + profile + target (live API or local model) → run → `InvestigationWorkspace`'s Compare/Trace/Evidence/Report tabs, plus run history read from `storage.js`. |
+| `src/components/RunContextSummary.jsx` | Persistent context strip above the workspace: case/variant/profile/target/judge/trials/configuration digest, and the derived idle/running/current/stale/degraded/error state with a field-level diff and rerun action when stale. |
+| `src/components/InvestigationWorkspace.jsx` | The Compare/Trace/Evidence/Report tab shell. Real ARIA tabs (roving tabindex, arrow/Home/End nav) — pure navigation, no verdict/security logic. |
+| `src/components/ReportPanel.jsx` | UI for `reportGenerator.js`'s Markdown/HTML/JSON export (current result or full comparison set), gated by `reportExport.js`'s stale-export confirmation — distinct from the Evidence Contract JSON download on the Evidence tab. |
+| `src/harness/runAgentAssessment.js` | **Start here for the logic.** Case + profile + target → run → verdict → contract. `runCaseAcrossProfiles` is the comparative arm; `createComparisonIdentity` records each member's manifest/configuration digest for the Compare tab. |
+| `src/harness/runAgentCase.js` | The ReAct loop. Owns provenance attribution, the turn cap, the loop guard, and provider-native assistant-turn fidelity (`providerResponses`). |
+| `src/harness/runConfiguration.js` | The one canonical execution-configuration snapshot (case/variant/profile/target/provider/model/judge/trials/advertised tools) and its digest — what `RunContextSummary` and the stale/current state derive from. |
+| `src/harness/evaluateCaseConditions.js` | Evaluates each case's declared `attack_success`/`partial_control_failure` signals against the observed run; feeds `computeVerdict.js`'s reconciliation (an unknown or matched case signal can downgrade a hold, never upgrade one). |
 | `src/harness/` | `authorityRegistry.js` (tool trust boundaries), `controlGate.js` (profile → system-prompt wrapper), `controls/*` (four control functions), `mockToolRouter.js`, `computeVerdict.js`, `evidenceContract.js`, `webllmLocalTarget.js` (local-model target, prompted-JSON tool-call fallback). |
-| `src/api/adapter.js` | Live-target adapter. OpenAI / Anthropic / generic, tool-calling, local JSON fallback, `describeDegradation` for readable degradation reasons. Key is a private class field — keep it that way. |
-| `src/data/agentCases.js` | The four threat cases (`NR-AGT-001/002/003A/003B`), fixtures, and framework mappings. |
+| `src/api/adapter.js` | Live-target adapter. OpenAI / Anthropic / generic, tool-calling, local JSON fallback, `describeDegradation` for readable degradation reasons. Key is a private class field — keep it that way. Preserves provider-native assistant content (mixed blocks, multiple tool calls, unknown block types) losslessly for continuation. |
+| `src/data/agentCases.js` | The four threat cases (`NR-AGT-001/002/003A/003B`), fixtures, framework mappings, and each case's declared `conditions` (executable signals `evaluateCaseConditions.js` consumes). |
 | `src/data/controlProfiles.js` | Baseline / Partial / Reference / Custom control postures. |
 | `src/data/victimModels.js` | Shared WebLLM model catalog for the local target. |
 | `src/data/frameworkMappings.js` | Control set, framework references, `OWASP_PUBLISHED_CROSSWALK`, `FRAMEWORK_VERSIONS`. |
 | `src/data/mitigationMappings.js` | ATLAS mitigation refs + project-defined action guidance. |
-| `src/reports/reportGenerator.js` | Markdown / JSON / HTML export, built around the agent-run + Evidence Contract shape — not the deleted probe-finding shape. |
+| `src/reports/reportGenerator.js` | Markdown / JSON / HTML export, built around the agent-run + Evidence Contract shape — not the deleted probe-finding shape. Has a UI surface now: `ReportPanel.jsx`. |
+| `src/reports/reportExport.js` / `evidenceContractExport.js` | Pure stale-export gating (`STALE_EXPORT_CONFIRMATION_REQUIRED`) for the Report tab and the Evidence Contract download respectively — same contract, applied independently in each place. |
 | `src/storage.js` | `AGENT_RUNS_KEY` only — completed agent runs, capped at 20. No probe-flow state persists; there is no "resume a half-configured case" concept in agent mode. |
 | `controls/`, `docs/` | Project-defined control set and framework relevance notes. |
+| `e2e/` | Playwright critical-flow tests (`npm run test:e2e`) — Sample Replay only, no live credentials needed in CI. |
 
 ## Conventions that matter
 
@@ -107,11 +114,18 @@ exfiltration path some cases exist to test.
 ## Current state
 
 Agent-only, wired end to end in the browser: pick a case, pick a control profile, point it at a
-live API target or a local WebLLM model, run it, and see the ReAct trace, the verdict, and the
-Evidence Contract. `runCaseAcrossProfiles` runs the comparative arm — same case, same model,
-Baseline vs. Reference — which is the headline demonstration, not single-turn-vs-agent.
+live API target or a local WebLLM model, run it, and work the result through the
+`InvestigationWorkspace`'s Compare/Trace/Evidence/Report tabs. `runCaseAcrossProfiles` runs the
+comparative arm — same case, same model, Baseline vs. Reference — which is the headline
+demonstration, not single-turn-vs-agent. A persistent `RunContextSummary` strip tracks whether
+the displayed result still matches the current form settings (current/stale/degraded/error),
+naming exactly which fields changed and offering a rerun action when it doesn't. Report exports
+(Markdown/HTML/JSON) and the Evidence Contract JSON download both refuse a stale export without
+explicit confirmation, then label it historical.
 
-508 tests, lint clean, build succeeds. The single-turn probe flow (`payloads.js`, `clusters.js`,
+572 vitest tests + 12 Playwright critical-flow tests (`npm run test:e2e`, Sample Replay only, no
+live credentials needed), lint clean, build clean, a CI-enforced bundle budget
+(`npm run check-budget`). The single-turn probe flow (`payloads.js`, `clusters.js`,
 `FindingCard`, `FindingsReport`, the batch/judge machinery, and several other components) was
 deleted outright rather than kept alongside agent mode — agents are the only mode now, and
 nothing in the harness executes single-turn probes.
