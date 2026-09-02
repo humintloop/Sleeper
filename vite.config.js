@@ -20,7 +20,7 @@ export default defineConfig({
     'import.meta.env.VITE_GIT_COMMIT': JSON.stringify(git.revision),
     'import.meta.env.VITE_GIT_DIRTY': JSON.stringify(git.dirty),
   },
-  base: '/SLEEPER/',
+  base: '/Sleeper/',
   optimizeDeps: {
     exclude: ['@mlc-ai/web-llm'],
   },

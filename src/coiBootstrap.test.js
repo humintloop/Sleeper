@@ -35,7 +35,7 @@ describe('cross-origin isolation bootstrap', () => {
   it('registers the public worker and reloads once when it first becomes active', async () => {
     const env = environment();
     const result = await ensureCrossOriginIsolation(env);
-    expect(env.navigatorObject.serviceWorker.register).toHaveBeenCalledWith('/SLEEPER/coi-serviceworker.js');
+    expect(env.navigatorObject.serviceWorker.register).toHaveBeenCalledWith('/Sleeper/coi-serviceworker.js');
     expect(result.status).toBe('reloading');
     expect(env.windowObject.location.reload).toHaveBeenCalledOnce();
   });
