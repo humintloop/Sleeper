@@ -143,15 +143,16 @@ a live-model run is stochastic and reported per trial, not as a single fixed pat
 
 ## Evidence Discipline
 
-Every finding records what it actually permits you to claim, on three axes:
+Take one concrete case: a run denies a proposed `send_email` call. That tells you Sleeper's own
+gate blocked it — a real, citable fact about this harness's control point. It does not tell you
+a production system would have done the same, and it says nothing about *why* the model proposed
+the call unless a real model was the one deciding.
 
-- **Evidence class (E1–E5).** Observation → runtime characterization → enforcement →
-  persistence/replay resistance → isolation. Nothing Sleeper produces reaches E4 or E5, and
-  it says so — enforced in code, not just documented.
-- **Oracle independence (I0–I2).** Who produced the verdict: self-authored, independently
-  reimplemented, or an independent sensor the target does not control. Sleeper is I0.
-- **Status.** Mapped / executed / independently reviewed / certified. A framework crosswalk is
-  E1 material regardless of how many requirements it covers.
+Every finding records what it actually permits you to claim this way, on three axes: evidence
+class (E1–E5, capped at E3 for anything this project produces — enforced in code, not just
+documented), oracle independence (I0–I2, always I0 here), and status (mapped / executed /
+independently reviewed / certified). Full taxonomy, more worked examples, and an
+audit-practitioner cross-reference: [`docs/evidence-classes.md`](./docs/evidence-classes.md).
 
 Two consequences worth stating up front:
 

@@ -160,15 +160,12 @@ Per-case harness specifics:
 
 ## Evidence discipline
 
-Every finding records what it actually permits its author to claim, on three axes:
-
-- **Evidence class (E1–E5).** E1 observation · E2 runtime characterization · E3 enforcement ·
-  E4 persistence/replay resistance · E5 isolation boundary. No Sleeper output reaches E4 or E5 —
-  enforced in code (`assertClaimableEvidenceClass`), not just documented.
-- **Oracle independence (I0–I2).** Who produced the verdict: self-authored, independently
-  reimplemented, or an independent sensor the target does not control. Every run here is I0
-  unless stated otherwise.
-- **Status.** Mapped / executed / independently reviewed / certified.
+Every finding records what it actually permits its author to claim, on three axes: evidence
+class (E1–E5), oracle independence (I0–I2), and status (mapped / executed / independently
+reviewed / certified). Full taxonomy, a plain-English worked example, and the audit-practitioner
+cross-reference live in [`evidence-classes.md`](./evidence-classes.md) — self-authored by this
+project, not an external standard. No Sleeper output reaches E4 or E5, enforced in code
+(`assertClaimableEvidenceClass`), and every run here is I0 unless stated otherwise.
 
 Applied to each run mode:
 
