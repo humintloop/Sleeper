@@ -21,12 +21,12 @@ export async function ensureCrossOriginIsolation({
       value: true,
     });
   }
+  // The early return above already handles crossOriginIsolated === true, so
+  // reaching this point on the reloaded page means the one automatic reload
+  // did not fix it — most likely service workers are blocked by browser
+  // policy or an extension, not a timing issue a second reload would solve.
   if (reloadedBySelf) {
-    return {
-      status: navigatorObject.serviceWorker.controller
-        ? 'reload_completed'
-        : 'reload_completed_without_controller',
-    };
+    return { status: 'reload_completed_still_not_isolated' };
   }
 
   try {
@@ -34,8 +34,15 @@ export async function ensureCrossOriginIsolation({
     const readyRegistration = registration.active
       ? registration
       : await navigatorObject.serviceWorker.ready;
-    if (readyRegistration?.active && !navigatorObject.serviceWorker.controller) {
-      windowObject.sessionStorage?.setItem(RELOAD_KEY, 'not_controlling');
+    // Check crossOriginIsolated itself, not serviceWorker.controller: the
+    // worker's activate handler calls clients.claim(), which can make it
+    // this page's controller before this check runs. That does not help —
+    // the top-level document's response headers were already fixed at
+    // navigation time, before the worker existed, so crossOriginIsolated
+    // stays false regardless of controller state until an actual reload
+    // re-fetches the document through the now-active worker.
+    if (readyRegistration?.active && !windowObject.crossOriginIsolated) {
+      windowObject.sessionStorage?.setItem(RELOAD_KEY, 'not_isolated');
       windowObject.location.reload();
       return { status: 'reloading', worker_url: workerUrl };
     }

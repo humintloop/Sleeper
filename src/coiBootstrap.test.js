@@ -40,10 +40,35 @@ describe('cross-origin isolation bootstrap', () => {
     expect(env.windowObject.location.reload).toHaveBeenCalledOnce();
   });
 
-  it('does not create a reload loop after its own reload marker', async () => {
+  it('still reloads when the service worker claims the page but crossOriginIsolated remains false', async () => {
+    // clients.claim() in the SW's activate handler can make it the page's
+    // controller before this check runs, in some browsers reliably so. The
+    // response headers for a document already in flight before the worker
+    // existed can never retroactively change, so crossOriginIsolated stays
+    // false regardless of controller state — a reload is still required.
     const env = environment();
-    env.windowObject.sessionStorage.setItem('sleeper-coi-reload', 'not_controlling');
-    expect(await ensureCrossOriginIsolation(env)).toEqual({ status: 'reload_completed_without_controller' });
+    env.navigatorObject.serviceWorker.controller = { postMessage: vi.fn() };
+    const result = await ensureCrossOriginIsolation(env);
+    expect(result.status).toBe('reloading');
+    expect(env.windowObject.location.reload).toHaveBeenCalledOnce();
+  });
+
+  it('reports already_isolated on the reloaded page when the reload fixed it, without a second reload', async () => {
+    const env = environment({ windowObject: { crossOriginIsolated: true } });
+    env.windowObject.sessionStorage.setItem('sleeper-coi-reload', 'not_isolated');
+    expect(await ensureCrossOriginIsolation(env)).toEqual({ status: 'already_isolated' });
+    expect(env.windowObject.location.reload).not.toHaveBeenCalled();
+    expect(env.navigatorObject.serviceWorker.register).not.toHaveBeenCalled();
+  });
+
+  it('does not create a reload loop after its own reload marker, even if still not isolated', async () => {
+    // One automatic reload only, ever, per tab session — if crossOriginIsolated
+    // is still false after that, further reloads would not help (this is a
+    // browser/policy-level block on service workers, not a timing race) and
+    // looping would just thrash the page.
+    const env = environment();
+    env.windowObject.sessionStorage.setItem('sleeper-coi-reload', 'not_isolated');
+    expect(await ensureCrossOriginIsolation(env)).toEqual({ status: 'reload_completed_still_not_isolated' });
     expect(env.windowObject.location.reload).not.toHaveBeenCalled();
     expect(env.navigatorObject.serviceWorker.register).not.toHaveBeenCalled();
   });
