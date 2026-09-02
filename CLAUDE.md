@@ -44,8 +44,10 @@ live-API target needs neither WebGPU nor a local download.
 
 | Path | Role |
 |---|---|
-| `src/App.jsx` | The whole shell. ~125 lines: token object `C`, `STAGE` (`HOME` / `AGENT_LAB` only), `GlobalStyle`, and a two-branch render. No compatibility gating or business logic lives here — device/capability checks are scoped to `AgentCaseRunner`'s Local Model target, and everything else is in `src/harness/`. |
-| `src/components/DossierHome.jsx` | Home screen. One entry point: "Run agent case." Headline copy leads with the Baseline-vs-Reference control-profile comparison. |
+| `src/App.jsx` | The whole shell: token object `C`, `STAGE` (`HOME` / `SCENE` / `AGENT_LAB`), `GlobalStyle`, a three-branch render, and the scene→lab run handoff. The three stages are a narrative in that order — consequence, how, proof. No compatibility gating or business logic lives here — device/capability checks are scoped to `AgentCaseRunner`'s Local Model target, and everything else is in `src/harness/`. |
+| `src/components/IncidentMemoHome.jsx` | Home screen: the incident memo. Leads with the consequence, for the audience deciding on a rollout, and carries a "skip the story" link straight to the lab for the audience that already believes the premise. Replaced `DossierHome.jsx` (a leftover ELICIT name whose copy led with the control-profile comparison). |
+| `src/components/SceneWalkthrough.jsx` | The demo. Runs the real Baseline Sample Replay of NR-AGT-001 through `runAgentAssessment` and renders **that run's own event stream** as the interface it would have happened in, then hands the same result object to the lab. Not a mock, and not a re-run. |
+| `src/data/storyScene.js` | The narrative layer over NR-AGT-001: the persona, the memo copy, the fixture-derived email split, `deriveSceneBeats`, and `storyRunParams` — the single definition of the arguments the scene runs with. |
 | `src/components/AgentCaseRunner.jsx` | **Start here for the UI.** Case + profile + target (live API or local model) → run → `InvestigationWorkspace`'s Compare/Trace/Evidence/Report tabs, plus run history read from `storage.js`. |
 | `src/components/RunContextSummary.jsx` | Persistent context strip above the workspace: case/variant/profile/target/judge/trials/configuration digest, and the derived idle/running/current/stale/degraded/error state with a field-level diff and rerun action when stale. |
 | `src/components/RunHistory.jsx` | Locally retained runs, grouped by comparison batch — one row per comparison, members' verdicts on it, records and their Evidence Contracts one level down. A record's `batchId` is what groups it; records without one stand alone. |
@@ -131,7 +133,25 @@ exfiltration path some cases exist to test.
 
 ## Current state
 
-Agent-only, wired end to end in the browser: pick a case, pick a control profile, point it at a
+The app opens on a story and ends in evidence. The home screen is an incident memo — the
+consequence stated plainly, marked simulated in the header rule, with the run/profile/target that
+produced the claim named underneath. "Show me the run" plays that run as the scene it would have
+happened in, and "open the evidence" hands the same result into the lab, which is unchanged.
+
+**The story layer asserts nothing the harness does not support, and every claim it makes is
+tested.** `storyScene.test.js` runs the Baseline replay and asserts it really does execute a send on
+untrusted instruction to the seeded address — so the memo's past-tense claim fails a test rather
+than quietly becoming false — and asserts the copy never says a control is effective, compliant or
+protective. The scene derives its closing line (`replyMentionsUntrustedCalls`) rather than narrating
+it, and stays silent when the run gives no basis for it. New narrative copy follows that rule: if a
+sentence is about the run, compute it; if it cannot be computed, do not write it.
+
+`storyRunParams` exists because the scene's result is handed to the lab and compared field by field
+against the live form. Any argument the scene leaves defaulted that the runner sets explicitly gives
+a different configuration digest and the visitor's own run arrives marked STALE. A test asserts the
+two configurations are equal; keep it that way when either side changes.
+
+Beyond that: pick a case, pick a control profile, point it at a
 live API target or a local WebLLM model, run it, and work the result through the
 `InvestigationWorkspace`'s Compare/Trace/Evidence/Report tabs. `runCaseAcrossProfiles` runs the
 comparative arm — same case, same model, Baseline vs. Reference — which is the headline
@@ -141,12 +161,17 @@ naming exactly which fields changed and offering a rerun action when it doesn't.
 (Markdown/HTML/JSON) and the Evidence Contract JSON download both refuse a stale export without
 explicit confirmation, then label it historical.
 
-582 vitest tests + 12 Playwright critical-flow tests (`npm run test:e2e`, Sample Replay only, no
+598 vitest tests + 15 Playwright critical-flow tests (`npm run test:e2e`, Sample Replay only, no
 live credentials needed), lint clean, build clean, a CI-enforced bundle budget
 (`npm run check-budget`). The single-turn probe flow (`payloads.js`, `clusters.js`,
 `FindingCard`, `FindingsReport`, the batch/judge machinery, and several other components) was
 deleted outright rather than kept alongside agent mode — agents are the only mode now, and
 nothing in the harness executes single-turn probes.
+
+The persona (`FIXTURE_PERSONA`) is scoped to case 1 on purpose. NR-AGT-002 runs across a deploy
+window and NR-AGT-003A/B drive an MCP-connected coding agent; a marketing coordinator does not do
+those things, so cases 2 and 3 keep their own engineer actors. One persona across all four would buy
+narrative consistency with a scenario that is no longer credible.
 
 Two framework-mapping judgment calls remain project-defined rather than sourced, and are
 flagged as such in `docs/agent-module-plan.md`: the AIUC-1 3a/3b requirement allocation, and
