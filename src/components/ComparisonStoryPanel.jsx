@@ -45,6 +45,32 @@ function targetIdentity(outcome) {
 }
 
 /**
+ * The one sentence this whole screen exists to produce.
+ *
+ * `findMaterialDifferences` below enumerates every field that differs, which
+ * is what a reviewer needs when they are already reading closely. This is the
+ * other job: whether turning controls on changed anything at all, stated once,
+ * before the reader has parsed three columns of flow steps.
+ *
+ * Deliberately phrased as an observation about this run, never as a claim
+ * about the controls in general — see CLAUDE.md on conformance language.
+ */
+export function summarizeControlDelta(results, profileOrder = PROFILE_ORDER) {
+  const present = profileOrder.filter(id => results?.[id]);
+  if (present.length < 2) return null;
+  const verdictChanged = new Set(present.map(id => results[id]?.verdict?.verdict ?? null)).size > 1;
+  const gateChanged = new Set(present.map(id => summarizeRun(results[id]).blocked)).size > 1;
+  const headline = verdictChanged && gateChanged
+    ? 'The control profile changed both the gate decision and the verdict.'
+    : verdictChanged
+      ? 'The control profile changed the verdict.'
+      : gateChanged
+        ? 'The control profile changed the gate decision, but every profile reached the same verdict.'
+        : 'No profile differed from any other on gate decision or verdict in this run.';
+  return { verdictChanged, gateChanged, changed: verdictChanged || gateChanged, headline };
+}
+
+/**
  * A concise summary of what actually differs between the compared members —
  * not every field, just the ones a reader would otherwise have to diff by
  * eye across cards: verdict, whether the gate blocked the path, and whether
@@ -101,6 +127,38 @@ function summarizeRun(outcome) {
   return { attemptedTools, untrustedSources, blocked, executedTools, deniedTools };
 }
 
+function DeltaStrip({ C, results, profiles, delta }) {
+  const present = PROFILE_ORDER.filter(id => results?.[id]);
+  return (
+    <div style={{ border: `1px solid ${C.border}`, borderTop: `2px solid ${delta.changed ? C.brass : C.borderHi}`, background: C.panel, borderRadius: C.radius, padding: '13px 15px' }}>
+      <div style={{ color: C.text1, fontSize: C.size.head, fontWeight: 600, lineHeight: 1.35, maxWidth: 760 }}>
+        {delta.headline}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${present.length}, minmax(0, 1fr))`, gap: 1, background: C.border, marginTop: 13 }}>
+        {present.map(id => {
+          const outcome = results[id];
+          const verdict = outcome?.verdict?.verdict;
+          const color = getVerdictColor(verdict, C);
+          const { blocked } = summarizeRun(outcome);
+          return (
+            <div key={id} style={{ background: C.surface, padding: '10px 12px', minWidth: 0 }}>
+              <div style={{ color: C[profiles?.[id]?.color] || C.brass, fontSize: C.size.micro, fontWeight: 800 }}>
+                {profiles?.[id]?.label || id}
+              </div>
+              <div style={{ color, fontSize: C.size.small, fontWeight: 800, fontFamily: C.mono, marginTop: 6, overflowWrap: 'anywhere' }}>
+                {getVerdictLabel(verdict)}
+              </div>
+              <div style={{ color: blocked ? C.green : C.red, fontSize: C.size.micro, marginTop: 5 }}>
+                {blocked ? 'Path blocked' : 'Path not blocked'}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function FlowStep({ C, icon: Icon, label, children, tone = 'text2', last = false }) {
   const color = C[tone] || C.text2;
   return (
@@ -112,8 +170,8 @@ function FlowStep({ C, icon: Icon, label, children, tone = 'text2', last = false
         {!last && <div style={{ width: 1, flex: 1, minHeight: 13, background: C.borderHi }} />}
       </div>
       <div style={{ paddingBottom: last ? 0 : 11, minWidth: 0 }}>
-        <div style={{ color: C.text3, fontSize: 9.5, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 3 }}>{label}</div>
-        <div style={{ color: C.text1, fontSize: 12, lineHeight: 1.45, overflowWrap: 'anywhere' }}>{children}</div>
+        <div style={{ color: C.text3, fontSize: C.size.micro, fontWeight: 800, letterSpacing: .2, marginBottom: 3 }}>{label}</div>
+        <div style={{ color: C.text1, fontSize: C.size.small, lineHeight: 1.45, overflowWrap: 'anywhere' }}>{children}</div>
       </div>
     </div>
   );
@@ -125,7 +183,7 @@ function ToolList({ C, tools }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
       {tools.map((tool, index) => (
         <span key={tool} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-          <span title={tool} style={{ fontFamily: C.mono, fontSize: 10.5, padding: '2px 5px', border: `1px solid ${C.borderHi}`, background: C.ink, color: C.text1, borderRadius: 2 }}>{friendlyToolName(tool)}</span>
+          <span title={tool} style={{ fontFamily: C.mono, fontSize: C.size.micro, padding: '2px 5px', border: `1px solid ${C.borderHi}`, background: C.ink, color: C.text1, borderRadius: 2 }}>{friendlyToolName(tool)}</span>
           {index < tools.length - 1 && <ArrowDown size={10} color={C.text3} style={{ transform: 'rotate(-90deg)' }} />}
         </span>
       ))}
@@ -137,8 +195,8 @@ function ProfileStory({ C, profile, outcome, selected, onInspect }) {
   if (!outcome) {
     return (
       <div style={{ border: `1px dashed ${C.borderHi}`, background: C.panel, borderRadius: 2, padding: 15, minHeight: 210 }}>
-        <div style={{ color: C.text1, fontSize: 13, fontWeight: 800 }}>{profile.label}</div>
-        <div style={{ color: C.text3, fontSize: 12, lineHeight: 1.5, marginTop: 8 }}>Not run yet.</div>
+        <div style={{ color: C.text1, fontSize: C.size.small, fontWeight: 800 }}>{profile.label}</div>
+        <div style={{ color: C.text3, fontSize: C.size.small, lineHeight: 1.5, marginTop: 8 }}>Not run yet.</div>
       </div>
     );
   }
@@ -158,10 +216,10 @@ function ProfileStory({ C, profile, outcome, selected, onInspect }) {
     <article style={{ border: `1px solid ${C.border}`, borderTop: `3px solid ${profileColor}`, background: C.panel, borderRadius: 2, padding: 15, animation: 'fadeUp .24s ease-out' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start', marginBottom: 14 }}>
         <div>
-          <div style={{ color: profileColor, fontSize: 10, fontWeight: 900, letterSpacing: 1.2, textTransform: 'uppercase' }}>{profile.label}</div>
-          <div style={{ color: C.text3, fontSize: 10.5, marginTop: 3 }}>{profile.description}</div>
+          <div style={{ color: profileColor, fontSize: C.size.micro, fontWeight: 900, letterSpacing: .2 }}>{profile.label}</div>
+          <div style={{ color: C.text3, fontSize: C.size.micro, marginTop: 3 }}>{profile.description}</div>
         </div>
-        <div style={{ color: verdictColor, border: `1px solid ${verdictColor}55`, padding: '3px 6px', borderRadius: 2, fontSize: 9.5, fontWeight: 900, letterSpacing: .5, whiteSpace: 'nowrap' }}>
+        <div style={{ color: verdictColor, border: `1px solid ${verdictColor}55`, padding: '3px 6px', borderRadius: 2, fontSize: C.size.micro, fontWeight: 900, letterSpacing: .5, whiteSpace: 'nowrap' }}>
           {getVerdictLabel(verdict)}
         </div>
       </div>
@@ -182,7 +240,7 @@ function ProfileStory({ C, profile, outcome, selected, onInspect }) {
         {effectText}
       </FlowStep>
 
-      <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${C.border}`, display: 'grid', gap: 3, fontSize: 10, color: C.text3, fontFamily: C.mono }}>
+      <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${C.border}`, display: 'grid', gap: 3, fontSize: C.size.micro, color: C.text3, fontFamily: C.mono }}>
         <div>Manifest: {truncateDigest(identity.manifestDigest)}</div>
         <div>Configuration: {truncateDigest(identity.configurationDigest)}</div>
         {identity.timestamp && <div>{new Date(identity.timestamp).toLocaleString()}</div>}
@@ -191,7 +249,7 @@ function ProfileStory({ C, profile, outcome, selected, onInspect }) {
       <button
         onClick={() => onInspect?.(profile.id, outcome)}
         aria-pressed={selected}
-        style={{ width: '100%', marginTop: 14, padding: '7px 9px', cursor: 'pointer', borderRadius: 2, border: `1px solid ${selected ? profileColor : C.borderHi}`, background: selected ? `${profileColor}12` : 'transparent', color: selected ? profileColor : C.text2, fontSize: 10.5, fontWeight: 800, letterSpacing: .7 }}
+        style={{ width: '100%', marginTop: 14, padding: '7px 9px', cursor: 'pointer', borderRadius: 2, border: `1px solid ${selected ? profileColor : C.borderHi}`, background: selected ? `${profileColor}12` : 'transparent', color: selected ? profileColor : C.text2, fontSize: C.size.micro, fontWeight: 800, letterSpacing: .7 }}
       >
         {selected ? 'DETAILS SHOWN BELOW' : 'OPEN FULL TRACE & EVIDENCE'}
       </button>
@@ -204,26 +262,28 @@ export default function ComparisonStoryPanel({ C, results, profiles, selectedId,
   if (available.length === 0) return null;
   const deterministic = available.every(id => results[id]?.contract?.run_mode === 'deterministic_replay');
   const differences = findMaterialDifferences(results, PROFILE_ORDER);
+  const delta = summarizeControlDelta(results, PROFILE_ORDER);
 
   return (
     <section aria-labelledby="comparison-story-title" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div>
-        <div id="comparison-story-title" style={{ color: C.brass, fontSize: 12, fontWeight: 900, letterSpacing: 1.4, textTransform: 'uppercase' }}>
+        <div id="comparison-story-title" style={{ color: C.brass, fontSize: C.size.small, fontWeight: 900, letterSpacing: .2 }}>
           What happened under each control setup
         </div>
-        <div style={{ color: C.text2, fontSize: 12.5, lineHeight: 1.55, marginTop: 5, maxWidth: 820 }}>
+        <div style={{ color: C.text2, fontSize: C.size.small, lineHeight: 1.55, marginTop: 5, maxWidth: 820 }}>
           Follow the same path from untrusted content to tool intent, harness decision, and simulated effect.
           {deterministic
             ? ' Sample Replay uses the same scripted malicious intent in every column.'
             : ' Live and local targets use separate model calls, so model behavior may vary between columns.'}
         </div>
       </div>
+      {delta && <DeltaStrip C={C} results={results} profiles={profiles} delta={delta} />}
       {differences.length > 0 && (
         <div role="status" style={{ background: C.surface, border: `1px solid ${C.borderHi}`, borderLeft: `3px solid ${C.brass}`, borderRadius: 2, padding: '10px 13px' }}>
-          <div style={{ color: C.text3, fontSize: 10, fontWeight: 800, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 6 }}>
+          <div style={{ color: C.text3, fontSize: C.size.micro, fontWeight: 800, letterSpacing: .2, marginBottom: 6 }}>
             Material differences across profiles
           </div>
-          <ul style={{ margin: 0, paddingLeft: 18, color: C.text2, fontSize: 12, lineHeight: 1.5 }}>
+          <ul style={{ margin: 0, paddingLeft: 18, color: C.text2, fontSize: C.size.small, lineHeight: 1.5 }}>
             {differences.map((line, i) => <li key={i}>{line}</li>)}
           </ul>
         </div>

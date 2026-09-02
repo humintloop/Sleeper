@@ -40,18 +40,18 @@ export default function ControlProfileSelector({ C, profiles, selectedId, onSele
             <button key={profile.id} aria-pressed={active} disabled={disabled} onClick={() => onSelect(profile.id)} style={{
               textAlign: 'left', padding: '13px 14px', borderRadius: 2, cursor: disabled ? 'not-allowed' : 'pointer',
               background: active ? C.surface : C.panel,
-              border: `1px solid ${active ? color : C.border}`,
-              borderLeft: `3px solid ${active ? color : C.border}`,
+              border: `1px solid ${active ? color : C.borderHi}`,
+              borderLeft: `3px solid ${active ? color : C.borderHi}`,
             }}>
-              <div style={{ fontSize: 13, color: active ? color : C.text1, fontWeight: 800, letterSpacing: .3, marginBottom: 4 }}>
+              <div style={{ fontSize: C.size.small, color: active ? color : C.text1, fontWeight: 800, letterSpacing: .3, marginBottom: 4 }}>
                 {profile.label}
               </div>
-              <div style={{ fontSize: 12, color: C.text3, lineHeight: 1.45, marginBottom: 10 }}>
+              <div style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.45, marginBottom: 10 }}>
                 {profile.description}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {controls && Object.entries(controls).map(([key, value]) => (
-                  <div key={key} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: C.mono, fontSize: 10.5 }}>
+                  <div key={key} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: C.mono, fontSize: C.size.micro }}>
                     <span style={{ color: C.text3 }}>{CONTROL_LABELS[key]}</span>
                     <span style={{ color: value === 'off' ? C.text3 : color, fontWeight: 700 }}>
                       {VALUE_LABELS[value] || String(value).toUpperCase()}
@@ -66,7 +66,7 @@ export default function ControlProfileSelector({ C, profiles, selectedId, onSele
 
       {selectedId === 'custom' && (
         <div style={{ background: C.panel, border: `1px solid ${C.borderHi}`, borderLeft: `3px solid ${C.brass}`, borderRadius: 2, padding: '12px 14px' }}>
-          <div style={{ fontSize: 11, color: C.brass, letterSpacing: 1.2, fontWeight: 800, marginBottom: 10, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: C.size.micro, color: C.brass, letterSpacing: .2, fontWeight: 800, marginBottom: 10 }}>
             Custom control configuration
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 8 }}>
@@ -75,14 +75,14 @@ export default function ControlProfileSelector({ C, profiles, selectedId, onSele
                 textAlign: 'left', padding: '9px 11px', borderRadius: 2, cursor: disabled ? 'not-allowed' : 'pointer',
                 background: C.surface, border: `1px solid ${C.borderHi}`,
               }}>
-                <div style={{ fontSize: 10, color: C.text3, letterSpacing: 1, marginBottom: 3 }}>{CONTROL_LABELS[key]}</div>
-                <div style={{ fontSize: 12, color: C.brass, fontWeight: 800, fontFamily: C.mono }}>
+                <div style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: 1, marginBottom: 3 }}>{CONTROL_LABELS[key]}</div>
+                <div style={{ fontSize: C.size.small, color: C.brass, fontWeight: 800, fontFamily: C.mono }}>
                   {VALUE_LABELS[customControls[key]] || String(customControls[key]).toUpperCase()}
                 </div>
               </button>
             ))}
           </div>
-          <div style={{ fontSize: 11, color: C.text3, marginTop: 8 }}>Click a setting to cycle through its values.</div>
+          <div style={{ fontSize: C.size.micro, color: C.text3, marginTop: 8 }}>Click a setting to cycle through its values.</div>
         </div>
       )}
     </div>

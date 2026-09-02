@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import DossierHome from './components/DossierHome';
+import IncidentMemoHome from './components/IncidentMemoHome';
+import SceneWalkthrough from './components/SceneWalkthrough';
 import AgentCaseRunner from './components/AgentCaseRunner';
 import { loadAgentRuns } from './storage';
 
@@ -20,12 +21,27 @@ import { loadAgentRuns } from './storage';
 // was and wasn't done in this pass.
 const C = {
   // Surfaces — canvas → raised → inset, darkest to least-dark.
+  //
+  // The elevation ramp was widened on 2026-09-02. The previous values
+  // (panel #0A0A09, surface #0D0D0C) sat ~3 points of luminance above the
+  // canvas — a 1.03:1 surface-to-surface ratio, which is not perceptible on
+  // a projector and made every bordered panel read as a floating outline on
+  // flat black rather than as a raised plane. The ramp below is ~1.09:1
+  // canvas→raised and ~1.06:1 raised→inset-content, which is visible without
+  // turning the app grey. Every text and boundary token was re-measured
+  // against the new surfaces (see docs/accessibility-audit.md):
+  //   text3 #8B877A  → 5.22:1 on panel, 4.90:1 on surface (AA normal text)
+  //   borderHi #666663 → 3.25:1 on panel, 3.06:1 on surface (WCAG 1.4.11)
   bg:       '#050505', // canvas
-  panel:    '#0A0A09', // raised
-  surface:  '#0D0D0C', // raised, slightly lighter (form fields, nested content)
-  hover:    '#15150F', // hover state over a raised surface
+  panel:    '#121211', // raised
+  surface:  '#191917', // raised, slightly lighter (form fields, nested content)
+  hover:    '#212119', // hover state over a raised surface
   ink:      '#050505', // inset (code/JSON blocks) — same value as canvas, named for role not reuse
-  border:   '#212120', // quiet divider — decorative, not a component boundary
+  // Quiet divider: section rules and the edges of non-interactive cards. It is
+  // 1.30:1 on panel and exempt from WCAG 1.4.11 as decoration — which means it
+  // must never be the only signal that something is selectable. Interactive
+  // boundaries use `borderHi`.
+  border:   '#2A2A27',
   // Default interactive-component boundary. Was #3A3A37 (1.74:1 against
   // panel — fails WCAG 1.4.11's 3:1 non-text threshold, measured in
   // docs/accessibility-audit.md) — used on a large number of actually-
@@ -82,6 +98,26 @@ const C = {
   mono:     '"Geist Mono", ui-monospace, monospace',
   sans:     '"Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
 
+  // Type scale — five steps, and deliberately only five. Before this the app
+  // used 9.5/10/10.5/11/11.5/12/12.5/13/14 — nine sizes inside a 4.5px band,
+  // where a half-pixel "step" is hierarchy the reader cannot actually see and
+  // the author still has to maintain. Each step below is a ≥18% jump, which
+  // reads as a level. Anything smaller than `micro` is not a size, it is a
+  // rounding error; anything between two steps belongs on one of them.
+  //
+  //   micro — IDs, digests, timestamps, metadata, eyebrow labels
+  //   small — dense UI copy, card bodies, controls
+  //   body  — narrative prose, the default
+  //   head  — panel and card titles
+  //   title — screen title, one per screen
+  size: {
+    micro: 11,
+    small: 13,
+    body:  15,
+    head:  19,
+    title: 28,
+  },
+
   // Radii — 2px (near-square, architectural) is the only radius used across
   // every panel/card/button/input in the app today (60+ call sites), with a
   // single deliberate exception (999px, a true pill shape). New code should
@@ -93,11 +129,16 @@ const C = {
 
 // ── Stages ────────────────────────────────────────────────────────────────────
 // Agent-only: the single-turn probe flow's six other stages
-// (CASE/LOADING/SELECT/PROBE/TRIAGE/REPORT) are gone. Each
-// remaining screen owns its own navigation — DossierHome's entry card,
-// AgentCaseRunner's own HOME link — so there is no persistent header/stage
-// rail left to coordinate between them.
-const STAGE = { HOME: 'home', AGENT_LAB: 'agent_lab' };
+// (CASE/LOADING/SELECT/PROBE/TRIAGE/REPORT) are gone.
+//
+// Three now, and they are a narrative in that order — consequence, then how,
+// then proof. HOME is the incident memo: what happened, for someone deciding
+// whether to roll an assistant out. SCENE plays the same run in the interface
+// it would have happened in. AGENT_LAB is the evidence, unchanged. A reader
+// who already believes the premise skips straight to the lab from the memo,
+// and each screen still owns its own back navigation, so there is no
+// persistent header/stage rail to coordinate between them.
+const STAGE = { HOME: 'home', SCENE: 'scene', AGENT_LAB: 'agent_lab' };
 
 // ═══ Global style ═════════════════════════════════════════════════════════════
 function GlobalStyle({ C }) {
@@ -123,9 +164,14 @@ function GlobalStyle({ C }) {
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
       }
+      @media (max-width: 980px) {
+        .scene-grid { grid-template-columns: minmax(0, 1fr) !important; }
+        .scene-grid > * { border-right: none !important; }
+      }
       @media (max-width: 760px) {
         .home-hero-grid { grid-template-columns: minmax(0, 1fr) !important; }
         .agent-runner { padding: 20px 16px 48px !important; gap: 16px !important; }
+        .scene { padding: 20px 16px 48px !important; }
       }
     `}</style>
   );
@@ -133,6 +179,10 @@ function GlobalStyle({ C }) {
 
 export default function App() {
   const [stage, setStage] = useState(STAGE.HOME);
+  // The run the scene produced, handed to the lab so the evidence opens on the
+  // very run the visitor just watched rather than on a fresh one that merely
+  // resembles it. Null whenever the lab is entered directly.
+  const [handoff, setHandoff] = useState(null);
 
   return (
     <div style={{
@@ -149,15 +199,32 @@ export default function App() {
       <GlobalStyle C={C} />
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
         {stage === STAGE.HOME && (
-          <DossierHome
+          <IncidentMemoHome
             C={C}
-            onAgentLab={() => setStage(STAGE.AGENT_LAB)}
+            onScene={() => setStage(STAGE.SCENE)}
+            onAgentLab={() => { setHandoff(null); setStage(STAGE.AGENT_LAB); }}
             agentRunsCount={loadAgentRuns().length}
           />
         )}
 
+        {stage === STAGE.SCENE && (
+          <SceneWalkthrough
+            C={C}
+            onHome={() => setStage(STAGE.HOME)}
+            onEvidence={outcome => { setHandoff(outcome); setStage(STAGE.AGENT_LAB); }}
+          />
+        )}
+
         {stage === STAGE.AGENT_LAB && (
-          <AgentCaseRunner C={C} onHome={() => setStage(STAGE.HOME)} />
+          <AgentCaseRunner
+            C={C}
+            onHome={() => setStage(STAGE.HOME)}
+            // Remounts when a different run arrives, so the runner's initial
+            // state genuinely re-seeds from it instead of the handoff being
+            // read once and ignored on every later entry.
+            key={handoff?.manifestDigest ?? 'direct'}
+            handoff={handoff}
+          />
         )}
       </div>
     </div>

@@ -49,7 +49,7 @@ export default function InvestigationWorkspace({ C, tabs, defaultTabId }) {
               onClick={() => setActiveId(tab.id)}
               onKeyDown={event => onKeyDown(event, index)}
               style={{
-                padding: '9px 16px', fontSize: 12, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase',
+                padding: '9px 16px', fontSize: C.size.small, fontWeight: 800, letterSpacing: .2,
                 cursor: 'pointer', background: 'transparent', border: 'none', borderBottom: `2px solid ${selected ? C.brass : 'transparent'}`,
                 color: selected ? C.brass : C.text3, display: 'flex', alignItems: 'center', gap: 6,
                 marginBottom: -1,
@@ -58,7 +58,7 @@ export default function InvestigationWorkspace({ C, tabs, defaultTabId }) {
               {tab.label}
               {tab.badge != null && (
                 <span style={{
-                  fontSize: 10, fontWeight: 900, padding: '1px 6px', borderRadius: 2,
+                  fontSize: C.size.micro, fontWeight: 900, padding: '1px 6px', borderRadius: 2,
                   background: selected ? C.brassBg : C.surface, color: selected ? C.brass : C.text3,
                   border: `1px solid ${selected ? C.brass : C.borderHi}`,
                 }}>

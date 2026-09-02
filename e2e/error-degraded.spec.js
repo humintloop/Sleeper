@@ -11,11 +11,12 @@
 //       reading as a clean result — i.e. the display layer cannot silently
 //       drop the flag Phase 1's runAgentCase.js always records honestly.
 import { test, expect } from '@playwright/test';
+import { openLab } from './helpers.js';
 
 test.describe('error and degraded paths stay visibly labeled', () => {
   test('running against Live API with no key set reports an error, not a fabricated result', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: /Run agent case/ }).click();
+    await openLab(page);
     await page.getByRole('button', { name: 'LIVE API' }).click();
 
     await page.getByRole('button', { name: 'RUN SELECTED PROFILE' }).click();
@@ -47,14 +48,17 @@ test.describe('error and degraded paths stay visibly labeled', () => {
       localStorage.setItem('sleeper-agent-runs', JSON.stringify([record]));
     });
     await page.reload();
-    await page.getByRole('button', { name: /Run agent case/ }).click();
+    await openLab(page);
 
     const historyRow = page.getByText('External Email Injection to Internal Data Exfiltration').last();
     await expect(historyRow).toBeVisible();
     // The DEGRADED badge sits in the same collapsed row as the verdict —
-    // a reader cannot see "CONTROL_HELD" without also seeing "DEGRADED".
+    // a reader cannot see the verdict without also seeing "DEGRADED". The
+    // history row renders the verdict through getVerdictLabel like every other
+    // verdict surface, so the displayed text is "CONTROL HELD"; what this test
+    // pins is co-visibility in the collapsed row, not the exact spelling.
     const row = page.locator('button', { hasText: 'External Email Injection to Internal Data Exfiltration' }).last();
     await expect(row).toContainText('DEGRADED');
-    await expect(row).toContainText('CONTROL_HELD');
+    await expect(row).toContainText('CONTROL HELD');
   });
 });

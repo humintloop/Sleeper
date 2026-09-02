@@ -2,11 +2,12 @@
 // status announcements — exercised with real keyboard events, not just
 // reading the DOM for aria-* attributes.
 import { test, expect } from '@playwright/test';
+import { openLab, reopenSetup } from './helpers.js';
 
 test.describe('keyboard operability and live announcements', () => {
   test('the workspace tablist follows the WAI-ARIA tabs keyboard pattern (arrow keys move focus and selection, Home/End jump)', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: /Run agent case/ }).click();
+    await openLab(page);
     await page.getByRole('button', { name: 'RUN & COMPARE CONTROLS' }).click();
     await expect(page.getByText('current', { exact: true })).toBeVisible({ timeout: 15_000 });
 
@@ -35,7 +36,7 @@ test.describe('keyboard operability and live announcements', () => {
 
   test('the tab panel is correctly associated with its tab and only the active panel is visible', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: /Run agent case/ }).click();
+    await openLab(page);
     await page.getByRole('button', { name: 'RUN & COMPARE CONTROLS' }).click();
     await expect(page.getByText('current', { exact: true })).toBeVisible({ timeout: 15_000 });
 
@@ -49,13 +50,14 @@ test.describe('keyboard operability and live announcements', () => {
 
   test('the run-context state change is announced via a live region, not conveyed by color alone', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: /Run agent case/ }).click();
+    await openLab(page);
     await page.getByRole('button', { name: 'RUN & COMPARE CONTROLS' }).click();
     await expect(page.getByText('current', { exact: true })).toBeVisible({ timeout: 15_000 });
 
     const status = page.getByRole('status').filter({ hasText: 'Displayed result matches the current configuration.' });
     await expect(status).toHaveAttribute('aria-live', 'polite');
 
+    await reopenSetup(page);
     await page.getByRole('button', { name: /Baseline Profile/ }).first().click();
     // Same live region, new text — a screen reader gets told the state
     // changed without needing to re-scan the page.

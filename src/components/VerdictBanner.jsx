@@ -64,7 +64,7 @@ export default function VerdictBanner({ C = fallback, verdict, note, compact = f
         {getVerdictLabel(verdict)}
       </div>
       {note && (
-        <div style={{ marginTop: 5, fontSize: 13, color: C.text2 || C.text3, lineHeight: 1.45 }}>
+        <div style={{ marginTop: 5, fontSize: C.size.small, color: C.text2 || C.text3, lineHeight: 1.45 }}>
           {note}
         </div>
       )}

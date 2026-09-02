@@ -133,14 +133,14 @@ function truncate(text, max) {
 }
 
 function codeStyle(C) {
-  return { fontFamily: C.mono, fontSize: 11.5, background: C.ink, border: `1px solid ${C.border}`, borderRadius: 2, padding: '1px 5px', color: C.text1 };
+  return { fontFamily: C.mono, fontSize: C.size.micro, background: C.ink, border: `1px solid ${C.border}`, borderRadius: 2, padding: '1px 5px', color: C.text1 };
 }
 
 export default function AgenticTracePanel({ C, run }) {
   if (!run) {
     return (
       <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 2, padding: 18 }}>
-        <div style={{ color: C.text3, fontSize: 13 }}>Run a case to see the ReAct loop&rsquo;s event stream here — every model turn, tool call, authorization decision, and result, in order.</div>
+        <div style={{ color: C.text3, fontSize: C.size.small }}>Run a case to see the ReAct loop&rsquo;s event stream here — every model turn, tool call, authorization decision, and result, in order.</div>
       </div>
     );
   }
@@ -149,7 +149,7 @@ export default function AgenticTracePanel({ C, run }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 11.5, color: C.text3 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: C.size.micro, color: C.text3 }}>
         <span>{run.turns} of {run.maxTurns} turns</span>
         <span>&middot;</span>
         <span>{STOP_REASON_LABEL[run.stopReason] || run.stopReason}</span>
@@ -161,12 +161,12 @@ export default function AgenticTracePanel({ C, run }) {
         )}
       </div>
       {run.degraded && run.degradations?.length > 0 && (
-        <div style={{ fontSize: 11.5, color: C.text3, lineHeight: 1.5 }}>
+        <div style={{ fontSize: C.size.micro, color: C.text3, lineHeight: 1.5 }}>
           {run.degradations.map((note, i) => <div key={i}>{note}</div>)}
         </div>
       )}
 
-      <div style={{ fontSize: 10.5, color: C.text3, lineHeight: 1.5, padding: '8px 10px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 2 }}>
+      <div style={{ fontSize: C.size.micro, color: C.text3, lineHeight: 1.5, padding: '8px 10px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 2 }}>
         <strong style={{ color: C.text2 }}>OBSERVED</strong> — a literal record of what happened, no judgment applied.{' '}
         <strong style={{ color: C.text2 }}>DERIVED</strong> — computed from observed facts by this harness&rsquo;s own
         deterministic policy (a gate decision, a detection match, the case-condition evaluator). No event below is an{' '}
@@ -184,15 +184,15 @@ export default function AgenticTracePanel({ C, run }) {
             <Icon size={14} color={color} style={{ flexShrink: 0, marginTop: 2 }} />
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' }}>
-                <span style={{ color, fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>{meta.label}</span>
-                <span style={{ color: C.text3, fontSize: 10, fontFamily: C.mono }}>T{event.turn}</span>
+                <span style={{ color, fontSize: C.size.micro, fontWeight: 800, letterSpacing: .2 }}>{meta.label}</span>
+                <span style={{ color: C.text3, fontSize: C.size.micro, fontFamily: C.mono }}>T{event.turn}</span>
                 {classification && (
-                  <span style={{ color: C.text3, fontSize: 9, fontWeight: 700, letterSpacing: .8, border: `1px solid ${C.borderHi}`, borderRadius: 2, padding: '1px 5px' }}>
+                  <span style={{ color: C.text3, fontSize: C.size.micro, fontWeight: 700, letterSpacing: .8, border: `1px solid ${C.borderHi}`, borderRadius: 2, padding: '1px 5px' }}>
                     {CLASSIFICATION_LABEL[classification] || classification.toUpperCase()}
                   </span>
                 )}
               </div>
-              <div style={{ color: C.text2, fontSize: 12.5, lineHeight: 1.5, overflowWrap: 'anywhere' }}>
+              <div style={{ color: C.text2, fontSize: C.size.small, lineHeight: 1.5, overflowWrap: 'anywhere' }}>
                 <EventDetail C={C} event={event} />
               </div>
             </div>

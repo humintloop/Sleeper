@@ -39,10 +39,11 @@ margin. No fix needed.
 | `brass` interaction accent on `bg` | 12.08:1 | Passes with margin |
 | `borderHi` divider on `panel` | **1.74:1** | **Fails 1.4.11 where a border is the only signal of an interactive boundary or state** |
 
-**Finding, not fixed here:** `borderHi` (#3A3A37) is the default (unselected/inactive) border
-color for a large number of pre-existing interactive elements across the whole app — case cards,
-profile cards, target toggles, and more — not something introduced in Phases 1–2. Its
-1.74:1 contrast against `panel` fails the 3:1 non-text threshold. Decorative borders are exempt
+**Finding, since fixed — see the 2026-09-02 re-measurement at the end of this document.**
+`borderHi` (then #3A3A37) is the default (unselected/inactive) border color for a large number of
+pre-existing interactive elements across the whole app — case cards, profile cards, target
+toggles, and more — not something introduced in Phases 1–2. Its 1.74:1 contrast against `panel`
+failed the 3:1 non-text threshold. Decorative borders are exempt
 from 1.4.11, but several of these borders are the primary visual signal that an element is
 selectable, which is in scope. Fixing this piecemeal across dozens of pre-existing call sites
 right before a token-system pass would mean doing the work twice. It is carried forward as a
@@ -99,8 +100,73 @@ alone carries a verdict or state distinction.
 - No actual screen-reader (VoiceOver/NVDA/JAWS) walkthrough — this audit checked the accessibility
   tree and ARIA structure, not real assistive-technology behavior. That gap should be named
   explicitly to anyone relying on this document, not glossed over.
-- The `borderHi` non-text-contrast finding above is identified, not fixed — deferred to the visual
-  token pass by design, to avoid duplicating the work.
+- The `borderHi` non-text-contrast finding above was identified here and deferred to the visual
+  token pass by design, to avoid duplicating the work. It was fixed in that pass — see the
+  2026-09-02 re-measurement below.
 - No automated accessibility linting (e.g. `eslint-plugin-jsx-a11y`, `axe-core`) wired into CI yet.
   Worth adding alongside the Playwright critical-flow tests this Phase 3 pass adds separately, as
   a follow-up rather than in this audit.
+
+---
+
+## Re-measurement — 2026-09-02 (elevation-ramp change)
+
+The surface tokens changed in the visual-hierarchy pass: `panel` #0A0A09 → #121211 and `surface`
+#0D0D0C → #191917, widening a canvas-to-raised step that was 1.03:1 (imperceptible, and invisible
+entirely on a projector) to 1.09:1. Raising the surfaces lowers the contrast of everything drawn on
+them, so every token in the tables above was re-measured against the new values rather than assumed
+to have survived.
+
+### Text (WCAG 1.4.3, AA normal text = 4.5:1)
+
+| Token | on `bg` #050505 | on `panel` #121211 | on `surface` #191917 |
+|---|---|---|---|
+| `text1` (#F4F2EA) | 18.18:1 | 16.72:1 | 15.71:1 |
+| `text2` (#B6B2A4) | 9.60:1 | 8.83:1 | 8.29:1 |
+| `text3` (#8B877A) | 5.67:1 | 5.22:1 | 4.90:1 |
+
+All three still clear 4.5:1 on every surface. `text3` on `surface` is the tightest at 4.90:1 and is
+the constraint on any further lightening of the ramp — `surface` cannot go much above #191917
+without either failing, or `text3` having to lighten with it.
+
+### Non-text UI components (WCAG 1.4.11, AA = 3:1)
+
+| Element | on `bg` | on `panel` | on `surface` | Verdict |
+|---|---|---|---|---|
+| `borderHi` (#666663) | 3.54:1 | 3.25:1 | 3.06:1 | Passes on every surface |
+| Focus outline (`amber` #C87844) | 6.04:1 | 5.56:1 | 5.22:1 | Passes with margin |
+| `brass` interaction accent (#CFC7B0) | 12.08:1 | 11.11:1 | 10.44:1 | Passes with margin |
+| `border` (#2A2A27) | 1.42:1 | 1.30:1 | 1.22:1 | Decorative only — see below |
+
+The original `borderHi` finding is resolved: at #666663 it passes 1.4.11 against all three
+surfaces, with `surface` the tightest at 3.06:1.
+
+### New finding, fixed in the same pass
+
+The original audit measured `borderHi` but did not check `border`, and `border` was in fact the
+unselected boundary on three sets of genuinely interactive elements — the case cards, the executable
+variant cards, and the control-profile cards. On those, the border is the primary signal that the
+element is selectable, so 1.4.11 applies and 1.30:1 fails it. (This predates the elevation change;
+at the old `border` #212120 on the old `panel` it was worse.)
+
+Fixed by moving all five of those call sites to `borderHi`. The rule the token comments now carry:
+`border` is decoration — section rules, the edge of a non-interactive card — and must never be the
+only signal that something is selectable; interactive boundaries use `borderHi`.
+
+### Reflow, re-tested (WCAG 1.4.10)
+
+Re-run at 320 CSS px because this pass changed the DOM, not just colors — sections lost their
+boxes, the setup form collapses after a run, and the run history gained a nested disclosure.
+`document.scrollingElement.scrollWidth` equalled `clientWidth` (320) in all eight states measured:
+home, runner with setup open, runner with setup collapsed after a comparison run, each of the four
+workspace tabs, and every `<details>` on the screen forced open at once. **Zero horizontal
+overflow**, unchanged from the original audit.
+
+### Not re-checked
+
+No new manual keyboard or screen-reader walkthrough. `e2e/accessibility.spec.js` still passes,
+which covers the live-region and keyboard assertions it encodes — including the roving-tabindex tab
+navigation — but the two controls this pass introduced (the collapsed-setup toggle and the run
+history's group disclosure) are native buttons carrying `aria-expanded` and were not put through a
+real assistive-technology walkthrough. The standing caveat from the original audit applies to them
+too: this document checks the accessibility tree, not actual AT behavior.
