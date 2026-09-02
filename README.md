@@ -1,5 +1,7 @@
 # Sleeper — Local-First Agent Assurance Lab
 
+[![CI](https://github.com/humintloop/Sleeper/actions/workflows/ci.yml/badge.svg)](https://github.com/humintloop/Sleeper/actions/workflows/ci.yml)
+
 > Run agents against adversarial content in the browser. Watch the tool calls. Map the control gap.
 
 ---
@@ -35,8 +37,11 @@ single-turn evaluation.
 ## Status
 
 The agent harness is built and wired end to end in the browser, with a no-key deterministic
-replay plus live API and local WebLLM targets. The automated suite covers the verdict,
-authorization, provenance, replay, and evidence-contract invariants. See
+replay plus live API and local WebLLM targets. The automated suite is 508 tests across 25
+files; 170 of those tests, across 9 files (`computeVerdict`, `VerdictBanner`,
+`authorityRegistry`, `toolAuthorizationGate`, `approvalPolicy`, `runProvenance`,
+`replayTarget`, `evidenceContract`, `evidenceWitness`), cover the verdict, authorization,
+provenance, replay, and evidence-contract invariants specifically. See
 [`docs/agent-module-plan.md`](./docs/agent-module-plan.md) for the architecture and the
 source-verified framework crosswalk.
 
