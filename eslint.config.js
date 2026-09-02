@@ -8,7 +8,7 @@ export default [
   { ignores: ['dist/**', 'node_modules/**'] },
   js.configs.recommended,
   {
-    files: ['**/*.{js,jsx}'],
+    files: ['**/*.{js,jsx,mjs}'],
     languageOptions: {
       // 2022 for class private fields (`#apiKey` in src/api/adapter.js), which
       // keep the key off the instance as an own enumerable property.

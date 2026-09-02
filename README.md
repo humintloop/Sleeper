@@ -100,6 +100,12 @@ Most are inferred, and the ledger says which.
 Current pins: MITRE ATLAS content v2026.07 · OWASP LLM Top 10 2026 · OWASP Agentic Top 10 2026
 · AIUC-1 2026-07-15.
 
+## Examples
+
+[`examples/`](./examples/) holds one real, exported Evidence Contract JSON per threat case,
+generated from the Sample Replay path under the Reference control profile — not hand-written
+samples. Look here before cloning if you want to see the actual shape of what a run produces.
+
 ## Responsible Use
 
 For authorized security research, internal AI assurance, and evaluation of systems you own or
