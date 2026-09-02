@@ -266,6 +266,10 @@ Sleeper requires a different judge model to reduce correlated failure.
 
 ## Persistence
 
+**Can a saved run be edited after the fact without detection?** Within this browser, yes — an
+edit is *detectable*, not prevented. Nothing here is signed, replay-resistant, or externally
+verifiable. That's the whole answer; the rest of this section is the mechanism behind it.
+
 Completed agent-case runs — verdict, reason, and the full Evidence Contract — are saved to
 this browser's local storage (most recent 20), so navigating away doesn't lose the run. Nothing
 else is persisted: there is no in-progress "resume a half-configured case" state, since a run
@@ -274,20 +278,17 @@ is a single self-contained action, not a multi-step wizard.
 Each contract records the source revision/dirty state when available and digests the case,
 profile, configuration, and advertised tool schema. It also carries an unsigned SHA-256
 self-digest that detects accidental mutation. Browser-local records remain editable and the
-digest can be recomputed by an attacker; this is not signed, replay-resistant audit evidence.
+digest can be recomputed by an attacker.
 
 Retained browser runs are also linked into a SHA-256 history chain. Verification detects
 accidental record mutation, deletion, or reordering within the retained window. Legacy records
 are labeled unverifiable and migrated when the next run is appended. Because localStorage and
 the application share one trust boundary, the whole chain can still be replaced and recomputed.
 
-The harness includes a deliberately unconfigured external-witness interface. A future signer
-must both attest and verify a receipt bound to the contract digest; replay resistance is claimed
-only when that verified receipt also carries append-only sequencing, a nonce, and a timestamp.
-Sleeper contains no private signing key and makes no remote call by default.
-
 For a concise portfolio presentation, follow the
 [`7-minute walkthrough`](./docs/portfolio-walkthrough.md).
+
+**Today: tamper-evident within one browser. Not yet: tamper-proof or externally verifiable.**
 
 ## Limitations
 
@@ -304,3 +305,14 @@ See [`docs/agent-module-plan.md`](./docs/agent-module-plan.md) for the architect
 framework crosswalk. Open: AIUC-1 3a/3b crosswalk allocation and two inferred OWASP LLM
 mappings are this project's own judgment calls rather than sourced facts (flagged as such in
 the plan doc).
+
+An external-witness interface exists in the harness but is deliberately unconfigured. A future
+signer would need to both attest and verify a receipt bound to the contract digest, and replay
+resistance could only be claimed once that verified receipt also carries append-only sequencing,
+a nonce, and a timestamp. Sleeper contains no private signing key and makes no remote call by
+default today — this is future work, not a current mechanism (see Persistence, above).
+
+The substantive scope this project defers rather than the cosmetic kind: memory poisoning
+(ASI06), inter-agent communication (ASI07), identity spoofing, and isolation testing — E5-class
+evidence that this architecture cannot produce without a security boundary it does not have. Any
+remaining cosmetic/UI polish is tracked as GitHub issues rather than here.
