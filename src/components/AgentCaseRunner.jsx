@@ -460,9 +460,9 @@ export default function AgentCaseRunner({ C, onHome }) {
         </div>
         <h1 style={{ fontSize: C.size.title, color: C.text1, fontWeight: 600, letterSpacing: '0.02em', margin: 0 }}>Run agent case</h1>
         <p style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.6, maxWidth: 720, marginTop: 10 }}>
-          Tool-call intent, simulated tool effect — nothing this screen does leaves the browser or acts on
-          anything. Live and local targets capture model decisions; Sample Replay uses a disclosed script to
-          demonstrate the harness without claiming model evidence.
+          Nothing on this screen leaves the browser or acts on anything: a tool call is intent, and every
+          tool effect is simulated. Live and local targets record what a model actually decided. Sample
+          Replay follows a disclosed script — it demonstrates the harness and claims nothing about a model.
         </p>
       </div>
 
@@ -554,7 +554,7 @@ export default function AgentCaseRunner({ C, onHome }) {
           <div style={fieldLabel(C)}>Control profile</div>
           <ControlProfileSelector C={C} profiles={DISPLAY_PROFILES} selectedId={profileId} onSelect={setProfileId} disabled={running} />
           <div style={{ color: C.text3, fontSize: C.size.micro, lineHeight: 1.5, marginTop: 10 }}>
-            Your selection controls which profile gets the full verdict, trace, and Evidence Contract after comparison. The primary comparison still runs all three profiles.
+            Run &amp; compare runs all three profiles; this selection decides which one opens in the trace, evidence, and report. Run selected profile runs only this one.
           </div>
         </div>
 
@@ -579,9 +579,12 @@ export default function AgentCaseRunner({ C, onHome }) {
 
           {targetType === TARGET_TYPES.SAMPLE ? (
             <div style={{ fontSize: C.size.small, color: C.text2, lineHeight: 1.6 }}>
-              Zero-key deterministic walkthrough. Scripted tool intent exercises the real provenance, authorization,
-              mock-effect, trace, verdict, and Evidence Contract pipeline. It is labeled E1 for the target because no
-              model decision is observed; any E3 claim applies only to Sleeper&rsquo;s own gate.
+              No API key and no model download. A scripted tool intent runs the real pipeline — provenance,
+              authorization, mock effect, trace, verdict, Evidence Contract — so you can see how the harness
+              handles the path.
+              <br /><br />
+              No model decision is observed here, so the target is evidence class E1. An E3 claim on this run
+              describes Sleeper&rsquo;s own gate, not the model.
             </div>
           ) : targetType === TARGET_TYPES.LIVE ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
@@ -675,8 +678,10 @@ export default function AgentCaseRunner({ C, onHome }) {
             <div>
               <div style={{ ...fieldLabel(C), marginBottom: 4 }}>Secondary local-model judge</div>
               <div style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.5, maxWidth: 660 }}>
-                Optional semantic triangulation of goal adoption and unauthorized intent. It cannot override deterministic
-                trace facts and does not raise independence above I0. A distinct model is required for a local target.
+                Optional. A second local model reads the run for goal adoption and unauthorized intent, as a
+                semantic cross-check on the deterministic result. It cannot override anything the trace
+                establishes, and it does not raise oracle independence above I0. Against a local target it
+                must be a different model from the target itself.
               </div>
             </div>
             <button aria-pressed={judgeEnabled} disabled={running} style={toggleBtn(C, judgeEnabled)} onClick={() => setJudgeEnabled(enabled => !enabled)}>
