@@ -16,7 +16,7 @@
 //     true` by construction; that is surfaced on the trace panel, never
 //     hidden.
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, History, Play, RefreshCw } from 'lucide-react';
+import { ChevronLeft, Play, RefreshCw } from 'lucide-react';
 import { AGENT_CASES, AGENT_CASE_ORDER } from '../data/agentCases';
 import { CONTROL_PROFILES } from '../data/controlProfiles';
 import { VICTIM_MODELS } from '../data/victimModels';
@@ -50,6 +50,7 @@ import ComparisonStoryPanel from './ComparisonStoryPanel';
 import RunContextSummary from './RunContextSummary';
 import InvestigationWorkspace from './InvestigationWorkspace';
 import ReportPanel from './ReportPanel';
+import RunHistory from './RunHistory';
 
 const PROVIDER_DEFAULTS = {
   [PROVIDERS.ANTHROPIC]: { endpoint: 'https://api.anthropic.com/v1/messages', modelId: 'claude-sonnet-5' },
@@ -329,9 +330,14 @@ export default function AgentCaseRunner({ C, onHome }) {
   // Trimmed to case/profile metadata, the verdict, and the contract — not the
   // full event stream/messages, which are large and only useful for the run
   // that is currently on screen, not for a history list.
-  const persistRun = async (outcome, targetProfileId) => {
+  const persistRun = async (outcome, targetProfileId, batchId = null) => {
     const record = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      // Which comparison pass wrote this record. Three profiles written in one
+      // pass share a batch id so the history can show them as the single
+      // comparison they were, instead of three near-identical rows. Records
+      // written before this existed have no batch id and stand alone.
+      batchId,
       timestamp: new Date().toISOString(),
       caseId,
       caseTitle: agentCase?.title ?? caseId,
@@ -362,6 +368,7 @@ export default function AgentCaseRunner({ C, onHome }) {
   const handleComparative = async () => {
     const next = {};
     const nextResults = {};
+    const batchId = `cmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let last = null;
     setComparisonProgress({ current: RUN_PROFILE_IDS[0], completed: 0, total: RUN_PROFILE_IDS.length });
     for (const [index, id] of RUN_PROFILE_IDS.entries()) {
@@ -373,7 +380,7 @@ export default function AgentCaseRunner({ C, onHome }) {
       }
       next[id] = outcome.verdict.verdict;
       nextResults[id] = outcome;
-      await persistRun(outcome, id);
+      await persistRun(outcome, id, batchId);
       if (id === profileId) last = outcome;
     }
     setComparison(next);
@@ -844,66 +851,7 @@ export default function AgentCaseRunner({ C, onHome }) {
         </div>
       )}
 
-      {history.length > 0 && <RunHistory C={C} history={history} chainStatus={chainStatus} />}
-    </div>
-  );
-}
-
-const HISTORY_VERDICT_TONE = {
-  CONTROL_HELD: 'green',
-  PARTIAL_CONTROL_FAILURE: 'ochre',
-  CONTROL_FAILED: 'red',
-  INCONCLUSIVE: 'slate',
-};
-
-function RunHistory({ C, history, chainStatus }) {
-  const [expandedId, setExpandedId] = useState(null);
-
-  return (
-    <div style={card(C)}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-        <History size={13} color={C.text3} />
-        <div style={{ ...fieldLabel(C), marginBottom: 0 }}>Recent runs &middot; this browser</div>
-      </div>
-      {chainStatus && (
-        <div role={chainStatus.valid ? undefined : 'alert'} style={{ fontSize: C.size.micro, color: chainStatus.valid ? C.text3 : C.red, lineHeight: 1.5, marginBottom: 10 }}>
-          Browser hash chain: {chainStatus.status.replaceAll('_', ' ')} · {chainStatus.checked} retained records checked
-          {chainStatus.latest_sequence ? ` · latest sequence ${chainStatus.latest_sequence}` : ''}. {chainStatus.limitation}
-        </div>
-      )}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {history.map(entry => {
-          const tone = C[HISTORY_VERDICT_TONE[entry.verdict]] || C.text3;
-          const expanded = expandedId === entry.id;
-          return (
-            <div key={entry.id} style={{ background: C.panel, border: `1px solid ${C.border}`, borderLeft: `3px solid ${tone}`, borderRadius: 2 }}>
-              <button
-                onClick={() => setExpandedId(expanded ? null : entry.id)}
-                style={{
-                  width: '100%', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer',
-                  padding: '9px 12px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
-                }}
-              >
-                <span style={{ color: tone, fontSize: C.size.micro, fontWeight: 800, letterSpacing: .5 }}>{entry.verdict}</span>
-                <span style={{ color: C.text1, fontSize: C.size.small, fontWeight: 600 }}>{entry.caseTitle}</span>
-                <span style={{ color: C.text3, fontSize: C.size.micro }}>{entry.profileLabel}</span>
-                {entry.degraded && <span style={{ color: C.red, fontSize: C.size.micro, fontWeight: 700 }}>DEGRADED</span>}
-                <span style={{ marginLeft: 'auto', color: C.text3, fontSize: C.size.micro, fontFamily: C.mono }}>
-                  {new Date(entry.timestamp).toLocaleString()}
-                </span>
-              </button>
-              {expanded && (
-                <div style={{ padding: '0 12px 12px' }}>
-                  {entry.reasonText && (
-                    <div style={{ fontSize: C.size.small, color: C.text2, lineHeight: 1.5, marginBottom: 10 }}>{entry.reasonText}</div>
-                  )}
-                  <EvidenceContractPanel C={C} contract={entry.contract} />
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {history.length > 0 && <RunHistory C={C} history={history} chainStatus={chainStatus} cardStyle={card(C)} />}
     </div>
   );
 }
