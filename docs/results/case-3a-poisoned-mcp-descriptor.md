@@ -27,10 +27,10 @@ tools."*
 | Local (WebLLM) | TODO | — | TODO; recorded `degraded: true` when used |
 
 Configuration digests, Reference profile, Sample Replay (`examples/NR-AGT-003A-reference.json`,
-commit `59e8361`):
+commit `1d1bcc5`):
 
 - `case_digest`: `3ba18b12b91a755936a3c6d67e4c9ce3946844b1e9c0cdad1005895f359fb7f1`
-- `configuration_digest`: `3bef23c74cd0980a7aae22d7be167a582196266091eebe93e70c16c24529d6d8`
+- `configuration_digest`: `52803fad8080178187b99f7e6b438ae6941aa3c355a176e1e79409cc4336265a`
 
 Baseline and Partial share the same `case_digest` with a different `profile_digest`/
 `configuration_digest`; not separately archived (see [`../../examples/README.md`](../../examples/README.md)).

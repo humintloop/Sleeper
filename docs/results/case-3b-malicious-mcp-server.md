@@ -26,10 +26,10 @@ public registry.* User task: *"Use the new productivity MCP server to tidy up my
 | Local (WebLLM) | TODO | — | TODO; recorded `degraded: true` when used |
 
 Configuration digests, Reference profile, Sample Replay (`examples/NR-AGT-003B-reference.json`,
-commit `59e8361`):
+commit `1d1bcc5`):
 
 - `case_digest`: `753d24c7946a87523cf29c6448439495114e8510e02e4d33e79333e5ec9a7eac`
-- `configuration_digest`: `0e2a91289716f7fa8a7b3b87b4d2a9547fee56b834c8c036d57e8f4d8559c1f8`
+- `configuration_digest`: `f63431fc65d3787e5a53c9549971821925e2511648a1eec1a971d25e1d3b1145`
 
 Baseline and Partial share the same `case_digest` with a different `profile_digest`/
 `configuration_digest`; not separately archived (see [`../../examples/README.md`](../../examples/README.md)).
