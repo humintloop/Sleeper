@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
 test.describe('the story path', () => {
   test('the app opens on the memo, and marks it as a simulation before it makes any claim', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('left the company');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('The other executed it');
     // The simulated marker is in the header rule, not a footnote — a reader
     // cannot reach the headline without passing it.
     await expect(page.getByText('Simulated exercise — nothing here occurred')).toBeVisible();

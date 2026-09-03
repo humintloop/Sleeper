@@ -198,7 +198,7 @@ export function replyMentionsUntrustedCalls(run) {
 export const MEMO = {
   employer: FIXTURE_EMPLOYER,
   persona: FIXTURE_PERSONA,
-  headline: 'An internal account record left the company on a Tuesday afternoon.',
+  headline: 'The email had two readers. One read a message. The other executed it.',
   standfirst:
     'Nobody was breached. No password was stolen. No one clicked a bad link. '
     + 'An assistant read a customer email, and the email told it what to do next.',
