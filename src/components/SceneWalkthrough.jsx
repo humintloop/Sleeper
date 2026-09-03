@@ -118,7 +118,20 @@ export default function SceneWalkthrough({ C, onHome, onEvidence }) {
         </div>
       )}
 
-      <div style={{ border: `1px solid ${C.borderHi}`, borderRadius: C.radius, background: C.bg, overflow: 'hidden' }}>
+      {/* flexShrink: 0 matters here, not just tidiness. This box is a flex
+          item of `.scene` (flex-direction: column, overflowY: auto). A flex
+          item's automatic minimum size is content-based UNLESS the item's own
+          `overflow` is anything but visible — this one sets `overflow:hidden`
+          (to clip the header row to the rounded corners), so its auto-minimum
+          silently drops to zero. Without flexShrink:0, whenever `.scene`'s
+          total content exceeds the viewport, flexbox crushes THIS box down to
+          whatever space is left (every sibling keeps its content-based floor)
+          and the excess is clipped with no scrollbar — worse, the clipped
+          height never counts toward `.scene`'s own scrollHeight, so `.scene`
+          reports nothing to scroll while the trace, the final response, and
+          the CTA context below it are simply gone. Reproduced at both 889×718
+          and 390×844. Confirmed via computed styles, not guessed. */}
+      <div style={{ border: `1px solid ${C.borderHi}`, borderRadius: C.radius, background: C.bg, overflow: 'hidden', flexShrink: 0 }}>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 13px', borderBottom: `1px solid ${C.border}`, background: C.panel }}>
           <span style={{ display: 'flex', gap: 5 }}>
