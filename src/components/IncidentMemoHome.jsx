@@ -1,8 +1,12 @@
-import { ArrowRight, History, Radio, ShieldAlert, TriangleAlert, UserRound } from 'lucide-react';
+import { ArrowRight, History, Radio, ShieldAlert, ShieldCheck, TriangleAlert, UserRound } from 'lucide-react';
 import { MEMO, STORY_CASE_ID } from '../data/storyScene';
 import SleeperBrand from './SleeperBrand';
 
-const FACT_ICONS = [UserRound, Radio, ShieldAlert];
+// One icon per MEMO.blocks entry (who / what happened / why it worked / what
+// would have stopped it) — four blocks need four distinct icons. This used to
+// have three, so index 3 fell back to the same Radio icon as index 1 and two
+// different facts rendered identically.
+const FACT_ICONS = [UserRound, Radio, ShieldAlert, ShieldCheck];
 
 export default function IncidentMemoHome({ C, onScene, onAgentLab, agentRunsCount = 0 }) {
   return (

@@ -92,7 +92,7 @@ export default function SceneWalkthrough({ C, onHome, onEvidence }) {
       <div className="lab-masthead">
         <div style={{ display: 'flex', alignItems: 'center', gap: 18, minWidth: 0 }}>
           <SleeperBrand compact style={{ width: 205, maxWidth: '48vw' }} />
-          <span className="brand-kicker" style={{ color: C.text3 }}>Live incident replay</span>
+          <span className="brand-kicker lab-masthead-tagline" style={{ color: C.text3 }}>Live incident replay</span>
         </div>
         <button onClick={onHome} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: C.text3, fontSize: C.size.small, cursor: 'pointer', padding: 0 }}>
           <ChevronLeft size={14} /> BACK TO THE MEMO

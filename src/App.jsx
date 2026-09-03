@@ -228,6 +228,12 @@ function GlobalStyle({ C }) {
            overflowing the page — same fix as the other masthead kicker above. */
         .masthead-tagline { display: none; }
         .lab-masthead { align-items: flex-start; }
+        /* Same nowrap-clips-at-the-edge shape as .masthead-tagline above, on
+           the runner/scene mastheads: "LIVE INCIDENT REPLAY" and "EVIDENCE
+           WORKSPACE" wrapped to 2-3 ragged lines against the logo and the
+           HOME/back link on a phone, instead of clipping cleanly. Hide it —
+           the wordmark alone still says what app this is. */
+        .lab-masthead-tagline { display: none; }
         /* No room beside a 168px wordmark on a phone; the wordmark alone
            still carries the identity at this width. */
         .rail-brand-caption { display: none; }
