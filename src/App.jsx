@@ -226,7 +226,7 @@ function GlobalStyle({ C }) {
         .incident-masthead > :last-child { display: none; }
         /* Was clipped at the viewport edge (nowrap, no truncation) rather than
            overflowing the page — same fix as the other masthead kicker above. */
-        .masthead-tagline, .masthead-tagline-rule { display: none; }
+        .masthead-tagline { display: none; }
         .lab-masthead { align-items: flex-start; }
         /* No room beside a 168px wordmark on a phone; the wordmark alone
            still carries the identity at this width. */

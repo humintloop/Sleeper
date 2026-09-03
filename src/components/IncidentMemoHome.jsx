@@ -37,12 +37,12 @@ export default function IncidentMemoHome({ C, onScene, onAgentLab, agentRunsCoun
       </aside>
 
       <div className="incident-main">
+        {/* No logo here — the rail beside/above this already carries the mark
+            and wordmark, always on screen at every width. Repeating it here
+            read as two lockups stacked on top of each other. This masthead
+            is page context only: where you are, not who you are. */}
         <header className="incident-masthead">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 18, minWidth: 0 }}>
-            <SleeperBrand compact style={{ width: 215, maxWidth: '48vw' }} />
-            <span className="masthead-tagline-rule" style={{ height: 25, borderLeft: `1px solid ${C.borderHi}` }} aria-hidden="true" />
-            <span className="brand-kicker masthead-tagline" style={{ color: C.text2, whiteSpace: 'nowrap' }}>Local-first agent assurance</span>
-          </div>
+          <span className="brand-kicker masthead-tagline" style={{ color: C.text2, whiteSpace: 'nowrap' }}>Local-first agent assurance</span>
           <span className="brand-kicker" style={{ color: C.text2 }}>Incident memo · I<sub>1</sub></span>
         </header>
 
