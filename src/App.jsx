@@ -5,11 +5,8 @@ import AgentCaseRunner from './components/AgentCaseRunner';
 import { loadAgentRuns } from './storage';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-// Obsidian Briefing / "Forensic Dossier" direction. Neutrals sit on a near-black/bone
-// palette calibrated against Offensive AI Con's own branding — restrained monochrome,
-// architectural rather than glowing — and `brass` takes over the brand/interactive role
-// amber used to carry solo, so amber can stay a pure verdict color. Don't drop text3 or
-// slate into running body copy; both are calibrated for contrast against the dark panel.
+// Dark field-manual direction. `signal` is the brand/interaction color; verdict colors
+// remain independent so a green control hold can never be confused with ordinary chrome.
 //
 // Grouped by semantic role per docs/phase-3 handoff guidance ("add or consolidate
 // semantic tokens before component-by-component restyling"). Key names are unchanged
@@ -32,35 +29,40 @@ const C = {
   // against the new surfaces (see docs/accessibility-audit.md):
   //   text3 #8B877A  → 5.22:1 on panel, 4.90:1 on surface (AA normal text)
   //   borderHi #666663 → 3.25:1 on panel, 3.06:1 on surface (WCAG 1.4.11)
-  bg:       '#050505', // canvas
-  panel:    '#121211', // raised
-  surface:  '#191917', // raised, slightly lighter (form fields, nested content)
-  hover:    '#212119', // hover state over a raised surface
-  ink:      '#050505', // inset (code/JSON blocks) — same value as canvas, named for role not reuse
+  bg:       '#050706', // canvas
+  panel:    '#0C0F0C', // raised
+  surface:  '#141814', // raised, slightly lighter (form fields, nested content)
+  hover:    '#1B211A', // hover state over a raised surface
+  ink:      '#030403', // inset (code/JSON blocks)
   // Quiet divider: section rules and the edges of non-interactive cards. It is
   // 1.30:1 on panel and exempt from WCAG 1.4.11 as decoration — which means it
   // must never be the only signal that something is selectable. Interactive
   // boundaries use `borderHi`.
-  border:   '#2A2A27',
+  border:   '#2A2F29',
   // Default interactive-component boundary. Was #3A3A37 (1.74:1 against
   // panel — fails WCAG 1.4.11's 3:1 non-text threshold, measured in
   // docs/accessibility-audit.md) — used on a large number of actually-
   // interactive elements (case/profile/target cards), not merely decorative
   // dividers. Same warm-neutral hue, lightened to 3.38–3.54:1 against every
   // surface token above.
-  borderHi: '#666663',
+  borderHi: '#6A7165',
 
   // Text — primary → secondary → muted. (No separate "inverse" tone exists;
   // nothing in this app renders dark text on a light surface.)
-  text1:    '#F4F2EA', // primary
-  text2:    '#B6B2A4', // secondary
-  text3:    '#8B877A', // muted — calibrated for contrast against panel/surface; never drop below this
+  text1:    '#EEE9DC', // primary
+  text2:    '#C4BEB0', // secondary
+  text3:    '#969589', // muted — calibrated for contrast against panel/surface
 
   // Interaction — brand/accent, never a verdict. Wordmark, active nav/tab
   // state, primary CTA, focus rings. Keeps amber free to stay a pure
   // reserved verdict color instead of double-booked as brand chrome.
-  brass:    '#CFC7B0', // accent
-  brassBg:  'rgba(207,199,176,.10)', // accent, selected/highlighted background
+  signal:   '#A8C943',
+  signalStrong: '#B8D94F',
+  signalBg: 'rgba(168,201,67,.10)',
+  // Compatibility aliases for existing presentation components. Security
+  // semantics never read these values; new UI should use `signal` directly.
+  brass:    '#A8C943',
+  brassBg:  'rgba(168,201,67,.10)',
 
   // Verdict — reserved exclusively for held/failed/partial/inconclusive/
   // degraded/error semantics (see src/components/VerdictBanner.js's
@@ -95,8 +97,8 @@ const C = {
   // every explicit `fontFamily: C.mono` call site in src/components/ — all
   // are digests, reason/verdict codes, framework IDs, or literal JSON/log
   // text, none are narrative prose set in mono.
-  mono:     '"Geist Mono", ui-monospace, monospace',
-  sans:     '"Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
+  mono:     '"SFMono-Regular", "Roboto Mono", ui-monospace, monospace',
+  sans:     '"Roboto Flex Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
 
   // Type scale — five steps, and deliberately only five. Before this the app
   // used 9.5/10/10.5/11/11.5/12/12.5/13/14 — nine sizes inside a 4.5px band,
@@ -149,10 +151,11 @@ function GlobalStyle({ C }) {
       ::-webkit-scrollbar { width: 6px; height: 6px; }
       ::-webkit-scrollbar-thumb { background: ${C.borderHi}; border-radius: 999px; }
       ::-webkit-scrollbar-track { background: transparent; }
-      ::selection { background: ${C.amber}; color: ${C.ink}; }
-      select, button, input, textarea { font-family: ${C.mono}; }
-      input:focus, textarea:focus, select:focus { outline: none; border-color: ${C.amber} !important; box-shadow: 0 0 0 1px rgba(200,120,68,.24); }
-      button:focus-visible, a:focus-visible, [role="button"]:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid ${C.amber}; outline-offset: 3px; }
+      body { margin: 0; background: ${C.bg}; }
+      ::selection { background: ${C.signal}; color: ${C.ink}; }
+      select, button, input, textarea { font-family: ${C.sans}; }
+      input:focus, textarea:focus, select:focus { outline: none; border-color: ${C.signal} !important; box-shadow: 0 0 0 1px rgba(168,201,67,.28); }
+      button:focus-visible, a:focus-visible, [role="button"]:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid ${C.signal}; outline-offset: 3px; }
       button:hover:not(:disabled) { filter: brightness(1.08); }
       input::placeholder, textarea::placeholder { color: ${C.text3}; }
       @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
@@ -161,15 +164,73 @@ function GlobalStyle({ C }) {
       @keyframes pulse { 0%,100% { opacity: .55; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.25); } }
       @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
       button, a, select { touch-action: manipulation; }
+      .display-type { font-stretch: 64%; font-variation-settings: "wdth" 64, "opsz" 48; }
+      .brand-kicker { font-family: ${C.mono}; font-size: ${C.size.micro}px; letter-spacing: .18em; text-transform: uppercase; }
+      .incident-home { width: 100%; max-width: 1500px; margin: 0 auto; min-height: 100%; padding: 12px; display: grid; grid-template-columns: minmax(240px, 300px) minmax(0, 1fr); gap: 34px; }
+      .incident-rail { min-height: calc(100dvh - 24px); border: 1px solid ${C.border}; padding: 34px 30px 28px; display: flex; flex-direction: column; background: ${C.bg}; }
+      /* Was inline-styled directly on the rail's first child, which meant the
+         980px rule below (".incident-rail { flex-direction: row }") had no
+         effect: with both ".rail-detail" blocks hidden at that width, this was
+         the ONLY visible child, and its own inline column layout is what
+         actually rendered — the icon mark stacked over the full wordmark
+         stacked over the caption, eating most of a phone screen before the
+         headline appeared. Given its own class so the breakpoints below can
+         reach it. */
+      .rail-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
+      /* SleeperBrand sets width/display inline (it merges a caller \`style\`
+         prop, but nothing is passed here), so overriding either from a
+         breakpoint needs !important — same reason .scene-grid/.agent-runner
+         below already do, not a new pattern. */
+      .rail-brand-wordmark { width: 230px !important; max-width: 100%; }
+      .incident-main { min-width: 0; padding: 12px 18px 30px 0; display: flex; flex-direction: column; }
+      .incident-masthead { min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-bottom: 14px; border-bottom: 1px solid ${C.border}; }
+      .incident-sheet { position: relative; flex: 1; display: grid; grid-template-columns: minmax(260px, .72fr) minmax(500px, 1.45fr); gap: 34px; padding: 42px 0 0; }
+      .incident-number { font-size: clamp(180px, 27vw, 430px); line-height: .78; font-weight: 850; font-stretch: 50%; color: rgba(238,233,220,.105); user-select: none; align-self: start; }
+      .incident-content { min-width: 0; display: flex; flex-direction: column; }
+      .incident-headline { font-size: clamp(44px, 5.4vw, 78px); line-height: .99; font-weight: 860; letter-spacing: -.035em; text-transform: uppercase; margin: 24px 0 20px; max-width: 850px; }
+      .incident-facts { border-top: 1px solid ${C.border}; margin-top: 22px; }
+      .incident-fact { display: grid; grid-template-columns: 28px minmax(130px, .45fr) minmax(0, 1fr); gap: 18px; align-items: center; min-height: 72px; border-bottom: 1px solid ${C.border}; }
+      .incident-actions { display: grid; grid-template-columns: 1.06fr 1fr; gap: 18px; margin-top: 20px; }
+      .field-button { min-height: 70px; padding: 14px 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-radius: 0; cursor: pointer; font-size: ${C.size.head}px; font-weight: 800; font-stretch: 72%; letter-spacing: .025em; text-transform: uppercase; }
+      .lab-masthead { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding-bottom: 14px; border-bottom: 1px solid ${C.border}; }
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
       }
       @media (max-width: 980px) {
+        .incident-home { grid-template-columns: 1fr; gap: 18px; }
+        .incident-rail { min-height: auto; padding: 18px 20px; flex-direction: row; align-items: center; gap: 18px; }
+        .incident-rail .rail-detail { display: none; }
+        /* Collapse to the same compact single-lockup row the runner and scene
+           mastheads already use, instead of the two full-size logos stacked. */
+        .rail-brand { flex-direction: row; align-items: center; gap: 14px; }
+        .rail-brand-mark { display: none !important; }
+        .rail-brand-rule { display: none; }
+        .rail-brand-wordmark { width: 168px !important; }
+        .incident-main { padding: 0 12px 32px; }
+        .incident-sheet { grid-template-columns: 160px minmax(0, 1fr); gap: 20px; }
+        .incident-number { font-size: 190px; }
         .scene-grid { grid-template-columns: minmax(0, 1fr) !important; }
         .scene-grid > * { border-right: none !important; }
       }
       @media (max-width: 760px) {
-        .home-hero-grid { grid-template-columns: minmax(0, 1fr) !important; }
+        .incident-home { padding: 8px; }
+        .incident-rail { border-left: 3px solid ${C.signal}; }
+        .incident-sheet { display: block; padding-top: 28px; }
+        .incident-number { position: absolute; right: 0; top: 28px; font-size: 150px; opacity: .65; }
+        .incident-content { position: relative; z-index: 1; }
+        .incident-headline { font-size: clamp(38px, 12vw, 56px); max-width: 92%; }
+        .incident-fact { grid-template-columns: 24px 1fr; gap: 12px; padding: 13px 0; }
+        .incident-fact > :last-child { grid-column: 2; }
+        .incident-actions { grid-template-columns: 1fr; }
+        .field-button { min-height: 58px; font-size: ${C.size.body}px; }
+        .incident-masthead > :last-child { display: none; }
+        /* Was clipped at the viewport edge (nowrap, no truncation) rather than
+           overflowing the page — same fix as the other masthead kicker above. */
+        .masthead-tagline, .masthead-tagline-rule { display: none; }
+        .lab-masthead { align-items: flex-start; }
+        /* No room beside a 168px wordmark on a phone; the wordmark alone
+           still carries the identity at this width. */
+        .rail-brand-caption { display: none; }
         .agent-runner { padding: 20px 16px 48px !important; gap: 16px !important; }
         .scene { padding: 20px 16px 48px !important; }
       }
@@ -188,12 +249,6 @@ export default function App() {
     <div style={{
       display: 'flex', flexDirection: 'column', minHeight: '100dvh', height: '100dvh',
       backgroundColor: C.bg,
-      // Obsidian background motif — two faint corner-ring layers, texture not
-      // decoration. Deliberately low opacity; the app reads as flat until you
-      // look for it.
-      backgroundImage:
-        'repeating-radial-gradient(circle at 100% 0%, transparent 0 42px, rgba(207,199,176,.055) 43px, transparent 44px), '
-        + 'repeating-radial-gradient(circle at 0% 100%, transparent 0 60px, rgba(207,199,176,.035) 61px, transparent 62px)',
       color: C.text1, fontFamily: C.sans, lineHeight: 1.5, overflow: 'hidden',
     }}>
       <GlobalStyle C={C} />

@@ -1,106 +1,116 @@
-// The opening screen: direction C.
-//
-// Replaces DossierHome, whose name was a leftover from ELICIT's dossier
-// framing and whose copy led with the control-profile comparison — accurate,
-// and an answer to a question the visitor has not asked yet. This leads with
-// the consequence instead, in the format the person who signs off on a rollout
-// actually reads, and lets them click down into how and then into the proof.
-//
-// Everything factual on this screen comes from src/data/storyScene.js, which
-// derives it from the case fixtures. The one thing this component must never
-// do is read as a real incident report: the simulated marker is in the header
-// rule, not in a footnote, and the provenance line names the run, the profile
-// and the target that produced the claim.
-import { ChevronRight, History } from 'lucide-react';
+import { ArrowRight, History, Radio, ShieldAlert, TriangleAlert, UserRound } from 'lucide-react';
 import { MEMO, STORY_CASE_ID } from '../data/storyScene';
+import SleeperBrand from './SleeperBrand';
+
+const FACT_ICONS = [UserRound, Radio, ShieldAlert];
 
 export default function IncidentMemoHome({ C, onScene, onAgentLab, agentRunsCount = 0 }) {
   return (
-    <main style={{ width: '100%', maxWidth: 900, margin: '0 auto', padding: '52px 24px 88px', display: 'flex', flexDirection: 'column', gap: 26 }}>
-
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
-        <span style={{ fontFamily: C.sans, fontSize: C.size.head, color: C.text1, fontWeight: 600, letterSpacing: '0.02em' }}>
-          Sleeper
-        </span>
-        <span style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: 2, textTransform: 'uppercase' }}>
-          Local-first agent assurance
-        </span>
-      </div>
-
-      <article style={{ background: C.panel, border: `1px solid ${C.borderHi}`, borderRadius: C.radius, padding: '30px 32px', display: 'flex', flexDirection: 'column', gap: 22 }}>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 14, flexWrap: 'wrap', borderBottom: `1px solid ${C.border}`, paddingBottom: 13 }}>
-          <span style={{ fontFamily: C.mono, fontSize: C.size.micro, color: C.text3, letterSpacing: 1.4, textTransform: 'uppercase' }}>
-            {MEMO.employer} &middot; internal
-          </span>
-          <span style={{ fontFamily: C.mono, fontSize: C.size.micro, color: C.ochre, letterSpacing: 1.4, textTransform: 'uppercase' }}>
-            Simulated exercise &mdash; nothing here occurred
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-          <h1 style={{
-            // The one display size on this screen, as the wordmark used to be.
-            // It is the sentence the whole app exists to earn, so it is sized
-            // to be read across a room and clamped so it never wraps to five
-            // lines on a phone.
-            fontSize: 'clamp(27px, 4.4vw, 40px)', fontWeight: 600, lineHeight: 1.2,
-            letterSpacing: '-0.01em', color: C.text1, margin: 0,
-          }}>
-            {MEMO.headline}
-          </h1>
-          <p style={{ fontSize: C.size.head, color: C.text2, lineHeight: 1.5, margin: 0, maxWidth: 720 }}>
-            {MEMO.standfirst}
-          </p>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '22px 38px' }}>
-          {MEMO.blocks.map(block => (
-            <div key={block.label} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ fontFamily: C.mono, fontSize: C.size.micro, color: C.text3, letterSpacing: 1.2, textTransform: 'uppercase' }}>
-                {block.label}
-              </div>
-              <div style={{ fontSize: C.size.body, color: C.text1, lineHeight: 1.6 }}>{block.text}</div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 16, display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ fontFamily: C.mono, fontSize: C.size.micro, color: C.text3, lineHeight: 1.65, flex: '1 1 380px', minWidth: 0 }}>
-            {MEMO.provenance}<br />{MEMO.disclaimer}
+    <main className="incident-home">
+      <aside className="incident-rail" aria-label="Sleeper introduction">
+        <div className="rail-brand">
+          <SleeperBrand kind="mark" className="rail-brand-mark" style={{ width: 100 }} />
+          <SleeperBrand className="rail-brand-wordmark" />
+          <div className="rail-brand-rule" style={{ width: '100%', borderTop: `1px solid ${C.border}`, marginTop: 2 }} />
+          <div className="brand-kicker rail-brand-caption" style={{ color: C.text3, lineHeight: 1.8 }}>
+            Local-first agent<br />assurance lab
           </div>
-          <button onClick={onScene} style={{
-            display: 'flex', alignItems: 'center', gap: 7, padding: '11px 20px', cursor: 'pointer',
-            background: C.brassBg, border: `1px solid ${C.brass}`, borderRadius: C.radius, color: C.brass,
-            fontFamily: C.mono, fontSize: C.size.small, fontWeight: 800, letterSpacing: .5, whiteSpace: 'nowrap',
-          }}>
-            SHOW ME THE RUN <ChevronRight size={14} />
-          </button>
         </div>
-      </article>
 
-      <div style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
-        {/* The second audience. A reviewer who already believes the premise
-            should not have to walk through the story to reach the evidence. */}
-        <button onClick={onAgentLab} style={{
-          background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
-          color: C.text2, fontSize: C.size.small, display: 'flex', alignItems: 'center', gap: 6,
-        }}>
-          Skip the story &mdash; open the lab and run any of the four cases <ChevronRight size={13} />
-        </button>
-        {agentRunsCount > 0 && (
-          <span style={{ color: C.text3, fontSize: C.size.small, display: 'flex', alignItems: 'center', gap: 5 }}>
-            <History size={12} /> {agentRunsCount} run{agentRunsCount === 1 ? '' : 's'} saved in this browser
-          </span>
-        )}
+        <div className="rail-detail" style={{ marginTop: 'auto' }}>
+          <p style={{ color: C.text2, fontSize: C.size.small, lineHeight: 1.62, margin: '0 0 18px', maxWidth: 210 }}>
+            Sleeper is a local-first lab for security leaders and technical reviewers.
+          </p>
+          <p style={{ color: C.text3, fontSize: C.size.small, lineHeight: 1.62, margin: 0 }}>
+            Simulate incidents.<br />Inspect the run.<br />Open the evidence.
+          </p>
+          {agentRunsCount > 0 && (
+            <div style={{ color: C.text3, fontFamily: C.mono, fontSize: C.size.micro, marginTop: 24, display: 'flex', alignItems: 'center', gap: 7 }}>
+              <History size={12} /> {agentRunsCount} local run{agentRunsCount === 1 ? '' : 's'}
+            </div>
+          )}
+        </div>
+
+        <div className="rail-detail" style={{ color: C.text3, fontFamily: C.mono, fontSize: C.size.micro, marginTop: 30, lineHeight: 1.6 }}>
+          v0.1.0<br />LOCAL ONLY
+        </div>
+      </aside>
+
+      <div className="incident-main">
+        <header className="incident-masthead">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 18, minWidth: 0 }}>
+            <SleeperBrand compact style={{ width: 215, maxWidth: '48vw' }} />
+            <span className="masthead-tagline-rule" style={{ height: 25, borderLeft: `1px solid ${C.borderHi}` }} aria-hidden="true" />
+            <span className="brand-kicker masthead-tagline" style={{ color: C.text2, whiteSpace: 'nowrap' }}>Local-first agent assurance</span>
+          </div>
+          <span className="brand-kicker" style={{ color: C.text2 }}>Incident memo · I<sub>1</sub></span>
+        </header>
+
+        <article className="incident-sheet" aria-labelledby="incident-headline">
+          <div className="incident-number display-type" aria-hidden="true">001</div>
+
+          <div className="incident-content">
+            <div className="brand-kicker" style={{ color: C.red, fontWeight: 750, marginTop: 6 }}>
+              Simulated incident&nbsp; —
+            </div>
+            <h1 id="incident-headline" className="incident-headline display-type" style={{ color: C.text1 }}>
+              {MEMO.headline}
+            </h1>
+            <p style={{ color: C.text2, fontSize: C.size.head, lineHeight: 1.48, margin: 0, maxWidth: 650 }}>
+              {MEMO.standfirst}
+            </p>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 24, padding: '12px 0', borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
+              <TriangleAlert size={20} color={C.red} aria-hidden="true" />
+              <strong style={{ color: C.text1, fontStretch: '72%', letterSpacing: '.055em', textTransform: 'uppercase' }}>
+                Simulated exercise — nothing here occurred
+              </strong>
+            </div>
+
+            <div className="incident-facts">
+              {MEMO.blocks.map((block, index) => {
+                const Icon = FACT_ICONS[index] ?? Radio;
+                return (
+                  <div className="incident-fact" key={block.label}>
+                    <Icon size={19} color={C.text2} aria-hidden="true" />
+                    <div className="brand-kicker" style={{ color: C.signal, fontWeight: 800 }}>{block.label}</div>
+                    <div style={{ color: C.text2, fontSize: C.size.body, lineHeight: 1.5 }}>{block.text}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="incident-actions">
+              <button
+                className="field-button display-type"
+                aria-label="SHOW ME THE RUN — replay the incident"
+                onClick={onScene}
+                style={{ background: C.signal, border: `1px solid ${C.signal}`, color: C.ink }}
+              >
+                <span>Replay the incident</span><ArrowRight size={24} />
+              </button>
+              <button
+                className="field-button display-type"
+                aria-label="Skip the story — open the lab and run any of the four cases"
+                onClick={onAgentLab}
+                style={{ background: 'transparent', border: `1px solid ${C.borderHi}`, color: C.text1 }}
+              >
+                <span>Open the evidence lab</span><ArrowRight size={24} color={C.text3} />
+              </button>
+            </div>
+
+            <div style={{ fontFamily: C.mono, fontSize: C.size.micro, color: C.text3, marginTop: 15, lineHeight: 1.62 }}>
+              {MEMO.provenance}<br />{MEMO.disclaimer}
+            </div>
+
+            <p style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.65, margin: '18px 0 0', maxWidth: 760 }}>
+              Sleeper tests whether a tool-using agent can be manipulated into taking an action it should not take,
+              then turns the result into reviewable evidence. {STORY_CASE_ID} is one of four cases. Results are
+              observed, not guaranteed, and an unexercised control stays <strong style={{ color: C.slate }}>INCONCLUSIVE</strong>.
+            </p>
+          </div>
+        </article>
       </div>
-
-      <p style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.7, margin: 0, maxWidth: 700 }}>
-        Sleeper tests whether a tool-using agent can be manipulated into taking an action it should not take, and
-        turns the result into reviewable evidence mapped to control frameworks. {STORY_CASE_ID} is one of four
-        cases. Results are observed, not guaranteed, and an unexercised control stays{' '}
-        <strong style={{ color: C.slate }}>INCONCLUSIVE</strong>.
-      </p>
     </main>
   );
 }

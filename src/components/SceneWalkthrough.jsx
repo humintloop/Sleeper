@@ -25,6 +25,7 @@ import {
 } from '../data/storyScene';
 import { runAgentAssessment } from '../harness/runAgentAssessment';
 import { FIXTURE_PERSONA } from '../data/agentCases';
+import SleeperBrand from './SleeperBrand';
 
 const BEAT_INTERVAL_MS = 950;
 
@@ -88,15 +89,21 @@ export default function SceneWalkthrough({ C, onHome, onEvidence }) {
   return (
     <div className="scene" style={{ flex: 1, overflowY: 'auto', padding: '24px 28px 56px', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-      <button onClick={onHome} style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: C.text3, fontSize: C.size.small, cursor: 'pointer', padding: 0 }}>
-        <ChevronLeft size={14} /> BACK TO THE MEMO
-      </button>
+      <div className="lab-masthead">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, minWidth: 0 }}>
+          <SleeperBrand compact style={{ width: 205, maxWidth: '48vw' }} />
+          <span className="brand-kicker" style={{ color: C.text3 }}>Live incident replay</span>
+        </div>
+        <button onClick={onHome} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: C.text3, fontSize: C.size.small, cursor: 'pointer', padding: 0 }}>
+          <ChevronLeft size={14} /> BACK TO THE MEMO
+        </button>
+      </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: 2, textTransform: 'uppercase' }}>
           {STORY_CASE_ID} &middot; Baseline profile &middot; Sample Replay
         </div>
-        <h1 style={{ fontSize: C.size.title, color: C.text1, fontWeight: 600, letterSpacing: '0.02em', margin: 0 }}>
+        <h1 className="display-type" style={{ fontSize: 42, color: C.text1, fontWeight: 780, letterSpacing: '-0.02em', margin: 0, textTransform: 'uppercase' }}>
           What {FIXTURE_PERSONA.name.split(' ')[0]} saw
         </h1>
         <p style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.6, maxWidth: 780, margin: 0 }}>
@@ -262,8 +269,8 @@ export default function SceneWalkthrough({ C, onHome, onEvidence }) {
           style={{
             display: 'flex', alignItems: 'center', gap: 7, padding: '11px 20px',
             cursor: outcome ? 'pointer' : 'not-allowed', borderRadius: C.radius,
-            background: C.brassBg, border: `1px solid ${C.brass}`, color: C.brass,
-            fontFamily: C.mono, fontSize: C.size.small, fontWeight: 800, letterSpacing: .5,
+            background: C.signal, border: `1px solid ${C.signal}`, color: C.ink,
+            fontSize: C.size.small, fontWeight: 800, letterSpacing: .5,
             opacity: outcome ? 1 : .5,
           }}
         >
@@ -274,7 +281,7 @@ export default function SceneWalkthrough({ C, onHome, onEvidence }) {
           style={{
             display: 'flex', alignItems: 'center', gap: 6, padding: '11px 16px', cursor: 'pointer',
             background: 'transparent', border: `1px solid ${C.borderHi}`, borderRadius: C.radius, color: C.text2,
-            fontFamily: C.mono, fontSize: C.size.small, fontWeight: 700, letterSpacing: .5,
+            fontSize: C.size.small, fontWeight: 700, letterSpacing: .5,
           }}
         >
           <RefreshCw size={13} /> PLAY IT AGAIN

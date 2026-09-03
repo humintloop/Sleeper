@@ -52,6 +52,7 @@ import InvestigationWorkspace from './InvestigationWorkspace';
 import ReportPanel from './ReportPanel';
 import RunHistory from './RunHistory';
 import { STORY_CASE_ID, STORY_PROFILE_ID } from '../data/storyScene';
+import SleeperBrand from './SleeperBrand';
 
 const PROVIDER_DEFAULTS = {
   [PROVIDERS.ANTHROPIC]: { endpoint: 'https://api.anthropic.com/v1/messages', modelId: 'claude-sonnet-5' },
@@ -91,7 +92,7 @@ function fieldLabel(C) {
 function input(C) {
   return {
     width: '100%', background: C.surface, border: `1px solid ${C.borderHi}`, color: C.text1,
-    fontSize: C.size.small, padding: '8px 10px', borderRadius: 2, fontFamily: C.mono,
+    fontSize: C.size.small, padding: '8px 10px', borderRadius: 2, fontFamily: C.sans,
   };
 }
 
@@ -461,7 +462,11 @@ export default function AgentCaseRunner({ C, onHome, handoff = null }) {
 
   return (
     <div className="agent-runner" style={{ flex: 1, overflowY: 'auto', padding: '24px 28px 60px', display: 'flex', flexDirection: 'column', gap: 22 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div className="lab-masthead">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, minWidth: 0 }}>
+          <SleeperBrand compact style={{ width: 205, maxWidth: '48vw' }} />
+          <span className="brand-kicker" style={{ color: C.text3 }}>Evidence workspace</span>
+        </div>
         <button onClick={onHome} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: C.text3, fontSize: C.size.small, cursor: 'pointer', padding: 0 }}>
           <ChevronLeft size={14} /> HOME
         </button>
@@ -471,7 +476,7 @@ export default function AgentCaseRunner({ C, onHome, handoff = null }) {
         <div style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>
           Agent threat case &middot; controlled harness run
         </div>
-        <h1 style={{ fontSize: C.size.title, color: C.text1, fontWeight: 600, letterSpacing: '0.02em', margin: 0 }}>Run agent case</h1>
+        <h1 className="display-type" style={{ fontSize: 46, color: C.text1, fontWeight: 820, letterSpacing: '-0.025em', margin: 0, textTransform: 'uppercase' }}>Run agent case</h1>
         <p style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.6, maxWidth: 720, marginTop: 10 }}>
           Nothing on this screen leaves the browser or acts on anything: a tool call is intent, and every
           tool effect is simulated. Live and local targets record what a model actually decided. Sample
@@ -501,7 +506,7 @@ export default function AgentCaseRunner({ C, onHome, handoff = null }) {
             <span style={{
               width: 6, height: 6, borderRadius: 999,
               background: step.done ? C.brass : C.borderHi,
-              boxShadow: step.done ? `0 0 6px ${C.brass}99` : 'none',
+              boxShadow: 'none',
             }} />
             <span style={{ fontSize: C.size.micro, letterSpacing: .2, fontWeight: step.done ? 800 : 500, color: step.done ? C.brass : C.text3 }}>
               {step.label}
@@ -741,7 +746,7 @@ export default function AgentCaseRunner({ C, onHome, handoff = null }) {
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <button onClick={handleComparative} disabled={running} style={{
           display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px',
-          background: running ? C.hover : C.brassBg, border: `1px solid ${C.brass}`, color: C.brass,
+          background: running ? C.hover : C.signal, border: `1px solid ${C.signal}`, color: running ? C.text3 : C.ink,
           fontSize: C.size.small, fontWeight: 800, letterSpacing: .5, cursor: running ? 'not-allowed' : 'pointer', borderRadius: 2,
         }}>
           {running ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Play size={14} />} {running ? 'RUNNING…' : 'RUN & COMPARE CONTROLS'}

@@ -170,3 +170,78 @@ navigation — but the two controls this pass introduced (the collapsed-setup to
 history's group disclosure) are native buttons carrying `aria-expanded` and were not put through a
 real assistive-technology walkthrough. The standing caveat from the original audit applies to them
 too: this document checks the accessibility tree, not actual AT behavior.
+
+---
+
+## Re-measurement — 2026-09-02, later same day (field-manual rebrand)
+
+A second token change landed the same day: `bg`/`panel`/`surface`/`text1-3`/`borderHi` all moved again,
+and `brass` was replaced by `signal` (#A8C943, an acid yellow-green) as the brand/interaction color.
+This rebrand was picked up uncommitted and finished in this pass rather than authored fresh — see the
+commit message for what was inherited versus fixed here.
+
+### Text (WCAG 1.4.3, AA normal text = 4.5:1)
+
+| Token | on `bg` #050706 | on `panel` #0C0F0C | on `surface` #141814 |
+|---|---|---|---|
+| `text1` (#EEE9DC) | 16.67:1 | 15.90:1 | 14.80:1 |
+| `text2` (#C4BEB0) | 10.91:1 | 10.41:1 | 9.69:1 |
+| `text3` (#969589) | 6.69:1 | 6.39:1 | 5.94:1 |
+| `signal` (#A8C943) | 10.68:1 | 10.19:1 | 9.48:1 |
+
+All comfortably clear AA, with more margin than the previous ramp — this direction lightened the
+neutrals a second time on top of the widened elevation ramp from the morning's pass.
+
+### Non-text (WCAG 1.4.11, AA = 3:1)
+
+`borderHi` (#6A7165): 3.82:1 on panel, 3.56:1 on surface — passes on both, the tokens `border`/`borderHi`
+convention from the morning's pass carried forward unchanged (decorative vs. interactive boundary).
+
+### Verdict-vocabulary collision check
+
+`signal` was chosen specifically to avoid the reserved verdict hues: 74.8° (yellow-green) against
+`CONTROL_HELD` green at 138.3° and `CONTROL_FAILED` red at 5.9° — both over 60° of hue separation,
+which reads as clearly distinct at a glance rather than a near-miss. Checked before finishing this
+pass, not assumed.
+
+### Reflow, re-tested (WCAG 1.4.10)
+
+This rebrand introduced a genuinely new layout (`.incident-home`'s two-column rail + sheet grid, its
+own 980px/760px breakpoints) rather than only changing colors, so reflow was re-checked at 320 CSS px
+across home, scene, and the evidence lab: `document.scrollingElement.scrollWidth` equalled `clientWidth`
+in all three states both before and after the fix below.
+
+### Fixed in this pass: the mobile rail never actually went compact
+
+The inherited `.incident-rail` CSS set `flex-direction: row` and hid the two `.rail-detail` blocks
+under 980px, intending a compact horizontal header on phones and tablets. It didn't work: the mark
+icon, wordmark, divider, and caption were all inline-styled children of one `<div style="display:
+flex; flexDirection: column">` — the single visible child of the row once `.rail-detail` was hidden —
+so the "row" was structurally correct but had nothing to lay out horizontally; the column div's own
+layout is what rendered. On a 320px phone this put roughly 45% of the viewport height into two
+stacked full-size logo renders before the incident headline appeared, directly working against the
+"leads with the consequence" design this screen exists for (see CLAUDE.md's Current state section).
+
+No horizontal overflow resulted (`SleeperBrand`'s wordmark has `maxWidth: '100%'`, so it shrank rather
+than pushing the page wider) — this was a layout/hierarchy defect, not a reflow failure, which is why
+`scrollWidth === clientWidth` held even in the broken state.
+
+Fixed by giving that wrapper its own class (`.rail-brand`) so the breakpoints could reach it, and
+collapsing to the same compact single-lockup pattern already used correctly in the runner and scene
+mastheads (icon mark hidden, wordmark alone, at 168px). `SleeperBrand` sets `display` and `width`
+inline (merging a `style` prop that wasn't being passed for the wordmark), so the override needed
+`!important` — consistent with `.scene-grid`/`.agent-runner` elsewhere in this file overriding the
+same component's inline styles for the same reason, not a new pattern.
+
+A second instance of the identical root cause (nowrap text with no responsive truncation, clipped at
+the viewport edge rather than causing page overflow) was found and fixed the same way in
+`.incident-masthead`'s "Local-first agent assurance" tagline.
+
+### Not re-checked
+
+No new manual keyboard or screen-reader walkthrough for this rebrand's controls (`.field-button`
+already had a working aria-label on both actions, so nothing new needed one). The `e2e/story.spec.js`
+and `e2e/run-lifecycle.spec.js` accessible-name assertions were empirically verified to still pass
+against the new CSS's `text-transform: uppercase` headings before this pass concluded that risk was
+resolved, rather than assumed from the accname spec — Chrome computes those accessible names from DOM
+text content, unaffected by the CSS transform.

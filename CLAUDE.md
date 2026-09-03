@@ -75,21 +75,26 @@ live-API target needs neither WebGPU nor a local download.
 **Colors, type sizes, and radii live in the `C` object** at the top of `App.jsx`. Never hardcode a
 hex outside it, and never a font size either — `C.size` is five steps (`micro`/`small`/`body`/
 `head`/`title`) and a sixth is almost always a hierarchy problem in disguise, not a missing token.
-The one literal left is the 52px home wordmark, which is display type and deliberately outside the
-UI scale.
+The wordmark is no longer a text literal: `src/components/SleeperBrand.jsx` renders the raster brand
+assets under `public/brand/` (a lockup and a standalone mark), sized per call site rather than
+through `C.size` — it is a logo, not UI copy.
 
 **Two boundary tokens, and they are not interchangeable.** `border` is decoration — section rules,
 the edge of a non-interactive card — and fails WCAG 1.4.11 at 1.30:1, so it must never be the only
-signal that something is selectable. Every interactive boundary uses `borderHi`, which passes on
-all three surfaces. Raising a surface token lowers the contrast of everything on it: `text3` on
-`surface` sits at 4.90:1, which is the ceiling on lightening the ramp further. Re-measure and
-update [`docs/accessibility-audit.md`](docs/accessibility-audit.md) in the same change, as with the
-framework ledger.
+signal that something is selectable. Every interactive boundary uses `borderHi`. Raising a surface
+token lowers the contrast of everything on it — re-measure and update
+[`docs/accessibility-audit.md`](docs/accessibility-audit.md) in the same change, as with the
+framework ledger, whenever `bg`/`panel`/`surface` move. Current tightest ratio: `text3` on `surface`
+at 5.94:1 (see the audit doc's most recent re-measurement for the full table — the ramp has moved
+twice since this was first written, so treat any specific number here as a snapshot, not a promise).
 
-**Uppercase is a level-one marker.** Section eyebrows, the screen kickers, and codes that are
-already uppercase strings. Not tabs, not card titles, not chips, not `<details>` summaries —
-applied at every level it stops being emphasis. Letterspacing exists to open up all-caps and comes
-off with it.
+**Uppercase is a level-one marker, with one documented exception.** Section eyebrows, the screen
+kickers, and codes that are already uppercase strings. Not tabs, not card titles, not chips, not
+`<details>` summaries — applied at every level it stops being emphasis. Letterspacing exists to open
+up all-caps and comes off with it. The field-manual rebrand added one deliberate, scoped exception:
+`.incident-headline` and `.field-button` on the home screen are display type, uppercase as part of
+that treatment, not as a level marker — don't take this as license to uppercase a card title or a
+tab elsewhere; it is specific to those two selectors.
 Verdict colors are reserved on two axes now — the app carries both vocabularies in one lookup
 table (`src/components/VerdictBanner.jsx`'s `verdictDisplay`): probe verdicts (red/teal/amber/
 blue for SUCCESS/FAILURE/PARTIAL/REVIEW, retained for any old exported finding, though the UI
