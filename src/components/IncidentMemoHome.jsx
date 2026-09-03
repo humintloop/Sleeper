@@ -50,13 +50,14 @@ export default function IncidentMemoHome({ C, onScene, onAgentLab, agentRunsCoun
           <span className="brand-kicker" style={{ color: C.text2 }}>Incident memo · I<sub>1</sub></span>
         </header>
 
+        {/* No ghost numeral here anymore — "001" didn't tie to anything a
+            reader could see (not the case ID, not a count of incidents) and
+            was one of the loudest single elements on the screen for
+            something that conveyed no information. The bordered alert strip
+            below is now the one "this is simulated" signal — it used to be
+            stated twice, in two different red treatments, within ~60px. */}
         <article className="incident-sheet" aria-labelledby="incident-headline">
-          <div className="incident-number display-type" aria-hidden="true">001</div>
-
           <div className="incident-content">
-            <div className="brand-kicker" style={{ color: C.red, fontWeight: 750, marginTop: 6 }}>
-              Simulated incident&nbsp; —
-            </div>
             <h1 id="incident-headline" className="incident-headline display-type" style={{ color: C.text1 }}>
               {MEMO.headline}
             </h1>

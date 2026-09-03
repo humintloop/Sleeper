@@ -184,8 +184,12 @@ function GlobalStyle({ C }) {
       .rail-brand-wordmark { width: 230px !important; max-width: 100%; }
       .incident-main { min-width: 0; padding: 12px 18px 30px 0; display: flex; flex-direction: column; }
       .incident-masthead { min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-bottom: 14px; border-bottom: 1px solid ${C.border}; }
-      .incident-sheet { position: relative; flex: 1; display: grid; grid-template-columns: minmax(260px, .72fr) minmax(500px, 1.45fr); gap: 34px; padding: 42px 0 0; }
-      .incident-number { font-size: clamp(180px, 27vw, 430px); line-height: .78; font-weight: 850; font-stretch: 50%; color: rgba(238,233,220,.105); user-select: none; align-self: start; }
+      /* Was a two-column grid (a giant ghost "001" numeral in the first
+         track, content in the second) — the numeral didn't tie to anything a
+         reader could see and was dropped as part of toning down the home
+         screen. .incident-content is the only child now, so this is plain
+         block flow rather than a grid. */
+      .incident-sheet { flex: 1; padding: 42px 0 0; }
       .incident-content { min-width: 0; display: flex; flex-direction: column; }
       .incident-headline { font-size: clamp(44px, 5.4vw, 78px); line-height: .99; font-weight: 860; letter-spacing: -.035em; text-transform: uppercase; margin: 24px 0 20px; max-width: 850px; }
       .incident-facts { border-top: 1px solid ${C.border}; margin-top: 22px; }
@@ -207,17 +211,13 @@ function GlobalStyle({ C }) {
         .rail-brand-rule { display: none; }
         .rail-brand-wordmark { width: 168px !important; }
         .incident-main { padding: 0 12px 32px; }
-        .incident-sheet { grid-template-columns: 160px minmax(0, 1fr); gap: 20px; }
-        .incident-number { font-size: 190px; }
         .scene-grid { grid-template-columns: minmax(0, 1fr) !important; }
         .scene-grid > * { border-right: none !important; }
       }
       @media (max-width: 760px) {
         .incident-home { padding: 8px; }
         .incident-rail { border-left: 3px solid ${C.signal}; }
-        .incident-sheet { display: block; padding-top: 28px; }
-        .incident-number { position: absolute; right: 0; top: 28px; font-size: 150px; opacity: .65; }
-        .incident-content { position: relative; z-index: 1; }
+        .incident-sheet { padding-top: 28px; }
         .incident-headline { font-size: clamp(38px, 12vw, 56px); max-width: 92%; }
         .incident-fact { grid-template-columns: 24px 1fr; gap: 12px; padding: 13px 0; }
         .incident-fact > :last-child { grid-column: 2; }
