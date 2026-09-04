@@ -235,6 +235,29 @@ export default function EvidenceContractPanel({
             <Field C={C} label="Unauthorized action intent" value={contract.secondary_oracle.unauthorized_action_intent ?? 'unclear'} />
             <Field C={C} label="Judge model" value={contract.secondary_oracle.model_id} />
             <Field C={C} label="Independence effect" value="none — remains I0" tone="ochre" />
+            {contract.secondary_oracle.error && (
+              <div style={{ gridColumn: '1 / -1', color: C.red, fontSize: C.size.small }}>
+                Judge error: {contract.secondary_oracle.error}
+              </div>
+            )}
+            {/* Shown whenever the judge produced no valid verdict, not only on
+               outright error — a small local model very often replies with
+               text that just doesn't parse as the expected JSON shape, and
+               "no valid verdict" with nothing else to look at is a dead end.
+               This is exactly what the model returned; it's diagnostic, not
+               a claim about anything. */}
+            {!contract.secondary_oracle.judged_verdict && contract.secondary_oracle.raw_response && (
+              <div style={{ gridColumn: '1 / -1' }}>
+                <div style={{ color: C.text3, fontSize: C.size.micro, marginBottom: 4 }}>Raw judge response (did not parse as valid output)</div>
+                <pre style={{
+                  margin: 0, fontFamily: C.mono, fontSize: C.size.micro, lineHeight: 1.5, color: C.text2,
+                  background: C.surface, border: `1px solid ${C.border}`, borderRadius: 2, padding: '9px 11px',
+                  whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', maxHeight: 220, overflowY: 'auto',
+                }}>
+                  {contract.secondary_oracle.raw_response}
+                </pre>
+              </div>
+            )}
           </Group>
         )}
 
