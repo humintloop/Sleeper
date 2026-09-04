@@ -40,7 +40,7 @@ import { PortfolioReplayTarget } from '../harness/replayTarget';
 import { WebLLMSecondaryJudge } from '../harness/secondaryJudge';
 import { RUN_MODES } from '../harness/evidenceContract';
 import { APITargetAdapter, PROVIDERS } from '../api/adapter';
-import { deleteCapturedRun, loadAgentRuns, loadCapturedRuns, saveAgentRun, verifyEvidenceChain } from '../storage';
+import { clearAgentRuns, deleteCapturedRun, loadAgentRuns, loadCapturedRuns, saveAgentRun, verifyEvidenceChain } from '../storage';
 import ControlProfileSelector from './ControlProfileSelector';
 import AgenticTracePanel from './AgenticTracePanel';
 import ControlResultsPanel from './ControlResultsPanel';
@@ -1029,7 +1029,15 @@ export default function AgentCaseRunner({ C, onHome, handoff = null, onWatchScen
         onDelete={captureId => setCaptures(deleteCapturedRun(captureId))}
       />
 
-      {history.length > 0 && <RunHistory C={C} history={history} chainStatus={chainStatus} cardStyle={card(C)} />}
+      {history.length > 0 && (
+        <RunHistory
+          C={C}
+          history={history}
+          chainStatus={chainStatus}
+          cardStyle={card(C)}
+          onClear={() => { setHistory(clearAgentRuns()); setChainStatus(null); }}
+        />
+      )}
     </div>
   );
 }

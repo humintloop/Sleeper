@@ -40,6 +40,12 @@ export function loadAgentRuns(storage = globalThis.localStorage) {
   return Array.isArray(runs) ? runs : [];
 }
 
+/** Clears run history only — captures are a deliberate keep, not clutter. */
+export function clearAgentRuns(storage = globalThis.localStorage) {
+  try { storage?.removeItem?.(AGENT_RUNS_KEY); } catch (_) { /* unavailable */ }
+  return [];
+}
+
 /**
  * Prepend a completed agent-case run and persist it, capped at
  * MAX_STORED_AGENT_RUNS most recent. Returns the updated list so the caller

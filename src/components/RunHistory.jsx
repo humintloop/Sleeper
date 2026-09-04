@@ -142,7 +142,7 @@ function RunGroup({ C, group }) {
   );
 }
 
-export default function RunHistory({ C, history, chainStatus, cardStyle }) {
+export default function RunHistory({ C, history, chainStatus, cardStyle, onClear }) {
   const groups = groupRunHistory(history);
   return (
     <div style={cardStyle}>
@@ -151,6 +151,19 @@ export default function RunHistory({ C, history, chainStatus, cardStyle }) {
         <div style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: 1.2, fontWeight: 700, textTransform: 'uppercase' }}>
           Recent runs &middot; this browser
         </div>
+        {onClear && (
+          <button
+            onClick={() => {
+              if (window.confirm(`Clear ${history.length} retained run${history.length === 1 ? '' : 's'} from this browser? This does not affect verified captures.`)) onClear();
+            }}
+            style={{
+              marginLeft: 'auto', background: 'transparent', border: 'none', color: C.text3,
+              fontSize: C.size.micro, fontWeight: 700, letterSpacing: .3, cursor: 'pointer', padding: 0,
+            }}
+          >
+            CLEAR
+          </button>
+        )}
       </div>
       {chainStatus && (
         <div role={chainStatus.valid ? undefined : 'alert'} style={{ fontSize: C.size.micro, color: chainStatus.valid ? C.text3 : C.red, lineHeight: 1.5, marginBottom: 10 }}>
