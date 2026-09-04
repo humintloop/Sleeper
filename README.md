@@ -73,15 +73,17 @@ so it isn't only a demonstration.
 
 The agent harness is built and wired end to end in the browser, organized around a Compare/
 Trace/Evidence/Report investigation workspace, with a no-key deterministic replay plus live API
-and local WebLLM targets. Case 1, and both halves of case 3 (the poisoned MCP tool descriptor and
-the unsanctioned MCP server), each have a dramatized scene walking through the real fixture and a
-real Sample Replay run before handing that same result into the lab; case 2 does not yet. A
+and local WebLLM targets. All four threat cases now have a dramatized scene walking through real
+fixture content and a real Sample Replay run before handing that same result into the lab — an
+inbox for case 1, a deploy-window checklist and approval prompt for case 2, a tool registry for
+3a, a marketplace listing for 3b — each in the visual metaphor that case's own failure mode
+actually looks like, not a smaller copy of another case's. A
 completed live run that reaches evidence class E3 can be saved as a **verified capture** and
 replayed later without another API call — see [`docs/live-verification-log.md`](./docs/live-verification-log.md)
 for the running, hand-maintained record of which ones are real.
 
-The automated suite is 606 unit/integration tests across 33 files plus 19 Playwright
-critical-flow browser tests across 8 files (`npm run test:e2e`, Sample Replay only — no live
+The automated suite is 606 unit/integration tests across 33 files plus 20 Playwright
+critical-flow browser tests across 9 files (`npm run test:e2e`, Sample Replay only — no live
 credentials needed in CI); 208 of the unit tests, across 13 files (`computeVerdict`,
 `VerdictBanner`, `authorityRegistry`, `toolAuthorizationGate`, `approvalPolicy`, `runProvenance`,
 `replayTarget`, `evidenceContract`, `evidenceWitness`, `runConfiguration`,

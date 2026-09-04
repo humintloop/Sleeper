@@ -50,6 +50,7 @@ live-API target needs neither WebGPU nor a local download.
 | `src/data/storyScene.js` | The narrative layer over NR-AGT-001: the persona, the memo copy, the fixture-derived email split, `deriveSceneBeats`, and `storyRunParams` — the single definition of the arguments the scene runs with. |
 | `src/components/McpDescriptorScene.jsx` / `src/data/mcpDescriptorScene.js` | The same scene pattern applied to NR-AGT-003A: a tool-registry inspector showing the poisoned descriptor's real revision-4-vs-7 diff (`descriptor_revision.changed_after_approval`), the credentials-file fixture, then the real agent trace and final response — reached from the Lab via "Watch this attack — the tool registry." |
 | `src/components/McpMarketplaceScene.jsx` / `src/data/mcpMarketplaceScene.js` | Same pattern for NR-AGT-003B: a fake MCP marketplace listing (rating, publisher, requested scopes with the excess ones highlighted) built from `parseListing()` over the real fixture text, then the real hostile tool result and agent trace — reached via "Watch this attack — the marketplace listing." |
+| `src/components/ApprovalQueueScene.jsx` / `src/data/approvalQueueScene.js` | The scene for NR-AGT-002 — not an injection case, so the metaphor is a deploy-window checklist and one approval prompt rather than poisoned content. Runs variant `NR-AGT-002-V3` (decision context stripping) and shows the real fixture's `full` payload next to the run's own `approvalSummary.approval_records[0].presented_context` — reached via "Watch this attack — the approval queue." |
 | `src/components/AgentCaseRunner.jsx` | **Start here for the UI.** Case + profile + target (live API or local model) → run → `InvestigationWorkspace`'s Compare/Trace/Evidence/Report tabs, plus run history read from `storage.js`. Which case/profile it opens on when arriving via a scene handoff is read from the handoff's own `configuration`, not a hardcoded case — this is what lets all three scenes (case 1, 3a, 3b) hand off through the same component. |
 | `src/components/RunContextSummary.jsx` | Persistent context strip above the workspace: case/variant/profile/target/judge/trials/configuration digest, and the derived idle/running/current/stale/degraded/error state with a field-level diff and rerun action when stale. Also exports `LiveRunBadge` — an animated "Live model run" badge shown the instant Live API is selected, not only after a run completes, and `targetSummary()`, the one place a configuration's target renders as text. |
 | `src/components/RunHistory.jsx` | Locally retained runs, grouped by comparison batch — one row per comparison, members' verdicts on it, records and their Evidence Contracts one level down. A record's `batchId` is what groups it; records without one stand alone. |
@@ -169,7 +170,7 @@ naming exactly which fields changed and offering a rerun action when it doesn't.
 (Markdown/HTML/JSON) and the Evidence Contract JSON download both refuse a stale export without
 explicit confirmation, then label it historical.
 
-606 vitest tests + 19 Playwright critical-flow tests (`npm run test:e2e`, Sample Replay only, no
+606 vitest tests + 20 Playwright critical-flow tests (`npm run test:e2e`, Sample Replay only, no
 live credentials needed), lint clean, build clean, a CI-enforced bundle budget
 (`npm run check-budget`). The single-turn probe flow (`payloads.js`, `clusters.js`,
 `FindingCard`, `FindingsReport`, the batch/judge machinery, and several other components) was
@@ -180,9 +181,14 @@ Case 1 is not the only case with a dramatized scene anymore. `McpDescriptorScene
 and `McpMarketplaceScene.jsx` (NR-AGT-003B) apply the same discipline to the two poisoned-MCP
 cases — a tool-registry inspector and a fake marketplace listing, both built from the real fixture
 text and both handing a real Sample Replay result into the lab exactly as case 1's scene does.
-Case 2 (excessive agency / insufficient human approval) still has no scene of its own; its four
-HITL failure modes don't fit the "here's the poisoned document" shape the other three share, and
-deserve their own visual metaphor rather than a smaller copy of one of these.
+`ApprovalQueueScene.jsx` (NR-AGT-002) closes out all four: nothing in that case is an injection, so
+its scene is a deploy-window checklist and one approval prompt rather than poisoned content, built
+from the one HITL variant (`NR-AGT-002-V3`, decision context stripping) a real fixture
+(`NR-AGT-002-FIX-APPROVAL-CONTEXT`) carries both sides of — what the call itself carried, and what
+actually reached the approval prompt (`{"tool": "send_email"}`, nothing else, straight from the
+run's own `approvalSummary.approval_records`). The other three HITL variants (approval flood, high-
+risk starvation, denied-decision replay) remain reachable only through the Lab's own variant
+selector, not dramatized.
 
 Going live changes what a run can prove, and now it also changes what stays visible on screen: an
 animated `LiveRunBadge` appears the moment Live API is selected, and a completed run that reaches
