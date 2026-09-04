@@ -48,9 +48,12 @@ live-API target needs neither WebGPU nor a local download.
 | `src/components/ConferenceStory.jsx` | Home screen: a five-step guided walkthrough (employee → content → agent → tools → control) built for a stage or booth monitor rather than an analyst's desk. Replaced `IncidentMemoHome.jsx`. Every claim on it is real: steps 1-2 use static data from `storyScene.js` that needs no run, steps 3-5 run the actual Baseline assessment plus a second run under `STORY_COMPARISON_PROFILE_ID` so the closing comparison is two independently computed verdicts, never narrated ones — the draft this replaced hand-typed the email, the tool calls, and a "Control held in this run" ending with no run behind any of it, which is exactly the failure mode this project's story layer exists to prevent. A "Evidence lab" link in its masthead goes straight to the lab for the audience that already believes the premise. |
 | `src/components/SceneWalkthrough.jsx` | The demo. Runs the real Baseline Sample Replay of NR-AGT-001 through `runAgentAssessment` and renders **that run's own event stream** as the interface it would have happened in, then hands the same result object to the lab. Not a mock, and not a re-run. |
 | `src/data/storyScene.js` | The narrative layer over NR-AGT-001: the persona, the memo copy, the fixture-derived email split, `deriveSceneBeats`, and `storyRunParams` — the single definition of the arguments the scene runs with. |
-| `src/components/AgentCaseRunner.jsx` | **Start here for the UI.** Case + profile + target (live API or local model) → run → `InvestigationWorkspace`'s Compare/Trace/Evidence/Report tabs, plus run history read from `storage.js`. |
-| `src/components/RunContextSummary.jsx` | Persistent context strip above the workspace: case/variant/profile/target/judge/trials/configuration digest, and the derived idle/running/current/stale/degraded/error state with a field-level diff and rerun action when stale. |
+| `src/components/McpDescriptorScene.jsx` / `src/data/mcpDescriptorScene.js` | The same scene pattern applied to NR-AGT-003A: a tool-registry inspector showing the poisoned descriptor's real revision-4-vs-7 diff (`descriptor_revision.changed_after_approval`), the credentials-file fixture, then the real agent trace and final response — reached from the Lab via "Watch this attack — the tool registry." |
+| `src/components/McpMarketplaceScene.jsx` / `src/data/mcpMarketplaceScene.js` | Same pattern for NR-AGT-003B: a fake MCP marketplace listing (rating, publisher, requested scopes with the excess ones highlighted) built from `parseListing()` over the real fixture text, then the real hostile tool result and agent trace — reached via "Watch this attack — the marketplace listing." |
+| `src/components/AgentCaseRunner.jsx` | **Start here for the UI.** Case + profile + target (live API or local model) → run → `InvestigationWorkspace`'s Compare/Trace/Evidence/Report tabs, plus run history read from `storage.js`. Which case/profile it opens on when arriving via a scene handoff is read from the handoff's own `configuration`, not a hardcoded case — this is what lets all three scenes (case 1, 3a, 3b) hand off through the same component. |
+| `src/components/RunContextSummary.jsx` | Persistent context strip above the workspace: case/variant/profile/target/judge/trials/configuration digest, and the derived idle/running/current/stale/degraded/error state with a field-level diff and rerun action when stale. Also exports `LiveRunBadge` — an animated "Live model run" badge shown the instant Live API is selected, not only after a run completes, and `targetSummary()`, the one place a configuration's target renders as text. |
 | `src/components/RunHistory.jsx` | Locally retained runs, grouped by comparison batch — one row per comparison, members' verdicts on it, records and their Evidence Contracts one level down. A record's `batchId` is what groups it; records without one stand alone. |
+| `src/components/CapturedRuns.jsx` | A completed **live** run that reached evidence class E3 can be saved as a verified capture — the full outcome (run/verdict/contract/configuration), not history's trimmed summary — so it can be shown again without another API call. `SaveCaptureButton` is gated on exactly that (`target_type === 'live'` and `max_class_claimed === 'E3'`); replaying one sets the result straight from what was recorded and syncs the target selector to match, rather than re-invoking any target. See [`docs/live-verification-log.md`](docs/live-verification-log.md) for the running record of which captures came from an actual live run. |
 | `src/components/InvestigationWorkspace.jsx` | The Compare/Trace/Evidence/Report tab shell. Real ARIA tabs (roving tabindex, arrow/Home/End nav) — pure navigation, no verdict/security logic. |
 | `src/components/ReportPanel.jsx` | UI for `reportGenerator.js`'s Markdown/HTML/JSON export (current result or full comparison set), gated by `reportExport.js`'s stale-export confirmation — distinct from the Evidence Contract JSON download on the Evidence tab. |
 | `src/harness/runAgentAssessment.js` | **Start here for the logic.** Case + profile + target → run → verdict → contract. `runCaseAcrossProfiles` is the comparative arm; `createComparisonIdentity` records each member's manifest/configuration digest for the Compare tab. |
@@ -66,7 +69,7 @@ live-API target needs neither WebGPU nor a local download.
 | `src/data/mitigationMappings.js` | ATLAS mitigation refs + project-defined action guidance. |
 | `src/reports/reportGenerator.js` | Markdown / JSON / HTML export, built around the agent-run + Evidence Contract shape — not the deleted probe-finding shape. Has a UI surface now: `ReportPanel.jsx`. |
 | `src/reports/reportExport.js` / `evidenceContractExport.js` | Pure stale-export gating (`STALE_EXPORT_CONFIRMATION_REQUIRED`) for the Report tab and the Evidence Contract download respectively — same contract, applied independently in each place. |
-| `src/storage.js` | `AGENT_RUNS_KEY` only — completed agent runs, capped at 20. No probe-flow state persists; there is no "resume a half-configured case" concept in agent mode. |
+| `src/storage.js` | `AGENT_RUNS_KEY` — completed agent runs, capped at 20, trimmed to summary + contract. `CAPTURED_RUNS_KEY` — verified captures, capped at 12, storing the full outcome; deliberately separate from run history since a capture exists to be replayed, not just reviewed. No probe-flow state persists; there is no "resume a half-configured case" concept in agent mode. |
 | `controls/`, `docs/` | Project-defined control set and framework relevance notes. |
 | `e2e/` | Playwright critical-flow tests (`npm run test:e2e`) — Sample Replay only, no live credentials needed in CI. |
 
@@ -166,12 +169,28 @@ naming exactly which fields changed and offering a rerun action when it doesn't.
 (Markdown/HTML/JSON) and the Evidence Contract JSON download both refuse a stale export without
 explicit confirmation, then label it historical.
 
-598 vitest tests + 15 Playwright critical-flow tests (`npm run test:e2e`, Sample Replay only, no
+606 vitest tests + 19 Playwright critical-flow tests (`npm run test:e2e`, Sample Replay only, no
 live credentials needed), lint clean, build clean, a CI-enforced bundle budget
 (`npm run check-budget`). The single-turn probe flow (`payloads.js`, `clusters.js`,
 `FindingCard`, `FindingsReport`, the batch/judge machinery, and several other components) was
 deleted outright rather than kept alongside agent mode — agents are the only mode now, and
 nothing in the harness executes single-turn probes.
+
+Case 1 is not the only case with a dramatized scene anymore. `McpDescriptorScene.jsx` (NR-AGT-003A)
+and `McpMarketplaceScene.jsx` (NR-AGT-003B) apply the same discipline to the two poisoned-MCP
+cases — a tool-registry inspector and a fake marketplace listing, both built from the real fixture
+text and both handing a real Sample Replay result into the lab exactly as case 1's scene does.
+Case 2 (excessive agency / insufficient human approval) still has no scene of its own; its four
+HITL failure modes don't fit the "here's the poisoned document" shape the other three share, and
+deserve their own visual metaphor rather than a smaller copy of one of these.
+
+Going live changes what a run can prove, and now it also changes what stays visible on screen: an
+animated `LiveRunBadge` appears the moment Live API is selected, and a completed run that reaches
+evidence class E3 can be saved as a **verified capture** (`CapturedRunsList` /
+`SaveCaptureButton`, `src/components/CapturedRuns.jsx`) — the full outcome, kept so it can be
+replayed later without another API call or a model reproducing the same decision twice. No
+verified capture exists yet; [`docs/live-verification-log.md`](docs/live-verification-log.md) is
+the honest, hand-maintained record of when one first does.
 
 The persona (`FIXTURE_PERSONA`) is scoped to case 1 on purpose. NR-AGT-002 runs across a deploy
 window and NR-AGT-003A/B drive an MCP-connected coding agent; a marketing coordinator does not do
