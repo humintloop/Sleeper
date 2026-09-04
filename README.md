@@ -82,8 +82,8 @@ completed live run that reaches evidence class E3 can be saved as a **verified c
 replayed later without another API call — see [`docs/live-verification-log.md`](./docs/live-verification-log.md)
 for the running, hand-maintained record of which ones are real.
 
-The automated suite is 606 unit/integration tests across 33 files plus 20 Playwright
-critical-flow browser tests across 9 files (`npm run test:e2e`, Sample Replay only — no live
+The automated suite is 636 unit/integration tests across 35 files plus 24 Playwright
+critical-flow browser tests across 11 files (`npm run test:e2e`, Sample Replay only — no live
 credentials needed in CI); 208 of the unit tests, across 13 files (`computeVerdict`,
 `VerdictBanner`, `authorityRegistry`, `toolAuthorizationGate`, `approvalPolicy`, `runProvenance`,
 `replayTarget`, `evidenceContract`, `evidenceWitness`, `runConfiguration`,

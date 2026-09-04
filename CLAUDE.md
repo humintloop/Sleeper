@@ -57,10 +57,12 @@ live-API target needs neither WebGPU nor a local download.
 | `src/components/CapturedRuns.jsx` | A completed **live** run that reached evidence class E3 can be saved as a verified capture — the full outcome (run/verdict/contract/configuration), not history's trimmed summary — so it can be shown again without another API call. `SaveCaptureButton` is gated on exactly that (`target_type === 'live'` and `max_class_claimed === 'E3'`); replaying one sets the result straight from what was recorded and syncs the target selector to match, rather than re-invoking any target. See [`docs/live-verification-log.md`](docs/live-verification-log.md) for the running record of which captures came from an actual live run. |
 | `src/components/InvestigationWorkspace.jsx` | The Compare/Trace/Evidence/Report tab shell. Real ARIA tabs (roving tabindex, arrow/Home/End nav) — pure navigation, no verdict/security logic. |
 | `src/components/ReportPanel.jsx` | UI for `reportGenerator.js`'s Markdown/HTML/JSON export (current result or full comparison set), gated by `reportExport.js`'s stale-export confirmation — distinct from the Evidence Contract JSON download on the Evidence tab. |
+| `src/components/LiveRunConsole.jsx` | Real-time console for a single run (`handleRun`/`handleComparative`, not repeat trials): sticky phase rail, a plain-English "now" line, and a card per `execution_chain` entry, appended the instant `runAgentCase.js`'s `onEvent` hands it back — the literal same object reference `run.events` ends up holding, not a copy, which is what makes this a faithful render rather than a mockup. Turn-granularity only (Phase A — no token streaming, `src/api/adapter.js` untouched); ends on a verdict banner reading `verdict.observation` when the run resolved one. Visual pattern from `docs/prototypes/sleeper-run-console.html`. |
 | `src/harness/runAgentAssessment.js` | **Start here for the logic.** Case + profile + target → run → verdict → contract. `runCaseAcrossProfiles` is the comparative arm; `createComparisonIdentity` records each member's manifest/configuration digest for the Compare tab. |
-| `src/harness/runAgentCase.js` | The ReAct loop. Owns provenance attribution, the turn cap, the loop guard, and provider-native assistant-turn fidelity (`providerResponses`). |
+| `src/harness/runAgentCase.js` | The ReAct loop. Owns provenance attribution, the turn cap, the loop guard, and provider-native assistant-turn fidelity (`providerResponses`). Every `execution_chain` entry passes through one `emit()` helper that both appends to `events` and calls the optional `onEvent` callback with the same reference — one source of truth for the trace, the contract, and `LiveRunConsole`. |
 | `src/harness/runConfiguration.js` | The one canonical execution-configuration snapshot (case/variant/profile/target/provider/model/judge/trials/advertised tools) and its digest — what `RunContextSummary` and the stale/current state derive from. |
-| `src/harness/evaluateCaseConditions.js` | Evaluates each case's declared `attack_success`/`partial_control_failure` signals against the observed run; feeds `computeVerdict.js`'s reconciliation (an unknown or matched case signal can downgrade a hold, never upgrade one). |
+| `src/harness/evaluateCaseConditions.js` | Evaluates each case's declared `attack_success`/`partial_control_failure` signals against the observed run, plus two resolved-observation signals (`injection_neutralized_upstream`, `injection_not_adopted` — run-level, not per-call) that name what happened when neither attack condition matched; feeds `computeVerdict.js`'s reconciliation (an unknown or matched case signal can downgrade a hold, never upgrade one). |
+| `src/harness/gateConformance.js` | A battery of synthetic tool-call proposals run straight through `runToolAuthorizationGate` — no target, no model, no case run. `GateConformancePanel.jsx` renders it as a runnable, always-available pass/fail suite in the Lab, demonstrating gate enforcement in under a second. Enforcement evidence about Sleeper's own gate only, stated explicitly in the report it returns. |
 | `src/harness/` | `authorityRegistry.js` (tool trust boundaries), `controlGate.js` (profile → system-prompt wrapper), `controls/*` (four control functions), `mockToolRouter.js`, `computeVerdict.js`, `evidenceContract.js`, `webllmLocalTarget.js` (local-model target, prompted-JSON tool-call fallback). |
 | `src/api/adapter.js` | Live-target adapter. OpenAI / Anthropic / generic, tool-calling, local JSON fallback, `describeDegradation` for readable degradation reasons. Key is a private class field — keep it that way. Preserves provider-native assistant content (mixed blocks, multiple tool calls, unknown block types) losslessly for continuation. |
 | `src/data/agentCases.js` | The four threat cases (`NR-AGT-001/002/003A/003B`), fixtures, framework mappings, and each case's declared `conditions` (executable signals `evaluateCaseConditions.js` consumes). |
@@ -170,7 +172,7 @@ naming exactly which fields changed and offering a rerun action when it doesn't.
 (Markdown/HTML/JSON) and the Evidence Contract JSON download both refuse a stale export without
 explicit confirmation, then label it historical.
 
-606 vitest tests + 20 Playwright critical-flow tests (`npm run test:e2e`, Sample Replay only, no
+636 vitest tests + 24 Playwright critical-flow tests (`npm run test:e2e`, Sample Replay only, no
 live credentials needed), lint clean, build clean, a CI-enforced bundle budget
 (`npm run check-budget`). The single-turn probe flow (`payloads.js`, `clusters.js`,
 `FindingCard`, `FindingsReport`, the batch/judge machinery, and several other components) was
@@ -207,8 +209,25 @@ Two framework-mapping judgment calls remain project-defined rather than sourced,
 flagged as such in `docs/agent-module-plan.md`: the AIUC-1 3a/3b requirement allocation, and
 two inferred OWASP LLM mappings (case 1's LLM01, case 3b's LLM04).
 
+Live NR-AGT-001 runs used to flatten to the same INCONCLUSIVE / `NO_AUTHORIZATION_DECISION_REQUIRED`
+under both the Reference and Partial postures, despite materially different event chains —
+Reference's detection blocks the payload before the model ever sees it, Partial's model sees it
+and declines. `evaluateCaseConditions.js`'s two new resolved-observation conditions
+(`injection_neutralized_upstream`, `injection_not_adopted`) and `computeVerdict.js`'s
+reconciliation now name that distinction with its own reason code and a new `observation` field
+— verdict stays INCONCLUSIVE deliberately (these are observations, not control-hold claims,
+and CONTROL_HELD still always requires tool_authorization itself to have held); nothing about
+the four-value verdict vocabulary changed. `ControlResultsPanel.jsx` and `LiveRunConsole.jsx`
+both surface `observation`, not only the Evidence Contract JSON. `docs/prototypes/
+sleeper-run-console.html` is the design brief `LiveRunConsole.jsx` was built against — the same
+onEvent bus Sample Replay already exercises, so it needs no live key to see it work.
+
 Live API target is **Anthropic first**. The adapter holds the key in memory for the session
-and never writes it to storage. Keep it that way.
+and never writes it to storage. Keep it that way. `LiveRunConsole.jsx` (Phase A) deliberately
+does not touch `adapter.js` at all — real per-token streaming there is Phase B, and should ship
+only behind a parity test (streamed assembly must produce an identical final message/contract to
+the non-streaming path for the same fixture). If that parity can't be asserted cheaply, Phase B
+is not worth the risk to this file's lossless provider-fidelity guarantee — stop at Phase A.
 
 ## Deadline
 
