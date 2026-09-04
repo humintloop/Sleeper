@@ -52,6 +52,7 @@ import InvestigationWorkspace from './InvestigationWorkspace';
 import ReportPanel from './ReportPanel';
 import RunHistory from './RunHistory';
 import CapturedRunsList, { SaveCaptureButton } from './CapturedRuns';
+import GateConformancePanel from './GateConformancePanel';
 import SleeperBrand from './SleeperBrand';
 
 const PROVIDER_DEFAULTS = {
@@ -1038,6 +1039,8 @@ export default function AgentCaseRunner({ C, onHome, handoff = null, onWatchScen
           onClear={() => { setHistory(clearAgentRuns()); setChainStatus(null); }}
         />
       )}
+
+      <GateConformancePanel C={C} cardStyle={card(C)} />
     </div>
   );
 }
