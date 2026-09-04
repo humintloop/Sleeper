@@ -96,6 +96,25 @@ function input(C) {
   };
 }
 
+// Turns a runAgentCase onProgress event into the one line a reader needs to
+// believe a live or local run is actually moving, not stuck. Before this,
+// "Turn N" only ever appeared after the run finished, in the trace — the
+// entire wait was silent.
+const PROGRESS_PHASE_LABEL = {
+  awaiting_model: 'waiting for a model response',
+  tool_calls_proposed: count => `model proposed ${count} tool call${count === 1 ? '' : 's'}, evaluating`,
+  final_response: 'model responded, finishing up',
+};
+
+function turnProgressText(progress) {
+  if (!progress) return null;
+  const phase = PROGRESS_PHASE_LABEL[progress.phase];
+  const detail = typeof phase === 'function' ? phase(progress.toolCallCount ?? 0) : phase;
+  if (!detail) return null;
+  const trialPrefix = progress.trialCount > 1 ? `Trial ${progress.trial} of ${progress.trialCount} — ` : '';
+  return `${trialPrefix}Turn ${progress.turn} of ${progress.maxTurns} — ${detail}`;
+}
+
 function toggleBtn(C, active) {
   return {
     padding: '7px 14px', fontSize: C.size.small, fontWeight: 800, letterSpacing: .5, cursor: 'pointer', borderRadius: 2,
@@ -192,6 +211,12 @@ export default function AgentCaseRunner({ C, onHome, handoff = null, onWatchScen
     handoff ? { [handoff.configuration.profile_id]: handoff } : {},
   ); // { [profileId]: full assessment }
   const [comparisonProgress, setComparisonProgress] = useState(null);
+  // Turn-by-turn progress within whichever runOnce() call is currently in
+  // flight. Without this, a multi-turn live-API run is one opaque `await` —
+  // a spinning icon and a single static "Assessment is running." message for
+  // however long several sequential network calls take, which reads as
+  // hung even when it is working.
+  const [turnProgress, setTurnProgress] = useState(null);
   const [trialCount, setTrialCount] = useState(3);
   const [trialSummary, setTrialSummary] = useState(null);
   const [running, setRunning] = useState(false);
@@ -356,6 +381,7 @@ export default function AgentCaseRunner({ C, onHome, handoff = null, onWatchScen
     }
     setRunning(true);
     setError(null);
+    setTurnProgress(null);
     try {
       return await runAgentAssessment({
         agentCase: caseId,
@@ -370,12 +396,14 @@ export default function AgentCaseRunner({ C, onHome, handoff = null, onWatchScen
         providerModel,
         localModel: targetType === TARGET_TYPES.LOCAL ? localModelId : null,
         trialCount,
+        onProgress: setTurnProgress,
       });
     } catch (err) {
       setError(err?.message || String(err));
       return null;
     } finally {
       setRunning(false);
+      setTurnProgress(null);
     }
   };
 
@@ -466,6 +494,12 @@ export default function AgentCaseRunner({ C, onHome, handoff = null, onWatchScen
     }
     setRunning(true);
     setError(null);
+    setTurnProgress(null);
+    // Trials run sequentially inside runRepeatedAssessment and each one
+    // resets its own turn counter to 1, so a fresh "turn 1" in the progress
+    // stream is exactly the signal that a new trial has started — there is
+    // no other per-trial hook to count from.
+    let trialNumber = 0;
     try {
       const repeated = await runRepeatedAssessment({
         trialCount,
@@ -480,6 +514,10 @@ export default function AgentCaseRunner({ C, onHome, handoff = null, onWatchScen
         targetType,
         providerModel,
         localModel: targetType === TARGET_TYPES.LOCAL ? localModelId : null,
+        onProgress: progress => {
+          if (progress.turn === 1) trialNumber += 1;
+          setTurnProgress({ ...progress, trial: trialNumber, trialCount });
+        },
       });
       for (const outcome of repeated.trials) await persistRun(outcome, profileId);
       setTrialSummary(repeated);
@@ -488,6 +526,7 @@ export default function AgentCaseRunner({ C, onHome, handoff = null, onWatchScen
       setError(err?.message || String(err));
     } finally {
       setRunning(false);
+      setTurnProgress(null);
     }
   };
 
@@ -811,11 +850,16 @@ export default function AgentCaseRunner({ C, onHome, handoff = null, onWatchScen
         Runs Baseline, Partial, and Reference, then shows the attempted tools, gate decision, and simulated effect side by side.
       </div>
 
-      {comparisonProgress && (
+      {running && (
         <div role="status" aria-live="polite" style={{ ...card(C), padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <RefreshCw size={13} color={C.brass} style={{ animation: 'spin 1s linear infinite' }} />
+          <RefreshCw size={13} color={C.brass} style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} />
           <div style={{ color: C.text2, fontSize: C.size.small }}>
-            Running <strong style={{ color: C.text1 }}>{DISPLAY_PROFILES[comparisonProgress.current]?.label}</strong> · {comparisonProgress.completed + 1} of {comparisonProgress.total}
+            {comparisonProgress && (
+              <>Running <strong style={{ color: C.text1 }}>{DISPLAY_PROFILES[comparisonProgress.current]?.label}</strong> · {comparisonProgress.completed + 1} of {comparisonProgress.total}</>
+            )}
+            {comparisonProgress && turnProgress && ' · '}
+            {turnProgress && turnProgressText(turnProgress)}
+            {!comparisonProgress && !turnProgress && 'Starting…'}
           </div>
         </div>
       )}

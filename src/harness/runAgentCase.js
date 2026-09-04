@@ -80,6 +80,11 @@ function seededClassesInValue(value, seeds) {
  * @param {string} [params.initialInstructionSource] conservative provenance for
  *   first-turn calls when untrusted model-facing descriptors are present.
  * @param {object} [params.approvalPolicy] deterministic approval-record provider.
+ * @param {Function} [params.onProgress]  fired before each network-bound step
+ *   ({ turn, maxTurns, phase, toolCallCount }) so a UI can show that a live
+ *   or local target is genuinely progressing turn by turn, not hung — this
+ *   loop is otherwise a single opaque `await` from the caller's side, which
+ *   for a multi-turn live run can take much longer than one request.
  * @returns {Promise<object>} trace, control records, and loop metadata.
  */
 export async function runAgentCase({
@@ -96,6 +101,7 @@ export async function runAgentCase({
   now,
   initialInstructionSource = INITIAL_INSTRUCTION_SOURCE,
   approvalPolicy = null,
+  onProgress = null,
 } = {}) {
   const controls = profile?.controls ?? {};
   const systemPrompt = buildControlSystemPrompt(baseSystemPrompt, profile);
@@ -130,6 +136,7 @@ export async function runAgentCase({
 
   while (turns < maxTurns) {
     turns += 1;
+    onProgress?.({ turn: turns, maxTurns, phase: 'awaiting_model' });
 
     let response;
     try {
@@ -167,6 +174,11 @@ export async function runAgentCase({
     }
 
     events.push({ type: 'model_turn', turn: turns, text: guardedText, tool_call_count: calls.length });
+    onProgress?.({
+      turn: turns, maxTurns,
+      phase: calls.length > 0 ? 'tool_calls_proposed' : 'final_response',
+      toolCallCount: calls.length,
+    });
 
     if (calls.length === 0) {
       const assistantMessage = formatAssistantToolCallMessage({

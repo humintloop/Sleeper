@@ -213,6 +213,18 @@ describe('end to end, case 1', () => {
     expect(contract.scope.covers.length).toBeGreaterThan(0);
     expect(contract.scope.covers).not.toEqual([]);
   });
+
+  it('forwards onProgress to the underlying loop untouched', async () => {
+    const events = [];
+    await runAgentAssessment({
+      agentCase: 'NR-AGT-001',
+      profile: 'baseline',
+      target: hijacked(),
+      onProgress: event => events.push(event),
+    });
+    expect(events.length).toBeGreaterThan(0);
+    expect(events[0]).toMatchObject({ turn: 1, phase: 'awaiting_model' });
+  });
 });
 
 describe('repeat-trial methodology', () => {

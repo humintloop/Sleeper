@@ -96,6 +96,50 @@ describe('loop control', () => {
   });
 });
 
+describe('onProgress', () => {
+  // The loop is otherwise one opaque `await` from the caller's side — for a
+  // multi-turn live-API run that can take much longer than one request, with
+  // no way for a UI to show it is genuinely moving rather than stuck. These
+  // assert the callback fires before the network-bound step (so a UI can
+  // show "waiting" before the wait happens, not after) and once more with
+  // the outcome once the model has replied.
+  it('fires before each target call and again once tool calls are known', async () => {
+    const events = [];
+    const run = await runAgentCase({
+      target: scriptedTarget([callTool('web_search', { q: 'a' }), say('done')]),
+      profile: CONTROL_PROFILES.baseline,
+      task: 'x',
+      maxTurns: 5,
+      onProgress: event => events.push(event),
+    });
+
+    expect(run.turns).toBe(2);
+    expect(events).toEqual([
+      { turn: 1, maxTurns: 5, phase: 'awaiting_model' },
+      { turn: 1, maxTurns: 5, phase: 'tool_calls_proposed', toolCallCount: 1 },
+      { turn: 2, maxTurns: 5, phase: 'awaiting_model' },
+      { turn: 2, maxTurns: 5, phase: 'final_response', toolCallCount: 0 },
+    ]);
+  });
+
+  it('does not fire after a target error, and never throws when omitted', async () => {
+    const events = [];
+    await runAgentCase({
+      target: { async _create() { throw new Error('unreachable'); } },
+      profile: CONTROL_PROFILES.baseline,
+      task: 'x',
+      onProgress: event => events.push(event),
+    });
+    expect(events).toEqual([{ turn: 1, maxTurns: DEFAULT_MAX_TURNS, phase: 'awaiting_model' }]);
+
+    await expect(runAgentCase({
+      target: scriptedTarget([say('done')]),
+      profile: CONTROL_PROFILES.baseline,
+      task: 'x',
+    })).resolves.toBeTruthy();
+  });
+});
+
 describe('control gate wiring', () => {
   it('sends the base prompt unchanged under Baseline', async () => {
     const target = scriptedTarget([say('ok')]);
