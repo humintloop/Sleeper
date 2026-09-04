@@ -11,7 +11,7 @@ import { openLab, reopenSetup } from './helpers.js';
 async function runToCurrent(page) {
   await page.goto('/');
   await openLab(page);
-  await page.getByRole('button', { name: 'RUN & COMPARE CONTROLS' }).click();
+  await page.getByRole('button', { name: 'Run & compare controls' }).click();
   await expect(page.getByText('current', { exact: true })).toBeVisible({ timeout: 15_000 });
 }
 

@@ -22,6 +22,12 @@ export const STORY_CASE_ID = 'NR-AGT-001';
 // it is what the case looks like when nobody has configured anything, which is
 // the state the story is about.
 export const STORY_PROFILE_ID = 'baseline';
+// The conference story's "with a control configured" comparison arm. Not used
+// by the scene or the memo — those stay single-profile, matching their own
+// established narrative — only by ConferenceStory's step 5, where showing a
+// second, real, computed verdict is the honest way to answer "and if it had
+// been configured?" instead of narrating an answer nothing ran.
+export const STORY_COMPARISON_PROFILE_ID = 'reference';
 // Matches AgentCaseRunner's own default so a scene result handed to the lab
 // reads as CURRENT rather than immediately STALE against the live form.
 export const STORY_TRIAL_COUNT = 3;
@@ -52,6 +58,19 @@ export function storyRunParams() {
     maxTurns: DEFAULT_MAX_TURNS,
     trialCount: STORY_TRIAL_COUNT,
   };
+}
+
+/**
+ * The same run, under the comparison profile instead of Baseline.
+ *
+ * A fresh `storyRunParams()` call (not a shared reference) so it gets its own
+ * `PortfolioReplayTarget` instance — the replay target is a stateful scripted
+ * queue, and reusing one target object across two runs would hand the second
+ * run whatever was left in the first run's queue instead of its own fresh
+ * script.
+ */
+export function storyComparisonRunParams() {
+  return { ...storyRunParams(), profile: STORY_COMPARISON_PROFILE_ID };
 }
 
 /** The fixture that actually carries the injected instruction. */

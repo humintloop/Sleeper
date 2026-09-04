@@ -146,7 +146,7 @@ export default function SceneWalkthrough({ C, onHome, onEvidence }) {
 
         <div className="scene-grid" style={{ display: 'grid', gridTemplateColumns: '190px minmax(0, 1fr) 340px' }}>
 
-          <div style={{ borderRight: `1px solid ${C.border}`, padding: '13px 0', display: 'flex', flexDirection: 'column' }}>
+          <div className="scene-inbox" style={{ borderRight: `1px solid ${C.border}`, padding: '13px 0', display: 'flex', flexDirection: 'column' }}>
             {SCENE_INBOX.map(item => (
               <div key={item.subject} style={{
                 padding: '9px 14px', display: 'flex', flexDirection: 'column', gap: 3,
@@ -287,7 +287,7 @@ export default function SceneWalkthrough({ C, onHome, onEvidence }) {
             opacity: outcome ? 1 : .5,
           }}
         >
-          OPEN THE EVIDENCE FOR THIS RUN <ChevronRight size={14} />
+          Open the evidence for this run <ChevronRight size={14} />
         </button>
         <button
           onClick={() => setReplayToken(token => token + 1)}
@@ -297,7 +297,7 @@ export default function SceneWalkthrough({ C, onHome, onEvidence }) {
             fontSize: C.size.small, fontWeight: 700, letterSpacing: .5,
           }}
         >
-          <RefreshCw size={13} /> PLAY IT AGAIN
+          <RefreshCw size={13} /> Play it again
         </button>
         <span style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.5 }}>
           The evidence workspace opens on this run, with the Reference profile one click away for the comparison.

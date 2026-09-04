@@ -6,7 +6,7 @@ import { openLab, reopenSetup } from './helpers.js';
 test('comparison members keep their own completed identity after the control profile selection changes', async ({ page }) => {
   await page.goto('/');
   await openLab(page);
-  await page.getByRole('button', { name: 'RUN & COMPARE CONTROLS' }).click();
+  await page.getByRole('button', { name: 'Run & compare controls' }).click();
   await expect(page.getByText('current', { exact: true })).toBeVisible({ timeout: 15_000 });
 
   // Capture each comparison card's own manifest digest before touching anything.

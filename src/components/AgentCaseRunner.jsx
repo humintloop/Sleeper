@@ -460,6 +460,8 @@ export default function AgentCaseRunner({ C, onHome, handoff = null }) {
     }
   };
 
+  const hasResults = Boolean(result || Object.keys(comparisonResults).length > 0);
+
   return (
     <div className="agent-runner" style={{ flex: 1, overflowY: 'auto', padding: '24px 28px 60px', display: 'flex', flexDirection: 'column', gap: 22 }}>
       <div className="lab-masthead">
@@ -472,19 +474,21 @@ export default function AgentCaseRunner({ C, onHome, handoff = null }) {
         </button>
       </div>
 
-      <div>
+      <div className="runner-intro">
         <div style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>
           Agent threat case &middot; controlled harness run
         </div>
         <h1 className="display-type" style={{ fontSize: 46, color: C.text1, fontWeight: 820, letterSpacing: '-0.025em', margin: 0, textTransform: 'uppercase' }}>Run agent case</h1>
-        <p style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.6, maxWidth: 720, marginTop: 10 }}>
-          Nothing on this screen leaves the browser or acts on anything: a tool call is intent, and every
-          tool effect is simulated. Live and local targets record what a model actually decided. Sample
-          Replay follows a disclosed script — it demonstrates the harness and claims nothing about a model.
-        </p>
+        {!hasResults && (
+          <p style={{ fontSize: C.size.small, color: C.text3, lineHeight: 1.6, maxWidth: 720, marginTop: 10 }}>
+            Nothing on this screen leaves the browser or acts on anything: a tool call is intent, and every
+            tool effect is simulated. Live and local targets record what a model actually decided. Sample
+            Replay follows a disclosed script — it demonstrates the harness and claims nothing about a model.
+          </p>
+        )}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+      <div className={`runner-jump${hasResults ? ' runner-jump--compact' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
         <span style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: .2, marginRight: 4 }}>Jump to</span>
         {[
           { label: 'Case', done: Boolean(caseId), ref: caseSectionRef, opensSetup: true },
@@ -749,14 +753,14 @@ export default function AgentCaseRunner({ C, onHome, handoff = null }) {
           background: running ? C.hover : C.signal, border: `1px solid ${C.signal}`, color: running ? C.text3 : C.ink,
           fontSize: C.size.small, fontWeight: 800, letterSpacing: .5, cursor: running ? 'not-allowed' : 'pointer', borderRadius: 2,
         }}>
-          {running ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Play size={14} />} {running ? 'RUNNING…' : 'RUN & COMPARE CONTROLS'}
+          {running ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Play size={14} />} {running ? 'Running…' : 'Run & compare controls'}
         </button>
         <button onClick={handleRun} disabled={running} style={{
           display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px',
           background: 'transparent', border: `1px solid ${C.borderHi}`, color: C.text2,
           fontSize: C.size.small, fontWeight: 700, letterSpacing: .5, cursor: running ? 'not-allowed' : 'pointer', borderRadius: 2,
         }}>
-          RUN SELECTED PROFILE
+          Run selected profile
         </button>
       </div>
 
@@ -796,7 +800,7 @@ export default function AgentCaseRunner({ C, onHome, handoff = null }) {
             background: 'transparent', border: `1px solid ${C.borderHi}`, color: C.text2,
             fontSize: C.size.small, fontWeight: 700, letterSpacing: .5, cursor: running ? 'not-allowed' : 'pointer', borderRadius: 2,
           }}>
-            RUN REPEAT TRIALS
+            Run repeat trials
           </button>
         </div>
       </details>

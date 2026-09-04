@@ -19,7 +19,7 @@ test.describe('run lifecycle: configure, run, stale, rerun', () => {
     // Sample Replay is selected by default (no-key path).
     await expect(page.getByRole('button', { name: 'SAMPLE REPLAY' })).toHaveAttribute('aria-pressed', 'true');
 
-    await page.getByRole('button', { name: 'RUN & COMPARE CONTROLS' }).click();
+    await page.getByRole('button', { name: 'Run & compare controls' }).click();
     await expect(page.getByText('current', { exact: true })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText('Displayed result matches the current configuration.')).toBeVisible();
 
@@ -31,7 +31,7 @@ test.describe('run lifecycle: configure, run, stale, rerun', () => {
 
   test('changing the control profile after a run goes STALE with a named field diff, and rerun returns to CURRENT', async ({ page }) => {
     await openRunAgentCase(page);
-    await page.getByRole('button', { name: 'RUN & COMPARE CONTROLS' }).click();
+    await page.getByRole('button', { name: 'Run & compare controls' }).click();
     await expect(page.getByText('current', { exact: true })).toBeVisible({ timeout: 15_000 });
 
     // Reference is selected by default; switch to Baseline without rerunning.
@@ -52,7 +52,7 @@ test.describe('run lifecycle: configure, run, stale, rerun', () => {
 
   test('the configuration digest changes on rerun, proving a new identity was assigned', async ({ page }) => {
     await openRunAgentCase(page);
-    await page.getByRole('button', { name: 'RUN & COMPARE CONTROLS' }).click();
+    await page.getByRole('button', { name: 'Run & compare controls' }).click();
     await expect(page.getByText('current', { exact: true })).toBeVisible({ timeout: 15_000 });
 
     const digestLocator = page.getByText(/^[0-9a-f]{16}…$/).first();

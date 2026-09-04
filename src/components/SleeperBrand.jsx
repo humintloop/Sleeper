@@ -8,9 +8,9 @@ const ASSETS = {
 /**
  * Raster brand assets generated from the selected visual direction.
  *
- * The near-black matte is intentional: both assets live only on the app's
- * canvas color, so the original cut lettering remains crisp without an SVG
- * approximation of the mark.
+ * The generated assets carry a near-black matte. Screen blending lets that
+ * matte disappear into Sleeper's canvas while preserving the original cut
+ * lettering without approximating the mark in SVG.
  */
 export default function SleeperBrand({
   kind = 'lockup',
@@ -31,6 +31,7 @@ export default function SleeperBrand({
         width: mark ? (compact ? 34 : 92) : (compact ? 188 : 260),
         height: 'auto',
         objectFit: 'contain',
+        mixBlendMode: 'screen',
         ...style,
       }}
     />

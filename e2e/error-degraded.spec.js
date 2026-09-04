@@ -19,7 +19,7 @@ test.describe('error and degraded paths stay visibly labeled', () => {
     await openLab(page);
     await page.getByRole('button', { name: 'LIVE API' }).click();
 
-    await page.getByRole('button', { name: 'RUN SELECTED PROFILE' }).click();
+    await page.getByRole('button', { name: 'Run selected profile' }).click();
     // Announced in two places: the form-level alert and the run-context
     // summary's own error state — genuinely redundant, not a coincidence.
     await expect(page.getByRole('alert')).toContainText('An API key is required.');

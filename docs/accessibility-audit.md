@@ -245,3 +245,52 @@ and `e2e/run-lifecycle.spec.js` accessible-name assertions were empirically veri
 against the new CSS's `text-transform: uppercase` headings before this pass concluded that risk was
 resolved, rather than assumed from the accname spec — Chrome computes those accessible names from DOM
 text content, unaffected by the CSS transform.
+
+---
+
+## Re-measurement — 2026-09-03 (conference-story pickup)
+
+Picked up an uncommitted, externally-built home-screen replacement (`ConferenceStory.jsx`) this same
+day. It introduced two new tokens, `attack` (untrusted instruction / hostile influence) and `agent`
+(model decision layer), plus a brighter `signal`. Re-checked before finishing the pass rather than
+assumed carried over.
+
+### Verdict-vocabulary collision — found and fixed
+
+The incoming `attack` (#FF5A52) sat **3.1° of hue** from `CONTROL_FAILED` red (#DC4838, 5.9°) — close
+enough to read as the same claim next to a real verdict, on the one screen in the app where "this is
+untrusted" and "this control failed" are both on screen together. Every reserved verdict hue (red
+5.9°, ochre 40.3°, green 138.3°, slate 220.4°) covers most of the wheel; the only arc 60°+ from all
+four is violet/magenta territory (~280-306°). Moved `attack` to 300° (#E03EE0), matched to red's own
+lightness and saturation (0.54L/0.70S) so it carries the same tonal weight, and checked it also clears
+the existing `violet` technique-accent token (46.8° away) — not just the verdicts.
+
+`agent` (#73D7E8, cyan, hue 188.7°) and the brightened `signal` (#B8F12B, hue 77.3°) were both already
+60°+ from every reserved verdict hue; no change needed.
+
+### Contrast, re-measured
+
+| Token | on `bg` #050706 | on `panel` #0C0F0C |
+|---|---|---|
+| `attack` (#E03EE0) | 5.71:1 | 5.45:1 |
+| `agent` (#73D7E8) | 12.14:1 | 11.58:1 |
+| `signal` (#B8F12B) | 15.06:1 | 14.37:1 |
+| `ink` on `attack` (button text) | 5.80:1 | — |
+
+All clear AA normal-text (4.5:1) with margin.
+
+### Reflow, re-tested (WCAG 1.4.10)
+
+`ConferenceStory` is a new component with its own five-step layout and its own mobile breakpoint CSS,
+not a variant of anything already checked. Verified zero horizontal overflow at 390×844 across all six
+states (the opening screen plus each of the five steps, navigated via the progress nav rather than
+sequential Next clicks, which is the more demanding path since a viewer can jump to any step before
+its content has necessarily settled).
+
+### Not re-checked
+
+No manual keyboard/screen-reader walkthrough of the five-step progress nav (`role="nav"`,
+`aria-current="step"` on the active button) — the accessible-tree shape is reasonable but unverified
+against real AT, same standing caveat as every other pass in this document. The story's free-jump
+navigation (a viewer can reach step 5 without visiting 1-4) was not evaluated as a UX question, only
+checked for not being broken.

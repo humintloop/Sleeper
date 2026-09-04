@@ -15,13 +15,14 @@ export async function reopenSetup(page) {
 }
 
 /**
- * Get from the opening memo into the evidence lab.
+ * Get from the conference story into the evidence lab.
  *
- * The home screen is the incident memo now, not a "Run agent case" card. Its
- * primary action walks the visitor through the scene; the secondary one goes
- * straight to the lab, which is the entry every test below wants. Tests that
- * care about the narrative path use the scene explicitly.
+ * The home screen is the five-step conference story now, not a "Run agent
+ * case" card. Its masthead carries a persistent "Evidence lab" button —
+ * present at every step, not just the opening screen — which is the entry
+ * every test below wants. Tests that care about the narrative path walk the
+ * story steps explicitly instead.
  */
 export async function openLab(page) {
-  await page.getByRole('button', { name: /Skip the story/ }).click();
+  await page.getByRole('button', { name: 'Evidence lab' }).click();
 }

@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import IncidentMemoHome from './components/IncidentMemoHome';
+import ConferenceStory from './components/ConferenceStory';
 import SceneWalkthrough from './components/SceneWalkthrough';
 import AgentCaseRunner from './components/AgentCaseRunner';
-import { loadAgentRuns } from './storage';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 // Dark field-manual direction. `signal` is the brand/interaction color; verdict colors
@@ -56,9 +55,9 @@ const C = {
   // Interaction — brand/accent, never a verdict. Wordmark, active nav/tab
   // state, primary CTA, focus rings. Keeps amber free to stay a pure
   // reserved verdict color instead of double-booked as brand chrome.
-  signal:   '#A8C943',
-  signalStrong: '#B8D94F',
-  signalBg: 'rgba(168,201,67,.10)',
+  signal:   '#B8F12B',
+  signalStrong: '#C5FF36',
+  signalBg: 'rgba(184,241,43,.08)',
   // Compatibility aliases for existing presentation components. Security
   // semantics never read these values; new UI should use `signal` directly.
   brass:    '#A8C943',
@@ -84,6 +83,17 @@ const C = {
   slate:    '#6B7A99', // inconclusive
   warmDim:  '#C4A07A',
   coolDim:  '#7A9AB5',
+  // Was #FF5A52 — 3.1° of hue from CONTROL_FAILED red (#DC4838, 5.9°), close
+  // enough to read as the same claim next to a real verdict. Every reserved
+  // verdict hue (red 5.9°, ochre 40.3°, green 138.3°, slate 220.4°) covers
+  // most of the wheel; the only arc 60°+ from all four is violet/magenta
+  // territory (~280-306°). Landed on 300° — matched to red's own lightness
+  // and saturation (0.54L/0.70S) so it carries the same tonal weight, and
+  // still 46.8° from the existing `violet` technique-accent token.
+  attack:   '#E03EE0', // untrusted instruction / hostile influence
+  attackBg: 'rgba(224,62,224,.10)',
+  agent:    '#73D7E8', // model / agent decision layer
+  agentBg:  'rgba(115,215,232,.09)',
 
   // Technique-category accents — deliberately distinct from every verdict
   // color above so a cluster's color never reads as a
@@ -134,10 +144,10 @@ const C = {
 // (CASE/LOADING/SELECT/PROBE/TRIAGE/REPORT) are gone.
 //
 // Three now, and they are a narrative in that order — consequence, then how,
-// then proof. HOME is the incident memo: what happened, for someone deciding
-// whether to roll an assistant out. SCENE plays the same run in the interface
-// it would have happened in. AGENT_LAB is the evidence, unchanged. A reader
-// who already believes the premise skips straight to the lab from the memo,
+// then proof. HOME is the conference story: a five-beat explanation of how
+// untrusted content changes an employee agent's behavior. SCENE plays the same
+// run in the interface it would have happened in. AGENT_LAB is the evidence,
+// unchanged. A reader who already believes the premise skips straight to the lab,
 // and each screen still owns its own back navigation, so there is no
 // persistent header/stage rail to coordinate between them.
 const STAGE = { HOME: 'home', SCENE: 'scene', AGENT_LAB: 'agent_lab' };
@@ -164,7 +174,7 @@ function GlobalStyle({ C }) {
       @keyframes pulse { 0%,100% { opacity: .55; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.25); } }
       @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
       button, a, select { touch-action: manipulation; }
-      .display-type { font-stretch: 64%; font-variation-settings: "wdth" 64, "opsz" 48; }
+      .display-type { font-stretch: 72%; font-variation-settings: "wdth" 72, "opsz" 44; }
       .brand-kicker { font-family: ${C.mono}; font-size: ${C.size.micro}px; letter-spacing: .18em; text-transform: uppercase; }
       .incident-home { width: 100%; max-width: 1500px; margin: 0 auto; min-height: 100%; padding: 12px; display: grid; grid-template-columns: minmax(240px, 300px) minmax(0, 1fr); gap: 34px; }
       .incident-rail { min-height: calc(100dvh - 24px); border: 1px solid ${C.border}; padding: 34px 30px 28px; display: flex; flex-direction: column; background: ${C.bg}; }
@@ -176,12 +186,12 @@ function GlobalStyle({ C }) {
          stacked over the caption, eating most of a phone screen before the
          headline appeared. Given its own class so the breakpoints below can
          reach it. */
-      .rail-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
+      .rail-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
       /* SleeperBrand sets width/display inline (it merges a caller \`style\`
          prop, but nothing is passed here), so overriding either from a
          breakpoint needs !important — same reason .scene-grid/.agent-runner
          below already do, not a new pattern. */
-      .rail-brand-wordmark { width: 230px !important; max-width: 100%; }
+      .rail-brand-wordmark { width: 210px !important; max-width: 100%; }
       .incident-main { min-width: 0; padding: 12px 18px 30px 0; display: flex; flex-direction: column; }
       .incident-masthead { min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-bottom: 14px; border-bottom: 1px solid ${C.border}; }
       /* Was a two-column grid (a giant ghost "001" numeral in the first
@@ -191,12 +201,110 @@ function GlobalStyle({ C }) {
          block flow rather than a grid. */
       .incident-sheet { flex: 1; padding: 42px 0 0; }
       .incident-content { min-width: 0; display: flex; flex-direction: column; }
-      .incident-headline { font-size: clamp(44px, 5.4vw, 78px); line-height: .99; font-weight: 860; letter-spacing: -.035em; text-transform: uppercase; margin: 24px 0 20px; max-width: 850px; }
-      .incident-facts { border-top: 1px solid ${C.border}; margin-top: 22px; }
-      .incident-fact { display: grid; grid-template-columns: 28px minmax(130px, .45fr) minmax(0, 1fr); gap: 18px; align-items: center; min-height: 72px; border-bottom: 1px solid ${C.border}; }
+      .incident-headline { font-size: clamp(42px, 4.8vw, 68px); line-height: 1.01; font-weight: 790; letter-spacing: -.028em; text-transform: uppercase; margin: 24px 0 20px; max-width: 780px; }
+      .incident-facts { margin-top: 22px; }
+      .incident-fact { display: grid; grid-template-columns: 28px minmax(130px, .45fr) minmax(0, 1fr); gap: 18px; align-items: center; min-height: 68px; border-bottom: 1px solid ${C.border}; }
+      .incident-fact:last-child { border-bottom: none; }
       .incident-actions { display: grid; grid-template-columns: 1.06fr 1fr; gap: 18px; margin-top: 20px; }
-      .field-button { min-height: 70px; padding: 14px 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-radius: 0; cursor: pointer; font-size: ${C.size.head}px; font-weight: 800; font-stretch: 72%; letter-spacing: .025em; text-transform: uppercase; }
+      .field-button { min-height: 58px; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-radius: 0; cursor: pointer; font-size: ${C.size.body}px; font-weight: 720; letter-spacing: 0; text-transform: none; }
       .lab-masthead { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding-bottom: 14px; border-bottom: 1px solid ${C.border}; }
+
+      /* Conference-first story mode. Color is semantic: red is hostile
+         influence, cyan is agent behavior, and brand green is defense/evidence. */
+      .conference-shell { width: min(100%, 1500px); min-height: 100%; margin: 0 auto; padding: 0 34px 42px; }
+      .conference-masthead { min-height: 76px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 24px; border-bottom: 1px solid ${C.border}; }
+      .conference-brand { padding: 0; border: 0; background: transparent; cursor: pointer; }
+      .conference-masthead__context { padding-left: 24px; border-left: 1px solid ${C.borderHi}; color: ${C.text2}; font-size: ${C.size.small}px; }
+      .conference-masthead__actions { display: flex; align-items: center; gap: 17px; color: ${C.text3}; font-family: ${C.mono}; font-size: ${C.size.micro}px; text-transform: uppercase; letter-spacing: .08em; }
+      .conference-masthead__actions button { min-height: 36px; padding: 7px 12px; border: 1px solid ${C.borderHi}; border-radius: ${C.radius}px; background: transparent; color: ${C.text1}; cursor: pointer; font-size: ${C.size.small}px; font-weight: 720; }
+      .conference-opening__meta { display: flex; border-bottom: 1px solid ${C.border}; color: ${C.text3}; font: ${C.size.micro}px ${C.mono}; letter-spacing: .1em; text-transform: uppercase; }
+      .conference-opening__meta span { padding: 12px 18px; border-right: 1px solid ${C.border}; }
+      .conference-opening__meta span:first-child { padding-left: 0; color: ${C.text2}; }
+      .conference-opening__grid { min-height: 610px; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr); gap: clamp(54px, 7vw, 110px); align-items: center; padding: 58px 0 45px; }
+      .conference-opening__copy h1 { max-width: 900px; margin: 22px 0 26px; font-size: clamp(64px, 7.3vw, 112px); font-weight: 850; line-height: .85; letter-spacing: -.052em; text-transform: uppercase; text-wrap: balance; }
+      .conference-opening__copy > p { max-width: 760px; margin: 0; color: ${C.text2}; font-size: clamp(19px, 1.7vw, 25px); line-height: 1.48; }
+      .conference-opening__actions { display: flex; gap: 12px; margin-top: 35px; }
+      .conference-opening__copy > small { display: block; margin-top: 15px; color: ${C.text3}; font-family: ${C.mono}; font-size: ${C.size.micro}px; }
+      .conference-button { min-height: 50px; display: inline-flex; align-items: center; justify-content: center; gap: 12px; padding: 12px 20px; border-radius: ${C.radius}px; cursor: pointer; font-size: ${C.size.body}px; font-weight: 760; }
+      .conference-button--primary { border: 1px solid ${C.signal}; background: ${C.signal}; color: ${C.ink}; }
+      .conference-button--secondary { border: 1px solid ${C.borderHi}; background: transparent; color: ${C.text1}; }
+      .conference-thesis { padding: 29px; border: 1px solid ${C.borderHi}; background: ${C.panel}; }
+      .conference-thesis > span { display: block; padding-bottom: 16px; border-bottom: 1px solid ${C.border}; color: ${C.text3}; font: ${C.size.micro}px ${C.mono}; letter-spacing: .14em; text-transform: uppercase; }
+      .conference-thesis p { margin: 0; padding: 18px 0; border-bottom: 1px solid ${C.border}; color: ${C.text2}; font-size: ${C.size.body}px; }
+      .conference-thesis .conference-thesis__danger { color: ${C.attack}; }
+      .conference-thesis strong { display: block; margin-top: 22px; color: ${C.text1}; font-size: ${C.size.body}px; line-height: 1.55; }
+      .conference-signal { display: inline-flex; width: fit-content; padding: 6px 9px; border: 1px solid currentColor; border-radius: ${C.radius}px; font: 760 ${C.size.micro}px ${C.mono}; letter-spacing: .11em; text-transform: uppercase; }
+      .conference-signal--danger { color: ${C.attack}; }
+      .conference-signal--agent { color: ${C.agent}; }
+      .conference-signal--held { color: ${C.signal}; }
+      .conference-signal--trusted { color: ${C.text1}; }
+      .conference-progress { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 1px solid ${C.borderHi}; border-bottom: 1px solid ${C.border}; }
+      .conference-progress button { min-height: 72px; display: grid; grid-template-columns: 28px 1fr; grid-template-rows: auto auto; column-gap: 9px; align-content: center; padding: 11px 15px; border: 0; border-right: 1px solid ${C.border}; background: transparent; color: ${C.text1}; text-align: left; cursor: pointer; }
+      .conference-progress button:last-child { border-right: 0; }
+      .conference-progress button:hover { background: ${C.surface}; }
+      .conference-progress button > span { grid-row: 1 / 3; align-self: center; color: ${C.text3}; font: ${C.size.micro}px ${C.mono}; }
+      .conference-progress strong { font-size: ${C.size.small}px; }
+      .conference-progress small { color: ${C.text3}; font-size: ${C.size.micro}px; }
+      .conference-progress__active { background: ${C.surface} !important; box-shadow: inset 0 -3px 0 ${C.text1}; }
+      .conference-scene__counter { display: flex; justify-content: space-between; padding: 18px 0 0; color: ${C.text3}; font: ${C.size.micro}px ${C.mono}; letter-spacing: .1em; text-transform: uppercase; }
+      .conference-beat { min-height: 570px; padding: 36px 0 30px; animation: fadeUp .28s ease-out; }
+      .conference-beat__heading { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(300px, .75fr); gap: 58px; align-items: end; margin-bottom: 40px; }
+      .conference-beat__heading h1 { max-width: 880px; margin: 16px 0 0; font-size: clamp(48px, 5.4vw, 80px); font-weight: 830; line-height: .91; letter-spacing: -.045em; text-transform: uppercase; text-wrap: balance; }
+      .conference-beat__heading > p { margin: 0; color: ${C.text2}; font-size: ${C.size.head}px; line-height: 1.6; }
+      .conference-actors { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+      .conference-actor { min-height: 245px; display: flex; flex-direction: column; padding: 27px; border: 1px solid ${C.borderHi}; background: ${C.panel}; }
+      .conference-actor--employee { border-top: 3px solid ${C.text1}; }
+      .conference-actor--agent { border-top: 3px solid ${C.agent}; background: ${C.agentBg}; }
+      .conference-actor > div { display: flex; align-items: flex-start; gap: 12px; }
+      .conference-actor > div span { display: flex; flex-direction: column; }
+      .conference-actor > div strong { font-size: ${C.size.head}px; }
+      .conference-actor > div small { color: ${C.text3}; font-size: ${C.size.small}px; }
+      .conference-actor blockquote { max-width: 33ch; margin: auto 0 0; color: ${C.text1}; font-size: clamp(22px, 2.1vw, 32px); font-weight: 650; line-height: 1.3; }
+      .conference-actor > p { max-width: 38ch; margin: auto 0 22px; color: ${C.text2}; font-size: ${C.size.head}px; line-height: 1.45; }
+      .conference-email { max-width: 1110px; margin: 0 auto; padding: 28px 32px 32px; border: 1px solid ${C.borderHi}; background: ${C.panel}; }
+      .conference-email__meta { display: grid; grid-template-columns: 1fr 2fr auto; gap: 20px; padding-bottom: 14px; border-bottom: 1px solid ${C.border}; color: ${C.text3}; font: ${C.size.micro}px ${C.mono}; text-transform: uppercase; }
+      .conference-email__meta span:first-child { display: flex; align-items: center; gap: 8px; color: ${C.text2}; }
+      .conference-email h2 { margin: 29px 0 11px; font-size: 30px; }
+      .conference-email > p { color: ${C.text2}; font-size: 17px; line-height: 1.6; }
+      .conference-injection { margin-top: 34px; padding: 22px 24px; border: 1px solid rgba(255,90,82,.56); border-left: 5px solid ${C.attack}; background: ${C.attackBg}; }
+      .conference-injection span { display: block; margin-bottom: 12px; color: ${C.attack}; font: 780 ${C.size.micro}px ${C.mono}; letter-spacing: .12em; text-transform: uppercase; }
+      .conference-injection strong { display: block; max-width: 70ch; color: #FFD2CE; font-size: 19px; line-height: 1.5; }
+      .conference-context { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      .conference-context article { min-height: 205px; display: flex; flex-direction: column; padding: 24px; border: 1px solid ${C.borderHi}; background: ${C.panel}; }
+      .conference-context article > span:first-child { color: ${C.text3}; font: ${C.size.micro}px ${C.mono}; letter-spacing: .08em; text-transform: uppercase; }
+      .conference-context article > strong { margin: 33px 0 25px; font-size: ${C.size.head}px; line-height: 1.42; }
+      .conference-context article .conference-signal { margin-top: auto; }
+      .conference-context .conference-context--danger { border-color: rgba(255,90,82,.5); background: ${C.attackBg}; }
+      .conference-context .conference-context--agent { border-color: rgba(115,215,232,.5); background: ${C.agentBg}; }
+      .conference-callout { display: grid; grid-template-columns: 245px 1fr; gap: 24px; align-items: center; margin-top: 18px; padding: 18px 21px; border: 1px solid rgba(255,90,82,.45); background: ${C.attackBg}; }
+      .conference-callout span { color: ${C.attack}; font: ${C.size.micro}px ${C.mono}; letter-spacing: .08em; text-transform: uppercase; }
+      .conference-callout strong { font-size: ${C.size.body}px; }
+      .conference-tools { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+      .conference-tools article { min-height: 190px; display: flex; flex-direction: column; padding: 22px; border: 1px solid ${C.borderHi}; background: ${C.panel}; }
+      .conference-tools article > span { margin-top: 11px; color: ${C.text3}; font: ${C.size.micro}px ${C.mono}; letter-spacing: .08em; text-transform: uppercase; }
+      .conference-tools article > strong { margin-top: auto; font-size: ${C.size.head}px; line-height: 1.35; }
+      .conference-tools article > small { margin-top: 7px; color: ${C.text3}; font-size: ${C.size.small}px; }
+      .conference-tools .conference-tools--danger { border-color: rgba(255,90,82,.4); }
+      .conference-tools .conference-tools--held { border-color: rgba(184,241,43,.5); background: ${C.signalBg}; }
+      .conference-comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+      .conference-outcome { min-height: 235px; display: flex; flex-direction: column; padding: 27px; border: 1px solid ${C.borderHi}; background: ${C.panel}; }
+      .conference-outcome > span { font: ${C.size.micro}px ${C.mono}; letter-spacing: .08em; text-transform: uppercase; }
+      .conference-outcome h2 { margin: 27px 0 9px; font-size: 34px; line-height: 1; text-transform: uppercase; }
+      .conference-outcome p { max-width: 57ch; margin: 0; color: ${C.text2}; font-size: ${C.size.body}px; line-height: 1.55; }
+      .conference-outcome > strong { margin-top: auto; padding-top: 22px; font-size: ${C.size.small}px; text-transform: uppercase; }
+      .conference-outcome--fail { border-top: 4px solid ${C.attack}; background: ${C.attackBg}; }
+      .conference-outcome--fail > span, .conference-outcome--fail > strong { color: ${C.attack}; }
+      .conference-outcome--held { border-top: 4px solid ${C.signal}; background: ${C.signalBg}; }
+      .conference-outcome--held > span, .conference-outcome--held > strong { color: ${C.signal}; }
+      .conference-takeaway { display: grid; grid-template-columns: 230px 1fr; gap: 28px; align-items: start; margin-top: 18px; padding: 21px 23px; border: 1px solid ${C.border}; }
+      .conference-takeaway > span { color: ${C.text3}; font: ${C.size.micro}px ${C.mono}; letter-spacing: .1em; text-transform: uppercase; }
+      .conference-takeaway p { max-width: 82ch; margin: 0; color: ${C.text2}; font-size: ${C.size.body}px; line-height: 1.6; }
+      .conference-controls { min-height: 78px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 26px; align-items: center; border-top: 1px solid ${C.borderHi}; }
+      .conference-controls > button:last-child, .conference-controls__finish { justify-self: end; }
+      .conference-controls > div:not(.conference-controls__finish) { display: flex; align-items: baseline; gap: 10px; }
+      .conference-controls > div > span { color: ${C.text3}; font-family: ${C.mono}; font-size: ${C.size.micro}px; }
+      .conference-controls > div > p { margin: 0; color: ${C.text2}; font-size: ${C.size.small}px; }
+      .conference-controls__finish { display: flex; gap: 10px; }
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
       }
@@ -213,15 +321,22 @@ function GlobalStyle({ C }) {
         .incident-main { padding: 0 12px 32px; }
         .scene-grid { grid-template-columns: minmax(0, 1fr) !important; }
         .scene-grid > * { border-right: none !important; }
+        .conference-opening__grid, .conference-beat__heading { grid-template-columns: 1fr; }
+        .conference-opening__grid { min-height: 0; gap: 40px; }
+        .conference-context { grid-template-columns: 1fr; }
+        .conference-tools { grid-template-columns: 1fr 1fr; }
       }
       @media (max-width: 760px) {
         .incident-home { padding: 8px; }
         .incident-rail { border-left: 3px solid ${C.signal}; }
         .incident-sheet { padding-top: 28px; }
-        .incident-headline { font-size: clamp(38px, 12vw, 56px); max-width: 92%; }
+        .incident-headline { font-size: clamp(34px, 10vw, 44px); max-width: 96%; }
         .incident-fact { grid-template-columns: 24px 1fr; gap: 12px; padding: 13px 0; }
         .incident-fact > :last-child { grid-column: 2; }
-        .incident-actions { grid-template-columns: 1fr; }
+        .incident-actions { grid-template-columns: 1fr; order: 1; margin-top: 18px; }
+        .incident-facts { order: 2; margin-top: 24px; }
+        .incident-provenance { order: 3; }
+        .incident-about { order: 4; }
         .field-button { min-height: 58px; font-size: ${C.size.body}px; }
         .incident-masthead > :last-child { display: none; }
         /* Was clipped at the viewport edge (nowrap, no truncation) rather than
@@ -237,8 +352,33 @@ function GlobalStyle({ C }) {
         /* No room beside a 168px wordmark on a phone; the wordmark alone
            still carries the identity at this width. */
         .rail-brand-caption { display: none; }
+        .scene-inbox { display: none !important; }
+        .runner-intro p { max-width: 34rem !important; }
+        .runner-jump { margin-top: -4px; }
+        .runner-jump--compact { display: none !important; }
+        .workspace-tabs { position: sticky; top: -20px; z-index: 5; background: ${C.bg}; padding-top: 10px; }
         .agent-runner { padding: 20px 16px 48px !important; gap: 16px !important; }
         .scene { padding: 20px 16px 48px !important; }
+        .conference-shell { padding: 0 14px 32px; }
+        .conference-masthead { min-height: 64px; grid-template-columns: 1fr auto; }
+        .conference-masthead__context, .conference-masthead__actions > span { display: none; }
+        .conference-opening__meta span:nth-child(2) { display: none; }
+        .conference-opening__grid { padding: 42px 0 34px; }
+        .conference-opening__copy h1 { font-size: 53px; }
+        .conference-opening__actions { flex-direction: column; }
+        .conference-progress { overflow-x: auto; grid-template-columns: repeat(5, minmax(130px, 1fr)); }
+        .conference-progress button { min-height: 62px; padding: 9px; }
+        .conference-beat { min-height: 0; }
+        .conference-beat__heading { gap: 22px; margin-bottom: 28px; }
+        .conference-beat__heading h1 { font-size: 43px; }
+        .conference-beat__heading > p { font-size: ${C.size.body}px; }
+        .conference-actors, .conference-comparison, .conference-tools { grid-template-columns: 1fr; }
+        .conference-email { padding: 20px; }
+        .conference-email__meta { grid-template-columns: 1fr; }
+        .conference-callout, .conference-takeaway { grid-template-columns: 1fr; }
+        .conference-controls { grid-template-columns: 1fr 1fr; padding-top: 16px; }
+        .conference-controls > div:not(.conference-controls__finish) { display: none; }
+        .conference-controls__finish { grid-column: 1 / -1; width: 100%; display: grid; grid-template-columns: 1fr; }
       }
     `}</style>
   );
@@ -260,11 +400,10 @@ export default function App() {
       <GlobalStyle C={C} />
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
         {stage === STAGE.HOME && (
-          <IncidentMemoHome
+          <ConferenceStory
             C={C}
             onScene={() => setStage(STAGE.SCENE)}
             onAgentLab={() => { setHandoff(null); setStage(STAGE.AGENT_LAB); }}
-            agentRunsCount={loadAgentRuns().length}
           />
         )}
 

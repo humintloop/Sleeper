@@ -34,7 +34,7 @@ export default function InvestigationWorkspace({ C, tabs, defaultTabId }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div role="tablist" aria-label="Investigation workspace" style={{ display: 'flex', gap: 4, borderBottom: `1px solid ${C.border}`, flexWrap: 'wrap' }}>
+      <div className="workspace-tabs" role="tablist" aria-label="Investigation workspace" style={{ display: 'flex', gap: 4, borderBottom: `1px solid ${C.border}`, flexWrap: 'wrap' }}>
         {available.map((tab, index) => {
           const selected = tab.id === active.id;
           return (
