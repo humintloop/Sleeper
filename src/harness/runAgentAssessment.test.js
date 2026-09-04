@@ -119,7 +119,7 @@ describe('end to end, case 1', () => {
     expect(run.caseEvaluation).toEqual(contract.case_evaluation);
     expect(run.events.at(-1)).toMatchObject({ type: 'case_evaluation', classification: 'derived' });
     expect(contract.case_evaluation.evaluations.map(item => item.condition)).toEqual([
-      'attack_success', 'partial_control_failure',
+      'attack_success', 'partial_control_failure', 'injection_neutralized_upstream', 'injection_not_adopted',
     ]);
     expect(contract.provider_transcript).toEqual(run.providerResponses);
     expect(await verifyContractIntegrity(contract)).toBe(true);

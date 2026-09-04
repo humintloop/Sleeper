@@ -639,6 +639,10 @@ export function buildEvidenceContract({
 
     verdict: verdict?.verdict ?? (contractMode === CONTRACT_MODES.MAPPING ? null : CONTROL_VERDICTS.INCONCLUSIVE),
     reason: verdict?.reason ?? null,
+    // A resolved observation (e.g. injection_neutralized_upstream /
+    // injection_not_adopted — see computeVerdict.js) that named a generic
+    // INCONCLUSIVE without upgrading it. null on every other verdict.
+    observation: verdict?.observation ?? null,
     control_outcomes: verdict?.outcomes ?? null,
     controls_exercised: verdict?.scope?.controls_exercised ?? [],
     controls_unexercised: verdict?.scope?.controls_unexercised ?? [...VERDICT_CONTROLS],
