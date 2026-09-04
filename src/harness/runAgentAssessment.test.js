@@ -225,6 +225,22 @@ describe('end to end, case 1', () => {
     expect(events.length).toBeGreaterThan(0);
     expect(events[0]).toMatchObject({ turn: 1, phase: 'awaiting_model' });
   });
+
+  it('forwards onEvent to the underlying loop, with the same objects the returned run.events holds', async () => {
+    const seen = [];
+    const { run } = await runAgentAssessment({
+      agentCase: 'NR-AGT-001',
+      profile: 'baseline',
+      target: hijacked(),
+      onEvent: entry => seen.push(entry),
+    });
+    // run.events carries a case_evaluation entry appended after the loop
+    // returns (see evaluatedRun below) — onEvent only sees what the loop
+    // itself emitted, so it is a prefix of run.events, not the whole thing.
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen.length).toBeLessThan(run.events.length);
+    seen.forEach((entry, index) => expect(entry).toBe(run.events[index]));
+  });
 });
 
 describe('repeat-trial methodology', () => {

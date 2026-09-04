@@ -150,6 +150,8 @@ function deriveRunStatus(run) {
  * @param {Function} [params.onProgress]  forwarded to runAgentCase — see its
  *   own doc comment. Passed through unchanged by runCaseAcrossProfiles and
  *   runRepeatedAssessment via their `...rest`/`...assessment` spreads.
+ * @param {Function} [params.onEvent]  forwarded to runAgentCase — see its own
+ *   doc comment. Same pass-through as onProgress.
  * @returns {Promise<{run: object, verdict: object, contract: object}>}
  */
 export async function runAgentAssessment({
@@ -172,6 +174,7 @@ export async function runAgentAssessment({
   localModel = null,
   trialCount = 1,
   onProgress = null,
+  onEvent = null,
 } = {}) {
   const resolvedCase = typeof agentCase === 'string' ? getAgentCase(agentCase) : agentCase;
   if (!resolvedCase) throw new Error(`Unknown agent case: ${String(agentCase)}`);
@@ -203,6 +206,7 @@ export async function runAgentAssessment({
     initialInstructionSource: initialInstructionSource(resolvedCase),
     approvalPolicy: createApprovalPolicy(resolvedVariant, registry),
     onProgress,
+    onEvent,
   });
 
   const caseEvaluation = evaluateCaseConditions({

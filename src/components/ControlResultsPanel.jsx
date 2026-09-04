@@ -65,6 +65,25 @@ export default function ControlResultsPanel({ C, verdict, profiles, comparisonHi
         {verdict.reason?.code && (
           <div style={{ fontSize: C.size.micro, color: C.text3, fontFamily: C.mono, marginTop: 6 }}>{verdict.reason.code}</div>
         )}
+        {verdict.observation && (
+          // A resolved observation (injection_neutralized_upstream /
+          // injection_not_adopted — see computeVerdict.js) that named this
+          // INCONCLUSIVE without upgrading it. Surfaced here, not only in the
+          // live console, so it stays visible on any later look at this run —
+          // a saved capture, run history, a report export.
+          <div style={{
+            fontSize: C.size.small, color: C.text1, lineHeight: 1.5, marginTop: 10, paddingTop: 10,
+            borderTop: `1px solid ${C.border}`,
+          }}>
+            <span style={{ fontSize: C.size.micro, color: C.text3, letterSpacing: .2, textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>
+              Resolved observation
+            </span>
+            {verdict.observation.description}
+            {verdict.observation.trial_note && (
+              <span style={{ display: 'block', color: C.text3, fontSize: C.size.micro, marginTop: 4 }}>{verdict.observation.trial_note}</span>
+            )}
+          </div>
+        )}
         <div style={{ fontSize: C.size.micro, color: C.text3, lineHeight: 1.5, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.border}` }}>
           Full evidence limits and claim boundary are in the Evidence Contract below.
         </div>

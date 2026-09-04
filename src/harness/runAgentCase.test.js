@@ -140,6 +140,50 @@ describe('onProgress', () => {
   });
 });
 
+describe('onEvent', () => {
+  // The live-console property this exists for: a console subscribed to
+  // onEvent must be provably rendering the same records the Evidence
+  // Contract does, not a parallel stream that could drift from them. That
+  // only holds if onEvent is handed the literal same object `events` holds
+  // — not a copy, not a re-serialization — so identity, not just deep
+  // equality, is what these assert.
+  it('fires with the exact same object references run.events ends up holding, in order', async () => {
+    const seen = [];
+    const run = await runAgentCase({
+      target: scriptedTarget([callTool('web_search', { q: 'a' }), say('done')]),
+      profile: CONTROL_PROFILES.baseline,
+      task: 'x',
+      onEvent: entry => seen.push(entry),
+    });
+
+    expect(seen.length).toBe(run.events.length);
+    seen.forEach((entry, index) => {
+      expect(entry).toBe(run.events[index]); // reference identity, not deep equality
+    });
+    expect(seen.map(entry => entry.type)).toEqual([
+      'prompt', 'model_turn', 'tool_call', 'authorization_decision', 'tool_result', 'model_turn', 'response',
+    ]);
+  });
+
+  it('still fires through a target error, and never throws when omitted', async () => {
+    const seen = [];
+    const run = await runAgentCase({
+      target: { async _create() { throw new Error('unreachable'); } },
+      profile: CONTROL_PROFILES.baseline,
+      task: 'x',
+      onEvent: entry => seen.push(entry),
+    });
+    expect(seen.map(entry => entry.type)).toEqual(['prompt', 'target_error', 'response']);
+    expect(seen[1]).toBe(run.events[1]);
+
+    await expect(runAgentCase({
+      target: scriptedTarget([say('done')]),
+      profile: CONTROL_PROFILES.baseline,
+      task: 'x',
+    })).resolves.toBeTruthy();
+  });
+});
+
 describe('control gate wiring', () => {
   it('sends the base prompt unchanged under Baseline', async () => {
     const target = scriptedTarget([say('ok')]);

@@ -47,7 +47,8 @@ import ControlResultsPanel from './ControlResultsPanel';
 import EvidenceContractPanel from './EvidenceContractPanel';
 import FrameworkCrosswalkPanel from './FrameworkCrosswalkPanel';
 import ComparisonStoryPanel from './ComparisonStoryPanel';
-import RunContextSummary from './RunContextSummary';
+import RunContextSummary, { targetSummary } from './RunContextSummary';
+import LiveRunConsole from './LiveRunConsole';
 import InvestigationWorkspace from './InvestigationWorkspace';
 import ReportPanel from './ReportPanel';
 import RunHistory from './RunHistory';
@@ -218,6 +219,11 @@ export default function AgentCaseRunner({ C, onHome, handoff = null, onWatchScen
   // however long several sequential network calls take, which reads as
   // hung even when it is working.
   const [turnProgress, setTurnProgress] = useState(null);
+  // The live console's own event stream — appended with the exact object
+  // references runAgentCase.js's onEvent hands back (see its doc comment),
+  // never a copy or a re-derivation. Reset per run, kept after completion so
+  // the feed stays on screen as a record of what was watched.
+  const [liveEvents, setLiveEvents] = useState([]);
   const [trialCount, setTrialCount] = useState(3);
   const [trialSummary, setTrialSummary] = useState(null);
   const [running, setRunning] = useState(false);
@@ -383,6 +389,7 @@ export default function AgentCaseRunner({ C, onHome, handoff = null, onWatchScen
     setRunning(true);
     setError(null);
     setTurnProgress(null);
+    setLiveEvents([]);
     try {
       return await runAgentAssessment({
         agentCase: caseId,
@@ -398,6 +405,7 @@ export default function AgentCaseRunner({ C, onHome, handoff = null, onWatchScen
         localModel: targetType === TARGET_TYPES.LOCAL ? localModelId : null,
         trialCount,
         onProgress: setTurnProgress,
+        onEvent: entry => setLiveEvents(prev => [...prev, entry]),
       });
     } catch (err) {
       setError(err?.message || String(err));
@@ -851,17 +859,33 @@ export default function AgentCaseRunner({ C, onHome, handoff = null, onWatchScen
         Runs Baseline, Partial, and Reference, then shows the attempted tools, gate decision, and simulated effect side by side.
       </div>
 
-      {running && (
+      {running && comparisonProgress && (
         <div role="status" aria-live="polite" style={{ ...card(C), padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
           <RefreshCw size={13} color={C.brass} style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} />
           <div style={{ color: C.text2, fontSize: C.size.small }}>
-            {comparisonProgress && (
-              <>Running <strong style={{ color: C.text1 }}>{DISPLAY_PROFILES[comparisonProgress.current]?.label}</strong> · {comparisonProgress.completed + 1} of {comparisonProgress.total}</>
-            )}
-            {comparisonProgress && turnProgress && ' · '}
-            {turnProgress && turnProgressText(turnProgress)}
-            {!comparisonProgress && !turnProgress && 'Starting…'}
+            Running <strong style={{ color: C.text1 }}>{DISPLAY_PROFILES[comparisonProgress.current]?.label}</strong> · {comparisonProgress.completed + 1} of {comparisonProgress.total}
           </div>
+        </div>
+      )}
+
+      {(running || liveEvents.length > 0) && (
+        <LiveRunConsole
+          C={C}
+          events={liveEvents}
+          running={running}
+          caseTitle={agentCase?.title ?? caseId}
+          targetSummaryText={targetSummary(currentConfiguration)}
+          turnProgress={turnProgress}
+          verdict={!running ? result?.verdict : null}
+        />
+      )}
+
+      {/* Repeat trials doesn't feed the console (see handleRepeated) — its own
+          turn-by-turn text is the only live feedback for that flow. */}
+      {running && turnProgress && liveEvents.length === 0 && (
+        <div role="status" aria-live="polite" style={{ ...card(C), padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <RefreshCw size={13} color={C.brass} style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} />
+          <div style={{ color: C.text2, fontSize: C.size.small }}>{turnProgressText(turnProgress)}</div>
         </div>
       )}
 

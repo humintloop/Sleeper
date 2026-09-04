@@ -85,6 +85,11 @@ function seededClassesInValue(value, seeds) {
  *   or local target is genuinely progressing turn by turn, not hung — this
  *   loop is otherwise a single opaque `await` from the caller's side, which
  *   for a multi-turn live run can take much longer than one request.
+ * @param {Function} [params.onEvent]  fired with the exact execution_chain
+ *   entry object at the moment it is created — the same reference `events`
+ *   below holds, not a copy. A live console and the Evidence Contract are
+ *   then provably rendering the same record: there is one array of entries
+ *   and one bus, not a stream that could drift from what gets recorded.
  * @returns {Promise<object>} trace, control records, and loop metadata.
  */
 export async function runAgentCase({
@@ -102,6 +107,7 @@ export async function runAgentCase({
   initialInstructionSource = INITIAL_INSTRUCTION_SOURCE,
   approvalPolicy = null,
   onProgress = null,
+  onEvent = null,
 } = {}) {
   const controls = profile?.controls ?? {};
   const systemPrompt = buildControlSystemPrompt(baseSystemPrompt, profile);
@@ -112,6 +118,12 @@ export async function runAgentCase({
   ];
 
   const events = [];
+  // Every entry the loop records goes through here, once. `events` stays a
+  // plain array — every existing consumer (verdict, contract, trace panel,
+  // scene walkthroughs) reads it exactly as before — this only adds a second
+  // subscriber that sees each entry the instant it is created rather than
+  // after the loop returns.
+  const emit = entry => { events.push(entry); onEvent?.(entry); return entry; };
   const toolCalls = [];
   const toolResults = [];
   const authorizationDecisions = [];
@@ -132,7 +144,7 @@ export async function runAgentCase({
   let lastResult = null;
   const seenCalls = new Set();
 
-  events.push({ type: 'prompt', turn: 0, system_prompt: systemPrompt, task: task ?? '' });
+  emit({ type: 'prompt', turn: 0, system_prompt: systemPrompt, task: task ?? '' });
 
   while (turns < maxTurns) {
     turns += 1;
@@ -149,7 +161,7 @@ export async function runAgentCase({
     } catch (err) {
       targetError = err?.message || String(err);
       stopReason = LOOP_STOP_REASON.TARGET_ERROR;
-      events.push({ type: 'target_error', turn: turns, error: targetError });
+      emit({ type: 'target_error', turn: turns, error: targetError });
       break;
     }
 
@@ -173,7 +185,7 @@ export async function runAgentCase({
       }
     }
 
-    events.push({ type: 'model_turn', turn: turns, text: guardedText, tool_call_count: calls.length });
+    emit({ type: 'model_turn', turn: turns, text: guardedText, tool_call_count: calls.length });
     onProgress?.({
       turn: turns, maxTurns,
       phase: calls.length > 0 ? 'tool_calls_proposed' : 'final_response',
@@ -273,7 +285,7 @@ export async function runAgentCase({
       toolResults.push(result);
       detections.push(detection);
 
-      events.push({
+      emit({
         type: 'tool_call',
         turn: turns,
         tool: call.tool,
@@ -285,7 +297,7 @@ export async function runAgentCase({
         // can silently drift from authorityRegistry.js's real one.
         instruction_source_trusted: !decision.untrusted_source,
       });
-      events.push({
+      emit({
         type: 'authorization_decision',
         turn: turns,
         tool: call.tool,
@@ -295,7 +307,7 @@ export async function runAgentCase({
         blocked: decision.tool_blocked,
         reason: decision.tool_block_reason,
       });
-      events.push({
+      emit({
         type: 'tool_result',
         turn: turns,
         tool: call.tool,
@@ -304,7 +316,7 @@ export async function runAgentCase({
         simulated_only: result.simulated_only,
       });
       if (detection.scan_active) {
-        events.push({
+        emit({
           type: 'detection',
           turn: turns,
           tool: call.tool,
@@ -336,13 +348,13 @@ export async function runAgentCase({
       // re-proposing an identical call after a denial is the denied-decision
       // replay failure mode, not noise to be swallowed.
       stopReason = LOOP_STOP_REASON.REPEATED_CALL;
-      events.push({ type: 'loop_guard', turn: turns, reason: 'identical tool call re-proposed' });
+      emit({ type: 'loop_guard', turn: turns, reason: 'identical tool call re-proposed' });
       break;
     }
   }
 
   if (turns >= maxTurns && stopReason === LOOP_STOP_REASON.TURN_CAP) {
-    events.push({ type: 'turn_cap', turn: turns, max_turns: maxTurns });
+    emit({ type: 'turn_cap', turn: turns, max_turns: maxTurns });
   }
 
   // Guard the final response before it becomes an event, return value, log,
@@ -351,7 +363,7 @@ export async function runAgentCase({
   piiDetections.push(finalPiiScan);
   finalText = finalPiiScan.redacted_text;
   const piiResult = aggregatePiiLeakage(piiDetections, finalText, controls.piiFilter);
-  events.push({ type: 'response', turn: turns, text: finalText });
+  emit({ type: 'response', turn: turns, text: finalText });
 
   const loggingResult = runActivityLogging(controls.activityLogging, events);
 
