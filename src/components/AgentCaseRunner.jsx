@@ -121,13 +121,15 @@ function toggleBtn(C, active) {
  * keeping its run arguments identical to what this component defaults to,
  * so the configuration digest matches either way.
  */
-// Which cases have a dramatized scene, and what the link says. Case 2 has
-// none yet — the four HITL failure modes don't fit the "here's the poisoned
-// document" shape the other three share, and need their own visual metaphor
-// rather than a smaller copy of one of these. Deliberately data-driven so
-// this component doesn't grow a case-specific branch per scene.
+// Which cases have a dramatized scene, and what the link says. Case 2's is
+// the approval queue rather than a copy of the other three's "here's the
+// poisoned document" shape — nothing in it is an injection, so its scene
+// dramatizes the one HITL variant (decision-context stripping) that a real
+// fixture carries both sides of, not the other three variants. Deliberately
+// data-driven so this component doesn't grow a case-specific branch per scene.
 const SCENE_ENTRY_LABEL = {
   'NR-AGT-001': 'Watch this attack — the inbox',
+  'NR-AGT-002': 'Watch this attack — the approval queue',
   'NR-AGT-003A': 'Watch this attack — the tool registry',
   'NR-AGT-003B': 'Watch this attack — the marketplace listing',
 };
@@ -135,7 +137,11 @@ const SCENE_ENTRY_LABEL = {
 export default function AgentCaseRunner({ C, onHome, handoff = null, onWatchScene = null }) {
   const [caseId, setCaseId] = useState(handoff?.configuration?.case_id ?? AGENT_CASE_ORDER[0]);
   const [profileId, setProfileId] = useState(handoff?.configuration?.profile_id ?? 'reference');
-  const [variantId, setVariantId] = useState(null);
+  // A handoff that ran a specific variant (case 2's approval-queue scene does)
+  // has to land on that same variant, or the runner defaults to the case's
+  // first-listed variant and the configuration digest mismatches on arrival —
+  // the same STALE-on-landing bug case_id/profile_id above already avoid.
+  const [variantId, setVariantId] = useState(handoff?.configuration?.variant_id ?? null);
 
   const [targetType, setTargetType] = useState(TARGET_TYPES.SAMPLE);
 

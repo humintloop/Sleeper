@@ -117,15 +117,15 @@ export default function McpDescriptorScene({ C, onHome, onEvidence }) {
           </span>
         </div>
 
-        <div className="mcp-registry-grid">
+        <div className="scene-split-grid">
 
           <div style={{ padding: '18px 20px', borderRight: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
             <div>
               <div style={{ fontFamily: C.mono, fontSize: C.size.micro, color: C.text3, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>Server</div>
               <div style={{ fontSize: C.size.body, color: C.text1, fontWeight: 600 }}>{server?.label ?? 'Halcyon Platform MCP'}</div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
-                <span className="mcp-chip" style={{ borderColor: C.borderHi, color: C.text2 }}>{server?.provenance ?? 'sanctioned'}</span>
-                <span className="mcp-chip" style={{ borderColor: C.borderHi, color: C.text2 }}>{server?.review_status?.replaceAll('_', ' ') ?? 'approved at connection'}</span>
+                <span className="scene-chip" style={{ borderColor: C.borderHi, color: C.text2 }}>{server?.provenance ?? 'sanctioned'}</span>
+                <span className="scene-chip" style={{ borderColor: C.borderHi, color: C.text2 }}>{server?.review_status?.replaceAll('_', ' ') ?? 'approved at connection'}</span>
               </div>
             </div>
             <div>
@@ -142,7 +142,7 @@ export default function McpDescriptorScene({ C, onHome, onEvidence }) {
           <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 13, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ fontFamily: C.mono, fontSize: C.size.small, color: C.text1, fontWeight: 700 }}>{tool?.label ?? 'Deploy Status (MCP)'}</span>
-              <span className="mcp-chip" style={{ borderColor: C.attack + '77', color: C.attack, background: C.attackBg }}>descriptor changed after approval</span>
+              <span className="scene-chip" style={{ borderColor: C.attack + '77', color: C.attack, background: C.attackBg }}>descriptor changed after approval</span>
             </div>
             <div style={{ display: 'flex', gap: 14, fontSize: C.size.micro, color: C.text3, fontFamily: C.mono }}>
               <span>Approved at connection: <strong style={{ color: C.text2 }}>{descriptor?.descriptor_revision?.accepted_at_connection ?? 'revision 4'}</strong></span>
