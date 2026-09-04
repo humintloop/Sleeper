@@ -40,8 +40,10 @@ export default defineConfig({
     // e2e/*.spec.js are Playwright tests (npm run test:e2e), not vitest's —
     // vitest's default include glob matches *.spec.js too, so without this
     // it tries to run them itself and fails on Playwright's own test()/
-    // describe() API.
-    exclude: ['node_modules/**', 'e2e/**'],
+    // describe() API. `.claude/**` excludes the same files a second time
+    // when a Claude Code worktree checkout sits nested inside this repo —
+    // confirmed to otherwise get picked up and fail the same way.
+    exclude: ['node_modules/**', 'e2e/**', '.claude/**'],
   },
   worker: {
     format: 'es',
