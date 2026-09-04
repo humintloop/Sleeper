@@ -22,6 +22,31 @@ export function targetSummary(configuration) {
   return configuration.target_label || 'Target not selected';
 }
 
+/**
+ * The one thing that should be impossible to miss when a result comes from
+ * an actual model decision rather than a scripted replay. Before this, going
+ * live only changed a footnote (evidence class E1 -> E3, buried in the
+ * Evidence tab) — for a project whose whole pitch can rest on "a real agent
+ * did this," that distinction needs the same visual weight the SIMULATED
+ * marker already carries, pointed the other direction. `C.agent` (cyan) is
+ * the token already reserved for "model decision layer" and sits 60°+ of hue
+ * from every verdict color, so this can never be mistaken for a verdict.
+ */
+export function LiveRunBadge({ C, compact = false }) {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 6,
+      padding: compact ? '3px 8px' : '4px 10px',
+      border: `1px solid ${C.agent}`, borderRadius: C.radiusPill, background: C.agentBg,
+      color: C.agent, fontFamily: C.mono, fontSize: C.size.micro, fontWeight: 800, letterSpacing: 1,
+      textTransform: 'uppercase', whiteSpace: 'nowrap',
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: C.radiusPill, background: C.agent, animation: 'pulse 1.6s ease-in-out infinite' }} aria-hidden="true" />
+      Live model run
+    </span>
+  );
+}
+
 function Field({ C, label, value, mono = false }) {
   if (!value) return null;
   return (
@@ -47,15 +72,18 @@ export default function RunContextSummary({
   const tone = C[STATE_TONE[state]] || C.text3;
   const judge = configuration?.judge?.enabled ? (configuration.judge.model_id || 'judge model not selected') : null;
 
+  const isLive = configuration?.target_type === 'live';
+
   return (
     <div
       role="status"
       aria-live={state === 'error' ? 'assertive' : 'polite'}
       style={{
-        background: C.panel, border: `1px solid ${C.border}`, borderLeft: `3px solid ${tone}`,
+        background: C.panel, border: `1px solid ${C.border}`, borderLeft: `3px solid ${isLive ? C.agent : tone}`,
         borderRadius: 2, padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10,
       }}
     >
+      {isLive && <div><LiveRunBadge C={C} /></div>}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 22px', alignItems: 'flex-end' }}>
         <Field C={C} label="Case" value={caseTitle} />
         <Field C={C} label="Variant" value={variantTitle} />

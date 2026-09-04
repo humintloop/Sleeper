@@ -18,6 +18,10 @@ test.describe('error and degraded paths stay visibly labeled', () => {
     await page.goto('/');
     await openLab(page);
     await page.getByRole('button', { name: 'LIVE API' }).click();
+    // Selecting Live API alone — before any run — flips the run-context
+    // strip's badge. It's meant to be impossible to miss, so it shows up the
+    // moment a real call becomes possible, not only after one completes.
+    await expect(page.getByText('Live model run')).toBeVisible();
 
     await page.getByRole('button', { name: 'Run selected profile' }).click();
     // Announced in two places: the form-level alert and the run-context
