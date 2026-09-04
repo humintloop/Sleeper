@@ -40,7 +40,7 @@ import { PortfolioReplayTarget } from '../harness/replayTarget';
 import { WebLLMSecondaryJudge } from '../harness/secondaryJudge';
 import { RUN_MODES } from '../harness/evidenceContract';
 import { APITargetAdapter, PROVIDERS } from '../api/adapter';
-import { loadAgentRuns, saveAgentRun, verifyEvidenceChain } from '../storage';
+import { deleteCapturedRun, loadAgentRuns, loadCapturedRuns, saveAgentRun, verifyEvidenceChain } from '../storage';
 import ControlProfileSelector from './ControlProfileSelector';
 import AgenticTracePanel from './AgenticTracePanel';
 import ControlResultsPanel from './ControlResultsPanel';
@@ -51,6 +51,7 @@ import RunContextSummary from './RunContextSummary';
 import InvestigationWorkspace from './InvestigationWorkspace';
 import ReportPanel from './ReportPanel';
 import RunHistory from './RunHistory';
+import CapturedRunsList, { SaveCaptureButton } from './CapturedRuns';
 import SleeperBrand from './SleeperBrand';
 
 const PROVIDER_DEFAULTS = {
@@ -200,6 +201,12 @@ export default function AgentCaseRunner({ C, onHome, handoff = null, onWatchScen
   // verdict vocabularies and record shapes.
   const [history, setHistory] = useState(() => loadAgentRuns());
   const [chainStatus, setChainStatus] = useState(null);
+
+  // Verified captures: completed live, E3 results saved on purpose so they
+  // can be replayed later without another API call. Separate list from
+  // `history` above — history is every run, trimmed; captures are the small
+  // subset worth keeping in full because they proved a real model did this.
+  const [captures, setCaptures] = useState(() => loadCapturedRuns());
 
   useEffect(() => {
     let active = true;
@@ -864,6 +871,16 @@ export default function AgentCaseRunner({ C, onHome, handoff = null, onWatchScen
         running={running}
       />
 
+      <SaveCaptureButton
+        C={C}
+        result={result}
+        caseId={caseId}
+        caseTitle={agentCase?.title ?? caseId}
+        profileId={profileId}
+        profileLabel={CONTROL_PROFILES[profileId]?.label ?? profileId}
+        onSaved={setCaptures}
+      />
+
       {(result || Object.keys(comparisonResults).length > 0) && (
         <div ref={resultsRef} style={{ scrollMarginTop: 18 }}>
           <InvestigationWorkspace
@@ -937,6 +954,30 @@ export default function AgentCaseRunner({ C, onHome, handoff = null, onWatchScen
           />
         </div>
       )}
+
+      <CapturedRunsList
+        C={C}
+        captures={captures}
+        cardStyle={card(C)}
+        onReplay={capture => {
+          setCaseId(capture.caseId);
+          setProfileId(capture.profileId);
+          // A captured run always came from a live target — no API key is
+          // ever stored with it, but the target selector itself follows the
+          // capture so the run-context strip's Live badge reflects what is
+          // actually on screen, not whatever target was last selected.
+          const capturedConfig = capture.outcome?.configuration;
+          if (capturedConfig?.target_type === TARGET_TYPES.LIVE) {
+            setTargetType(TARGET_TYPES.LIVE);
+            if (capturedConfig.provider) setProvider(capturedConfig.provider);
+            if (capturedConfig.provider_model) setModelId(capturedConfig.provider_model);
+          }
+          setResult(capture.outcome);
+          setSetupOpen(false);
+          window.requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }));
+        }}
+        onDelete={captureId => setCaptures(deleteCapturedRun(captureId))}
+      />
 
       {history.length > 0 && <RunHistory C={C} history={history} chainStatus={chainStatus} cardStyle={card(C)} />}
     </div>

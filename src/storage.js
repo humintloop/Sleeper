@@ -11,8 +11,19 @@ import { canonicalJson, sha256Hex } from './harness/runProvenance.js';
 export const AGENT_RUNS_KEY = 'sleeper-agent-runs';
 export const MAX_STORED_AGENT_RUNS = 20;
 
+// A captured run is a completed LIVE result (a real model decision, not
+// Sample Replay) saved so it can be shown again later without another API
+// call — and without a live demo's outcome depending on the model
+// reproducing on cue. Deliberately separate from AGENT_RUNS_KEY: run history
+// trims the full event stream (it's only useful for the run currently on
+// screen), but a capture exists specifically to be replayed, so it keeps the
+// whole outcome — run, verdict, contract, configuration — not a summary.
+export const CAPTURED_RUNS_KEY = 'sleeper-captured-runs';
+export const MAX_STORED_CAPTURED_RUNS = 12;
+
 export const STORAGE_KEYS = [
   AGENT_RUNS_KEY,
+  CAPTURED_RUNS_KEY,
 ];
 
 const readJson = (storage, key, fallback) => {
@@ -134,6 +145,47 @@ export async function verifyEvidenceChain(runs) {
     limitation:
       'Verification covers only the retained browser records. It does not prove authorship, prevent replacement of the entire chain, or provide trusted time.',
   };
+}
+
+export function loadCapturedRuns(storage = globalThis.localStorage) {
+  const runs = readJson(storage, CAPTURED_RUNS_KEY, []);
+  return Array.isArray(runs) ? runs : [];
+}
+
+/**
+ * Persist a completed run as a verified capture.
+ *
+ * The gate on WHAT may be captured (target_type === 'live', evidence class
+ * reached E3) lives in the caller, same as the pattern for `saveAgentRun` —
+ * this function stores whatever record it is given and does not
+ * second-guess it. What it does own: `capture_id`, a digest of the run's own
+ * manifest so the same live result saved twice de-duplicates instead of
+ * appearing as two captures.
+ */
+export async function saveCapturedRun(record, storage = globalThis.localStorage, { now } = {}) {
+  const existing = loadCapturedRuns(storage);
+  const capturedAt = now ?? new Date().toISOString();
+  const captureId = (record.manifestDigest || await sha256Hex(canonicalJson(record.outcome ?? record))).slice(0, 24);
+  const capture = { ...record, captureId, capturedAt };
+  const updated = [capture, ...existing.filter(entry => entry.captureId !== captureId)]
+    .slice(0, MAX_STORED_CAPTURED_RUNS);
+  try {
+    storage?.setItem?.(CAPTURED_RUNS_KEY, JSON.stringify(updated));
+  } catch (_) {
+    // Storage full or unavailable — the capture still rendered this
+    // session; only the persisted copy is lost. The export download (built
+    // in the same action) is what actually gets a capture out of the
+    // browser, so this is not the only way to keep it.
+  }
+  return updated;
+}
+
+export function deleteCapturedRun(captureId, storage = globalThis.localStorage) {
+  const updated = loadCapturedRuns(storage).filter(entry => entry.captureId !== captureId);
+  try {
+    storage?.setItem?.(CAPTURED_RUNS_KEY, JSON.stringify(updated));
+  } catch (_) {}
+  return updated;
 }
 
 export function clearStoredLocalData(storage = globalThis.localStorage) {

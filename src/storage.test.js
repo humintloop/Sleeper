@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
   AGENT_RUNS_KEY,
+  CAPTURED_RUNS_KEY,
   clearStoredLocalData,
+  deleteCapturedRun,
   loadAgentRuns,
+  loadCapturedRuns,
   MAX_STORED_AGENT_RUNS,
+  MAX_STORED_CAPTURED_RUNS,
   saveAgentRun,
+  saveCapturedRun,
   verifyEvidenceChain,
 } from './storage';
 
@@ -23,12 +28,14 @@ describe('storage hardening', () => {
   it('clears only SLEEPER-owned storage keys', () => {
     const storage = fakeStorage({
       [AGENT_RUNS_KEY]: '[]',
+      [CAPTURED_RUNS_KEY]: '[]',
       unrelated: 'keep-me',
     });
 
     clearStoredLocalData(storage);
 
     expect(storage.has(AGENT_RUNS_KEY)).toBe(false);
+    expect(storage.has(CAPTURED_RUNS_KEY)).toBe(false);
     expect(storage.has('unrelated')).toBe(true);
   });
 });
@@ -116,5 +123,94 @@ describe('agent run persistence', () => {
     expect(migrated.every(run => run.evidenceChain)).toBe(true);
     expect(migrated[1].evidenceChain.migrated_legacy_record).toBe(true);
     expect((await verifyEvidenceChain(migrated)).valid).toBe(true);
+  });
+});
+
+describe('captured-run persistence', () => {
+  // Synthetic fixtures only — this is a storage-layer test, not a claim that
+  // any real live run has ever been captured. What "captured" means (a real
+  // model decision, not Sample Replay) is gated by the caller; this module
+  // just persists whatever record it is given.
+  const fakeCapture = (overrides = {}) => ({
+    manifestDigest: 'a'.repeat(64),
+    outcome: { caseId: 'NR-AGT-001', verdict: 'CONTROL_HELD' },
+    configuration: { target_type: 'live', provider: 'anthropic', provider_model: 'claude-sonnet-5' },
+    contract: { evidence: { max_class_claimed: 'E3' } },
+    ...overrides,
+  });
+
+  it('returns an empty list when nothing is stored', () => {
+    const storage = fakeStorage();
+    expect(loadCapturedRuns(storage)).toEqual([]);
+  });
+
+  it('saves a capture and makes it loadable, stamped with a captureId and capturedAt', async () => {
+    const storage = fakeStorage();
+    const record = fakeCapture();
+
+    const updated = await saveCapturedRun(record, storage, { now: '2026-09-02T00:00:00Z' });
+
+    expect(updated[0]).toMatchObject(record);
+    expect(updated[0].captureId).toBe('a'.repeat(24));
+    expect(updated[0].capturedAt).toBe('2026-09-02T00:00:00Z');
+    expect(loadCapturedRuns(storage)).toEqual(updated);
+  });
+
+  it('derives a captureId from the outcome when no manifestDigest is given', async () => {
+    const storage = fakeStorage();
+    const record = fakeCapture({ manifestDigest: undefined });
+
+    const updated = await saveCapturedRun(record, storage);
+
+    expect(updated[0].captureId).toMatch(/^[a-f0-9]{24}$/);
+  });
+
+  it('de-duplicates by captureId: saving the same manifest twice replaces rather than appending', async () => {
+    const storage = fakeStorage();
+    await saveCapturedRun(fakeCapture(), storage, { now: '2026-09-02T00:00:00Z' });
+    await saveCapturedRun(fakeCapture({ outcome: { caseId: 'NR-AGT-001', verdict: 'CONTROL_FAILED' } }), storage, { now: '2026-09-02T01:00:00Z' });
+
+    const loaded = loadCapturedRuns(storage);
+    expect(loaded).toHaveLength(1);
+    expect(loaded[0].outcome.verdict).toBe('CONTROL_FAILED');
+    expect(loaded[0].capturedAt).toBe('2026-09-02T01:00:00Z');
+  });
+
+  it('prepends distinct captures so the most recent is first', async () => {
+    const storage = fakeStorage();
+    await saveCapturedRun(fakeCapture({ manifestDigest: 'a'.repeat(64) }), storage);
+    await saveCapturedRun(fakeCapture({ manifestDigest: 'b'.repeat(64) }), storage);
+
+    const loaded = loadCapturedRuns(storage);
+    expect(loaded[0].captureId).toBe('b'.repeat(24));
+    expect(loaded[1].captureId).toBe('a'.repeat(24));
+  });
+
+  it('caps stored captures at MAX_STORED_CAPTURED_RUNS', async () => {
+    const storage = fakeStorage();
+    for (let i = 0; i < MAX_STORED_CAPTURED_RUNS + 5; i++) {
+      await saveCapturedRun(fakeCapture({ manifestDigest: String(i).padEnd(64, '0') }), storage);
+    }
+
+    const loaded = loadCapturedRuns(storage);
+    expect(loaded).toHaveLength(MAX_STORED_CAPTURED_RUNS);
+  });
+
+  it('deletes only the matching capture', async () => {
+    const storage = fakeStorage();
+    await saveCapturedRun(fakeCapture({ manifestDigest: 'a'.repeat(64) }), storage);
+    await saveCapturedRun(fakeCapture({ manifestDigest: 'b'.repeat(64) }), storage);
+
+    const remaining = deleteCapturedRun('a'.repeat(24), storage);
+
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].captureId).toBe('b'.repeat(24));
+    expect(loadCapturedRuns(storage)).toEqual(remaining);
+  });
+
+  it('does not throw when storage is unavailable', async () => {
+    await expect(saveCapturedRun(fakeCapture(), null)).resolves.toHaveLength(1);
+    expect(loadCapturedRuns(null)).toEqual([]);
+    expect(() => deleteCapturedRun('x', null)).not.toThrow();
   });
 });
