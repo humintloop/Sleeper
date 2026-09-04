@@ -130,10 +130,15 @@ function summarizeRun(outcome) {
 function DeltaStrip({ C, results, profiles, delta }) {
   const present = PROFILE_ORDER.filter(id => results?.[id]);
   return (
-    <div style={{ border: `1px solid ${C.border}`, borderTop: `2px solid ${delta.changed ? C.brass : C.borderHi}`, background: C.panel, borderRadius: C.radius, padding: '13px 15px' }}>
-      <div style={{ color: C.text1, fontSize: C.size.head, fontWeight: 600, lineHeight: 1.35, maxWidth: 760 }}>
+    <div style={{ borderTop: `1px solid ${delta.changed ? C.brass : C.borderHi}`, borderBottom: `1px solid ${C.border}`, padding: '11px 2px' }}>
+      <div style={{ color: C.text1, fontSize: C.size.body, fontWeight: 650, lineHeight: 1.45, maxWidth: 760 }}>
         {delta.headline}
       </div>
+      {/* Per-profile verdict cells — the headline sentence says whether
+          anything changed, this is what changed. Dropped once (uncommitted,
+          picked up and restored): the whole point of leading the Compare tab
+          with this strip was giving the finding a visual form, not just a
+          sentence — see the commit that introduced it. */}
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${present.length}, minmax(0, 1fr))`, gap: 1, background: C.border, marginTop: 13 }}>
         {present.map(id => {
           const outcome = results[id];
@@ -251,7 +256,7 @@ function ProfileStory({ C, profile, outcome, selected, onInspect }) {
         aria-pressed={selected}
         style={{ width: '100%', marginTop: 14, padding: '7px 9px', cursor: 'pointer', borderRadius: 2, border: `1px solid ${selected ? profileColor : C.borderHi}`, background: selected ? `${profileColor}12` : 'transparent', color: selected ? profileColor : C.text2, fontSize: C.size.micro, fontWeight: 800, letterSpacing: .7 }}
       >
-        {selected ? 'DETAILS SHOWN BELOW' : 'OPEN FULL TRACE & EVIDENCE'}
+        {selected ? 'Details shown below' : 'Open full trace & evidence'}
       </button>
     </article>
   );
@@ -279,14 +284,14 @@ export default function ComparisonStoryPanel({ C, results, profiles, selectedId,
       </div>
       {delta && <DeltaStrip C={C} results={results} profiles={profiles} delta={delta} />}
       {differences.length > 0 && (
-        <div role="status" style={{ background: C.surface, border: `1px solid ${C.borderHi}`, borderLeft: `3px solid ${C.brass}`, borderRadius: 2, padding: '10px 13px' }}>
-          <div style={{ color: C.text3, fontSize: C.size.micro, fontWeight: 800, letterSpacing: .2, marginBottom: 6 }}>
-            Material differences across profiles
-          </div>
-          <ul style={{ margin: 0, paddingLeft: 18, color: C.text2, fontSize: C.size.small, lineHeight: 1.5 }}>
+        <details style={{ borderBottom: `1px solid ${C.border}`, padding: '1px 2px 9px' }}>
+          <summary style={{ color: C.text3, fontSize: C.size.micro, fontWeight: 750, letterSpacing: .2, cursor: 'pointer' }}>
+            Review material differences across profiles
+          </summary>
+          <ul style={{ margin: '9px 0 0', paddingLeft: 18, color: C.text2, fontSize: C.size.small, lineHeight: 1.5 }}>
             {differences.map((line, i) => <li key={i}>{line}</li>)}
           </ul>
-        </div>
+        </details>
       )}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 10 }}>
         {PROFILE_ORDER.map(id => (
