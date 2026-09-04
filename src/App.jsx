@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import ConferenceStory from './components/ConferenceStory';
 import SceneWalkthrough from './components/SceneWalkthrough';
+import McpDescriptorScene from './components/McpDescriptorScene';
+import McpMarketplaceScene from './components/McpMarketplaceScene';
 import AgentCaseRunner from './components/AgentCaseRunner';
+import { MCP_DESCRIPTOR_CASE_ID } from './data/mcpDescriptorScene';
+import { MCP_MARKETPLACE_CASE_ID } from './data/mcpMarketplaceScene';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 // Dark field-manual direction. `signal` is the brand/interaction color; verdict colors
@@ -143,14 +147,25 @@ const C = {
 // Agent-only: the single-turn probe flow's six other stages
 // (CASE/LOADING/SELECT/PROBE/TRIAGE/REPORT) are gone.
 //
-// Three now, and they are a narrative in that order — consequence, then how,
-// then proof. HOME is the conference story: a five-beat explanation of how
-// untrusted content changes an employee agent's behavior. SCENE plays the same
-// run in the interface it would have happened in. AGENT_LAB is the evidence,
-// unchanged. A reader who already believes the premise skips straight to the lab,
-// and each screen still owns its own back navigation, so there is no
-// persistent header/stage rail to coordinate between them.
-const STAGE = { HOME: 'home', SCENE: 'scene', AGENT_LAB: 'agent_lab' };
+// Three or five now, and they are a narrative in that order — consequence,
+// then how, then proof. HOME is the conference story: a five-beat explanation
+// of how untrusted content changes an employee agent's behavior. SCENE plays
+// case 1's run in the interface it would have happened in; MCP_DESCRIPTOR_SCENE
+// and MCP_MARKETPLACE_SCENE do the same for cases 3a and 3b, each in its own
+// visual metaphor (a tool registry, a marketplace listing) rather than a
+// second copy of the inbox. AGENT_LAB is the evidence, unchanged. A reader who
+// already believes the premise skips straight to the lab, and the lab itself
+// offers a way into whichever scene matches the case currently selected —
+// reachable without ever passing through Home. Each screen owns its own back
+// navigation, so there is no persistent header/stage rail to coordinate
+// between them.
+const STAGE = {
+  HOME: 'home',
+  SCENE: 'scene',
+  MCP_DESCRIPTOR_SCENE: 'mcp_descriptor_scene',
+  MCP_MARKETPLACE_SCENE: 'mcp_marketplace_scene',
+  AGENT_LAB: 'agent_lab',
+};
 
 // ═══ Global style ═════════════════════════════════════════════════════════════
 function GlobalStyle({ C }) {
@@ -305,6 +320,15 @@ function GlobalStyle({ C }) {
       .conference-controls > div > span { color: ${C.text3}; font-family: ${C.mono}; font-size: ${C.size.micro}px; }
       .conference-controls > div > p { margin: 0; color: ${C.text2}; font-size: ${C.size.small}px; }
       .conference-controls__finish { display: flex; gap: 10px; }
+
+      /* McpDescriptorScene / McpMarketplaceScene — the two MCP-case scenes.
+         Share .scene's outer scroll treatment and .lab-masthead, but need
+         their own inner layout: a two-column registry panel for 003A, a
+         chip/badge vocabulary both reuse. */
+      .mcp-registry-grid { display: grid; grid-template-columns: minmax(200px, 260px) minmax(0, 1fr); }
+      .mcp-chip { display: inline-flex; align-items: center; font-size: ${C.size.micro}px; padding: 2px 8px; border: 1px solid; border-radius: ${C.radius}px; white-space: nowrap; }
+      .mcp-listing-card { border: 1px solid ${C.borderHi}; border-radius: ${C.radius}px; background: ${C.panel}; padding: 14px 16px; }
+
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
       }
@@ -321,6 +345,8 @@ function GlobalStyle({ C }) {
         .incident-main { padding: 0 12px 32px; }
         .scene-grid { grid-template-columns: minmax(0, 1fr) !important; }
         .scene-grid > * { border-right: none !important; }
+        .mcp-registry-grid { grid-template-columns: minmax(0, 1fr) !important; }
+        .mcp-registry-grid > * { border-right: none !important; border-bottom: 1px solid ${C.border}; }
         .conference-opening__grid, .conference-beat__heading { grid-template-columns: 1fr; }
         .conference-opening__grid { min-height: 0; gap: 40px; }
         .conference-context { grid-template-columns: 1fr; }
@@ -415,6 +441,22 @@ export default function App() {
           />
         )}
 
+        {stage === STAGE.MCP_DESCRIPTOR_SCENE && (
+          <McpDescriptorScene
+            C={C}
+            onHome={() => setStage(STAGE.HOME)}
+            onEvidence={outcome => { setHandoff(outcome); setStage(STAGE.AGENT_LAB); }}
+          />
+        )}
+
+        {stage === STAGE.MCP_MARKETPLACE_SCENE && (
+          <McpMarketplaceScene
+            C={C}
+            onHome={() => setStage(STAGE.HOME)}
+            onEvidence={outcome => { setHandoff(outcome); setStage(STAGE.AGENT_LAB); }}
+          />
+        )}
+
         {stage === STAGE.AGENT_LAB && (
           <AgentCaseRunner
             C={C}
@@ -424,6 +466,12 @@ export default function App() {
             // read once and ignored on every later entry.
             key={handoff?.manifestDigest ?? 'direct'}
             handoff={handoff}
+            onWatchScene={caseId => {
+              setHandoff(null);
+              if (caseId === MCP_DESCRIPTOR_CASE_ID) setStage(STAGE.MCP_DESCRIPTOR_SCENE);
+              else if (caseId === MCP_MARKETPLACE_CASE_ID) setStage(STAGE.MCP_MARKETPLACE_SCENE);
+              else setStage(STAGE.SCENE);
+            }}
           />
         )}
       </div>

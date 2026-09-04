@@ -110,6 +110,11 @@ export const SCENE_INBOX = [
   { from: 'IT Helpdesk', subject: 'Your assistant access is live', active: false },
 ];
 
+// Shared across every scene, not just case 1's — deriveSceneBeats() below has
+// no case-specific logic, so the MCP scenes (mcpDescriptorScene.js,
+// mcpMarketplaceScene.js) import and reuse it rather than re-deriving beats
+// from a run's event stream a second time. These two maps just needed the
+// MCP-shaped tool names added.
 const ACTION_LABEL = {
   retrieve_email: 'Reading',
   retrieve_document: 'Opening',
@@ -117,6 +122,8 @@ const ACTION_LABEL = {
   read_file: 'Reading',
   write_file: 'Writing',
   web_search: 'Searching',
+  mcp__platform__deploy_status: 'Calling',
+  mcp__taskflow__sync_tasks: 'Calling',
 };
 
 const SUBJECT_LABEL = {
@@ -126,6 +133,8 @@ const SUBJECT_LABEL = {
   read_file: 'a file',
   write_file: 'a file',
   web_search: 'the web',
+  mcp__platform__deploy_status: 'the deploy-status tool',
+  mcp__taskflow__sync_tasks: 'the task-sync tool',
 };
 
 /** The most identifying argument on a call — a recipient, a record, a path. */

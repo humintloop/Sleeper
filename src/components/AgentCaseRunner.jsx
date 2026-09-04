@@ -16,7 +16,7 @@
 //     true` by construction; that is surfaced on the trace panel, never
 //     hidden.
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, Play, RefreshCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, RefreshCw } from 'lucide-react';
 import { AGENT_CASES, AGENT_CASE_ORDER } from '../data/agentCases';
 import { CONTROL_PROFILES } from '../data/controlProfiles';
 import { VICTIM_MODELS } from '../data/victimModels';
@@ -51,7 +51,6 @@ import RunContextSummary from './RunContextSummary';
 import InvestigationWorkspace from './InvestigationWorkspace';
 import ReportPanel from './ReportPanel';
 import RunHistory from './RunHistory';
-import { STORY_CASE_ID, STORY_PROFILE_ID } from '../data/storyScene';
 import SleeperBrand from './SleeperBrand';
 
 const PROVIDER_DEFAULTS = {
@@ -106,16 +105,35 @@ function toggleBtn(C, active) {
 }
 
 /**
- * `handoff` is a completed run from the scene walkthrough. When one arrives the
- * runner opens on it — that exact result object, not a fresh run that resembles
- * it — with setup collapsed and the form already matching the configuration
- * that produced it, so the visitor lands on CURRENT rather than being told
- * their own run is stale. src/data/storyScene.js owns the arguments that keep
- * those two configurations identical.
+ * `handoff` is a completed run from one of the scene walkthroughs — case 1's
+ * SceneWalkthrough, or either MCP scene. When one arrives the runner opens on
+ * it — that exact result object, not a fresh run that resembles it — with
+ * setup collapsed and the form already matching the configuration that
+ * produced it, so the visitor lands on CURRENT rather than being told their
+ * own run is stale.
+ *
+ * Which case and profile is read from the handoff's own recorded
+ * configuration (`outcome.configuration.case_id`/`profile_id`) rather than a
+ * hardcoded constant — this is what lets the same runner open correctly no
+ * matter which scene produced the handoff. Each scene's own data module
+ * (storyScene.js, mcpDescriptorScene.js, mcpMarketplaceScene.js) still owns
+ * keeping its run arguments identical to what this component defaults to,
+ * so the configuration digest matches either way.
  */
-export default function AgentCaseRunner({ C, onHome, handoff = null }) {
-  const [caseId, setCaseId] = useState(handoff ? STORY_CASE_ID : AGENT_CASE_ORDER[0]);
-  const [profileId, setProfileId] = useState(handoff ? STORY_PROFILE_ID : 'reference');
+// Which cases have a dramatized scene, and what the link says. Case 2 has
+// none yet — the four HITL failure modes don't fit the "here's the poisoned
+// document" shape the other three share, and need their own visual metaphor
+// rather than a smaller copy of one of these. Deliberately data-driven so
+// this component doesn't grow a case-specific branch per scene.
+const SCENE_ENTRY_LABEL = {
+  'NR-AGT-001': 'Watch this attack — the inbox',
+  'NR-AGT-003A': 'Watch this attack — the tool registry',
+  'NR-AGT-003B': 'Watch this attack — the marketplace listing',
+};
+
+export default function AgentCaseRunner({ C, onHome, handoff = null, onWatchScene = null }) {
+  const [caseId, setCaseId] = useState(handoff?.configuration?.case_id ?? AGENT_CASE_ORDER[0]);
+  const [profileId, setProfileId] = useState(handoff?.configuration?.profile_id ?? 'reference');
   const [variantId, setVariantId] = useState(null);
 
   const [targetType, setTargetType] = useState(TARGET_TYPES.SAMPLE);
@@ -161,10 +179,10 @@ export default function AgentCaseRunner({ C, onHome, handoff = null }) {
 
   const [result, setResult] = useState(handoff ?? null); // { run, verdict, contract }
   const [comparison, setComparison] = useState(
-    handoff ? { [STORY_PROFILE_ID]: handoff.verdict?.verdict } : {},
+    handoff ? { [handoff.configuration.profile_id]: handoff.verdict?.verdict } : {},
   ); // { [profileId]: verdictString }
   const [comparisonResults, setComparisonResults] = useState(
-    handoff ? { [STORY_PROFILE_ID]: handoff } : {},
+    handoff ? { [handoff.configuration.profile_id]: handoff } : {},
   ); // { [profileId]: full assessment }
   const [comparisonProgress, setComparisonProgress] = useState(null);
   const [trialCount, setTrialCount] = useState(3);
@@ -547,6 +565,18 @@ export default function AgentCaseRunner({ C, onHome, handoff = null }) {
             <p style={{ fontSize: C.size.small, color: C.text2, lineHeight: 1.6, marginTop: 12, marginBottom: 0 }}>
               {agentCase.scenario?.narrative}
             </p>
+          )}
+          {onWatchScene && SCENE_ENTRY_LABEL[caseId] && (
+            <button
+              onClick={() => onWatchScene(caseId)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, padding: 0,
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                color: C.brass, fontSize: C.size.small, fontWeight: 700,
+              }}
+            >
+              {SCENE_ENTRY_LABEL[caseId]} <ChevronRight size={13} />
+            </button>
           )}
           {agentCase?.variants?.length > 0 && (
             <div style={{ marginTop: 14 }}>
