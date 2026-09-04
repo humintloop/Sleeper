@@ -51,7 +51,6 @@ is the control harness around those known threats: real tool-calling agent execu
 instrumentation (`instructionSource` on every tool call), deterministic control gates, and the
 evidence discipline that states plainly what a run does and does not prove.
 
-<!-- AUTHOR: personalize before merging -->
 ## Why This Exists
 
 Sleeper started from a compliance and assurance angle on agent security, not an offensive-
@@ -61,14 +60,28 @@ tooling in this space is built for red-teamers rather than for the people who wi
 an opinion about whether a control held. This project is an attempt to instrument that gap
 honestly — evidence classes instead of pass/fail banners, `INCONCLUSIVE` instead of a false
 "held," and a claim boundary stated on every output — rather than to find novel attacks.
-<!-- /AUTHOR: personalize before merging -->
+
+The four threat cases are deliberately the well-known ones (indirect injection, excessive
+agency, poisoned tool descriptors, unsanctioned MCP servers) because the point isn't novelty —
+it's showing, concretely and reproducibly, what each one actually looks like inside a real
+tool-calling loop: the exact instruction an agent read, the exact tool call it proposed, and
+what a deterministic control did or didn't do about it. Sample Replay exists so that
+demonstration doesn't depend on a model cooperating on cue; the live-API and local targets exist
+so it isn't only a demonstration.
 
 ## Status
 
 The agent harness is built and wired end to end in the browser, organized around a Compare/
 Trace/Evidence/Report investigation workspace, with a no-key deterministic replay plus live API
-and local WebLLM targets. The automated suite is 572 unit/integration tests across 31 files plus
-12 Playwright critical-flow browser tests (`npm run test:e2e`, Sample Replay only — no live
+and local WebLLM targets. Case 1, and both halves of case 3 (the poisoned MCP tool descriptor and
+the unsanctioned MCP server), each have a dramatized scene walking through the real fixture and a
+real Sample Replay run before handing that same result into the lab; case 2 does not yet. A
+completed live run that reaches evidence class E3 can be saved as a **verified capture** and
+replayed later without another API call — see [`docs/live-verification-log.md`](./docs/live-verification-log.md)
+for the running, hand-maintained record of which ones are real.
+
+The automated suite is 606 unit/integration tests across 33 files plus 19 Playwright
+critical-flow browser tests across 8 files (`npm run test:e2e`, Sample Replay only — no live
 credentials needed in CI); 208 of the unit tests, across 13 files (`computeVerdict`,
 `VerdictBanner`, `authorityRegistry`, `toolAuthorizationGate`, `approvalPolicy`, `runProvenance`,
 `replayTarget`, `evidenceContract`, `evidenceWitness`, `runConfiguration`,
@@ -274,9 +287,11 @@ edit is *detectable*, not prevented. Nothing here is signed, replay-resistant, o
 verifiable. That's the whole answer; the rest of this section is the mechanism behind it.
 
 Completed agent-case runs — verdict, reason, and the full Evidence Contract — are saved to
-this browser's local storage (most recent 20), so navigating away doesn't lose the run. Nothing
-else is persisted: there is no in-progress "resume a half-configured case" state, since a run
-is a single self-contained action, not a multi-step wizard.
+this browser's local storage (most recent 20), so navigating away doesn't lose the run. A
+completed **live** run that reaches evidence class E3 can additionally be saved, on request, as a
+verified capture (most recent 12, full outcome retained) so it can be shown again without another
+API call. There is no in-progress "resume a half-configured case" state, since a run is a single
+self-contained action, not a multi-step wizard.
 
 Each contract records the source revision/dirty state when available and digests the case,
 profile, configuration, and advertised tool schema. It also carries an unsigned SHA-256
